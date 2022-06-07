@@ -1,9 +1,8 @@
-from rich.console import Console
 import yaml
+from rich.console import Console
 
 console = Console()
 console_error = Console(stderr=True, style="bold red")
-
 
 with open("config.yaml", "r") as config_file:
     config = yaml.safe_load(config_file)
@@ -26,5 +25,19 @@ SYS_SERVICE_KEY = _CONFIG_SYS["service-key"]
 _CONFIG_LOG = config["log"]
 
 LOG_SUPPRESS_WARNINGS = _CONFIG_LOG["suppress-warnings"]
+
+# endregion
+
+# region Data
+
+_CONFIG_DATA = config["data"]
+
+# region Data / Stream
+
+_CONFIG_DATA_STREAM = _CONFIG_DATA["stream"]
+
+DATA_TIMEOUT_SECS = _CONFIG_DATA_STREAM["timeout-secs"]
+
+# endregion
 
 # endregion

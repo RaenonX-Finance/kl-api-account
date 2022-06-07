@@ -1,85 +1,80 @@
-import json
-import re
+from datetime import datetime
 
 from .core import TCoreZMQ
+from .message import (
+    GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval, SubscribePxHistoryMessage, SubscribePxHistoryRequest,
+    SubscribeRealtimeMessage, SubscribeRealtimeRequest, UnsubscribeRealtimeMessage, UnsubscribeRealtimeRequest,
+)
+from .model import SymbolBaseType
+from .utils import print_log
 
 
 class QuoteAPI(TCoreZMQ):
-    def __init__(self, app_id, service_key):
-        super().__init__(app_id, service_key)
+    def subscribe_realtime(self, symbol: SymbolBaseType) -> SubscribeRealtimeMessage:
+        print_log(f"[Quote] Subscribing realtime data of [yellow]{symbol.symbol_name}[/yellow]")
 
-    def subscribe_realtime(self, symbol):
         with self.lock:
-            obj = {
-                "Request": "SUBQUOTE", "SessionKey": self.session_key,
-                "Param": {
-                    "Symbol": symbol,
-                    "SubDataType": "REALTIME"
-                }
-            }
-            self.socket.send_string(json.dumps(obj))
-            message = self.socket.get_message()
-            data = json.loads(message)
+            req = SubscribeRealtimeRequest(session_key=self.session_key, symbol=symbol)
+            self.socket.send_string(req.to_message())
 
-        return data
+            return SubscribeRealtimeMessage(message=self.socket.get_message())
 
-    def unsubscribe_realtime(self, sessionKey, symbol):
-        self.lock.acquire()
-        obj = {"Request": "UNSUBQUOTE", "SessionKey": sessionKey}
-        obj["Param"] = {"Symbol": symbol, "SubDataType": "REALTIME"}
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.get_message()
-        data = json.loads(message)
-        self.lock.release()
-        return data
+    def unsubscribe_realtime(self, symbol: SymbolBaseType) -> UnsubscribeRealtimeMessage:
+        print_log(f"[Quote] Unsubscribing realtime data from [yellow]{symbol.symbol_name}[/yellow]")
 
-    def SubGreeks(self, sessionKey, symbol, greeksType="REAL"):
-        self.lock.acquire()
-        obj = {"Request": "SUBQUOTE", "SessionKey": sessionKey}
-        obj["Param"] = {"Symbol": symbol, "SubDataType": "GREEKS", "GreeksType": greeksType}
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.get_message()
-        data = json.loads(message)
-        self.lock.release()
-        return data
+        with self.lock:
+            req = UnsubscribeRealtimeRequest(session_key=self.session_key, symbol=symbol)
+            self.socket.send_string(req.to_message())
 
-    def UnsubGreeks(self, sessionKey, symbol, greeksType="REAL"):
-        self.lock.acquire()
-        obj = {"Request": "UNSUBQUOTE", "SessionKey": sessionKey}
-        obj["Param"] = {"Symbol": symbol, "SubDataType": "GREEKS", "GreeksType": greeksType}
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.get_message()
-        data = json.loads(message)
-        self.lock.release()
-        return data
+            return UnsubscribeRealtimeMessage(message=self.socket.get_message())
 
-    # 订阅历史数据
-    # 1：SessionKey，
-    # 2：合约代码，
-    # 3：数据周期:"TICKS","1K","DK"，
-    # 4: 历史数据开始时间,
-    # 5: 历史数据结束时间
-    def subscribe_history(self, sessionKey, symbol, type, startTime, endTime):
-        self.lock.acquire()
-        obj = {"Request": "SUBQUOTE", "SessionKey": sessionKey}
-        obj["Param"] = {"Symbol": symbol, "SubDataType": type, "StartTime": startTime, "EndTime": endTime}
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.get_message()
-        data = json.loads(message)
-        self.lock.release()
-        return data
+    def subscribe_history(
+            self,
+            symbol: SymbolBaseType, interval: HistoryInterval,
+            start: datetime, end: datetime,
+    ) -> SubscribePxHistoryMessage:
+        print_log(
+            f"[Quote] Subscribing historical data of "
+            f"[yellow]{symbol.symbol_name}[/yellow] at [yellow]{interval}[/yellow]"
+        )
+        print_log(f"[Quote] Historical data starts from {start} to {end}")
 
-    # 分页获取订阅的历史数据
-    def GetHistory(self, sessionKey, symbol, type, startTime, endTime, qryIndex):
-        self.lock.acquire()
-        obj = {"Request": "GETHISDATA", "SessionKey": sessionKey}
-        obj["Param"] = {
-            "Symbol": symbol, "SubDataType": type, "StartTime": startTime, "EndTime": endTime, "QryIndex": qryIndex
-        }
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.get_message()
-        index = re.search(":", message).span()[1]  # filter
-        message = message[index:]
-        message = json.loads(message)
-        self.lock.release()
-        return message
+        with self.lock:
+            req = SubscribePxHistoryRequest(
+                session_key=self.session_key,
+                symbol=symbol,
+                interval=interval,
+                start_time=start,
+                end_time=end
+            )
+            self.socket.send_string(req.to_message())
+
+            return SubscribePxHistoryMessage(message=self.socket.get_message())
+
+    def get_paged_history(
+            self, symbol: str, interval: HistoryInterval,
+            start: str, end: str, query_idx: int = 0
+    ) -> GetPxHistoryMessage:
+        """
+        Usually this is called after receiving the subscription data after calling ``subscribe_history()``.
+
+        Parameters originated from the subscription data of ``subscribe_history()``.
+        """
+        print_log(
+            f"[Quote] Getting paged historical data of [yellow]{symbol}[/yellow] "
+            f"at [yellow]{interval}[/yellow] (#{query_idx})"
+        )
+        print_log(f"[Quote] Paged historical data starts from {start} to {end}")
+
+        with self.lock:
+            req = GetPxHistoryRequest(
+                session_key=self.session_key,
+                symbol_name=symbol,
+                interval=interval,
+                start_time_str=start,
+                end_time_str=end,
+                query_idx=query_idx
+            )
+            self.socket.send_string(req.to_message())
+
+            return GetPxHistoryMessage(message=self.socket.get_message())

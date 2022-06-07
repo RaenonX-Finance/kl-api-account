@@ -42,8 +42,8 @@ class TCoreZMQ:
         if data.success:
             self.create_ping_pong(data.sub_port)
 
-        print_log(f"TCoreZMQ API connected to port {data.sub_port}.")
-        print_log(f"Session Key: {data.session_key}")
+        print_log(f"[API] Connected to port {data.sub_port}.")
+        print_log(f"[API] Session Key: [yellow]{data.session_key}[/yellow]")
 
         return data
 
@@ -52,6 +52,7 @@ class TCoreZMQ:
         if self.obj_zmq_keep_alive is not None:
             self.obj_zmq_keep_alive.close()
 
+        print_log(f"[API] created ping pong helper at port {sub_port}.")
         self.obj_zmq_keep_alive = KeepAliveHelper(sub_port, self)
 
     def pong(self, id_: str) -> PongMessage:
@@ -65,16 +66,19 @@ class TCoreZMQ:
         with self.lock:
             self.socket.send_string(LogoutRequest(session_key=self.session_key).to_message())
 
+        print_log("[API] Disconnected.")
         self.session_key_internal = None
 
     def query_instrument_info(self, symbol: SymbolBaseType) -> QueryInstrumentMessage:
-        print_log(f"Requesting instrument info of {symbol.symbol_name}")
+        print_log(f"[API] Requesting instrument info of [yellow]{symbol.symbol_name}[/yellow]")
 
         with self.lock:
             self.socket.send_string(QueryInstrumentRequest(session_key=self.session_key, symbol=symbol).to_message())
             return QueryInstrumentMessage(message=self.socket.get_message())
 
     def query_all_instrument_info(self, instrument_type: InstrumentType) -> ErrorMessage:
+        print_log(f"[API] Requesting all instrument info of type [yellow]{instrument_type}[/yellow]")
+
         with self.lock:
             req = QueryAllInstrumentRequest(session_key=self.session_key, instrument_type=instrument_type)
             self.socket.send_string(req.to_message())

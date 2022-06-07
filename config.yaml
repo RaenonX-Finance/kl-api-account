@@ -6,3 +6,7 @@ system:
 
 log:
   suppress-warnings: true
+
+data:
+  stream:
+    timeout-secs: 300

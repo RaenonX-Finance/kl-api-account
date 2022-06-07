@@ -13,10 +13,10 @@ class KeepAliveHelper:
 
         self.is_terminated = False
 
-    def close(self):
+    def close(self) -> None:
         self.is_terminated = True
 
-    def _thread_process(self, sub_port: int, tcore_zmq: "TCoreZMQ"):
+    def _thread_process(self, sub_port: int, tcore_zmq: "TCoreZMQ") -> None:
         socket = create_subscription_receiver_socket(sub_port)
 
         while True:

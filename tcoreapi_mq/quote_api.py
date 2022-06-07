@@ -8,46 +8,47 @@ class QuoteAPI(TCoreZMQ):
     def __init__(self, app_id, service_key):
         super().__init__(app_id, service_key)
 
-    # 订阅实时报价
-    def SubQuote(self, sessionKey, symbol):
-        self.lock.acquire()
-        obj = {"Request": "SUBQUOTE", "SessionKey": sessionKey}
-        obj["Param"] = {"Symbol": symbol, "SubDataType": "REALTIME"}
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.recv()[:-1]
-        data = json.loads(message)
-        self.lock.release()
+    def subscribe_realtime(self, symbol):
+        with self.lock:
+            obj = {
+                "Request": "SUBQUOTE", "SessionKey": self.session_key,
+                "Param": {
+                    "Symbol": symbol,
+                    "SubDataType": "REALTIME"
+                }
+            }
+            self.socket.send_string(json.dumps(obj))
+            message = self.socket.get_message()
+            data = json.loads(message)
+
         return data
 
-    # 解订实时报价(每次订阅合约前，先调用解订，避免重复订阅)
-    def UnsubQuote(self, sessionKey, symbol):
+    def unsubscribe_realtime(self, sessionKey, symbol):
         self.lock.acquire()
         obj = {"Request": "UNSUBQUOTE", "SessionKey": sessionKey}
         obj["Param"] = {"Symbol": symbol, "SubDataType": "REALTIME"}
         self.socket.send_string(json.dumps(obj))
-        message = self.socket.recv()[:-1]
+        message = self.socket.get_message()
         data = json.loads(message)
         self.lock.release()
         return data
 
-    # 订阅实时greeks
     def SubGreeks(self, sessionKey, symbol, greeksType="REAL"):
         self.lock.acquire()
         obj = {"Request": "SUBQUOTE", "SessionKey": sessionKey}
         obj["Param"] = {"Symbol": symbol, "SubDataType": "GREEKS", "GreeksType": greeksType}
         self.socket.send_string(json.dumps(obj))
-        message = self.socket.recv()[:-1]
+        message = self.socket.get_message()
         data = json.loads(message)
         self.lock.release()
         return data
 
-    # 解订实时greeks(每次订阅合约前，先调用解订，避免重复订阅)
     def UnsubGreeks(self, sessionKey, symbol, greeksType="REAL"):
         self.lock.acquire()
         obj = {"Request": "UNSUBQUOTE", "SessionKey": sessionKey}
         obj["Param"] = {"Symbol": symbol, "SubDataType": "GREEKS", "GreeksType": greeksType}
         self.socket.send_string(json.dumps(obj))
-        message = self.socket.recv()[:-1]
+        message = self.socket.get_message()
         data = json.loads(message)
         self.lock.release()
         return data
@@ -58,29 +59,12 @@ class QuoteAPI(TCoreZMQ):
     # 3：数据周期:"TICKS","1K","DK"，
     # 4: 历史数据开始时间,
     # 5: 历史数据结束时间
-    def SubHistory(self, sessionKey, symbol, type, startTime, endTime):
+    def subscribe_history(self, sessionKey, symbol, type, startTime, endTime):
         self.lock.acquire()
         obj = {"Request": "SUBQUOTE", "SessionKey": sessionKey}
         obj["Param"] = {"Symbol": symbol, "SubDataType": type, "StartTime": startTime, "EndTime": endTime}
         self.socket.send_string(json.dumps(obj))
-        message = self.socket.recv()[:-1]
-        data = json.loads(message)
-        self.lock.release()
-        return data
-
-        # 解订历史数据（遗弃，不再使用）
-
-    # 1：SessionKey，
-    # 2：合约代码，
-    # 3：数据周期"TICKS","1K","DK"，
-    # 4: 历史数据开始时间,
-    # 5: 历史数据结束时间
-    def UnsubHistory(self, sessionKey, symbol, type, startTime, endTime):
-        self.lock.acquire()
-        obj = {"Request": "UNSUBQUOTE", "SessionKey": sessionKey}
-        obj["Param"] = {"Symbol": symbol, "SubDataType": type, "StartTime": startTime, "EndTime": endTime}
-        self.socket.send_string(json.dumps(obj))
-        message = self.socket.recv()[:-1]
+        message = self.socket.get_message()
         data = json.loads(message)
         self.lock.release()
         return data
@@ -93,7 +77,7 @@ class QuoteAPI(TCoreZMQ):
             "Symbol": symbol, "SubDataType": type, "StartTime": startTime, "EndTime": endTime, "QryIndex": qryIndex
         }
         self.socket.send_string(json.dumps(obj))
-        message = (self.socket.recv()[:-1]).decode("utf-8")
+        message = self.socket.get_message()
         index = re.search(":", message).span()[1]  # filter
         message = message[index:]
         message = json.loads(message)

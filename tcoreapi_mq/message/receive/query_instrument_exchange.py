@@ -20,12 +20,14 @@ Sample message of query instrument for exchange:
     }
 }
 """
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, dataclass, field
 
 
 @dataclass(kw_only=True)
 class QueryInstrumentExchange:
     body: InitVar[dict[str, str]]
 
+    code: str = field(init=False)
+
     def __post_init__(self, body: dict[str, str]):
-        pass
+        self.code = body["EXG.SIM"]

@@ -29,8 +29,8 @@ class QueryInstrumentMessage:
 
         self.success = body["Success"] == "OK"
         self.info_exchange = QueryInstrumentExchange(body=next(
-            info_val for info_key, info_val in body["Info"].items() if info_key.count(".") == 3
+            info_val for info_key, info_val in body["Info"].items() if info_key.count(".") == 2
         ))
         self.info_product = QueryInstrumentProduct(body=next(
-            info_val for info_key, info_val in body["Info"].items() if info_key.count(".") == 2
+            info_val for info_key, info_val in body["Info"].items() if info_key.count(".") == 3
         ))

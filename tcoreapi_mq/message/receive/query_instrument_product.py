@@ -110,12 +110,14 @@ Sample message of query instrument for product:
     }
 }
 """
-from dataclasses import InitVar, dataclass
+from dataclasses import InitVar, dataclass, field
 
 
 @dataclass(kw_only=True)
 class QueryInstrumentProduct:
     body: InitVar[dict[str, str]]
 
+    symbol: str = field(init=False)
+
     def __post_init__(self, body: dict[str, str]):
-        pass
+        self.symbol = body["Symbol"]

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://raw.githubusercontent.com/RaenonX-Finance/kl-site-back/main/config.schema.json",
+  "title": "KL Site Back Config Schema",
+  "type": "object",
+  "description": "JSON Schema for the px quoting server config.",
+  "required": [
+    "system",
+    "log"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "system": {
+      "type": "object",
+      "description": "System settings.",
+      "required": [
+        "app-id",
+        "port",
+        "service-key"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "app-id": {
+          "type": "string",
+          "description": "Application ID of the Touchance API. In general, this shouldn't need to change."
+        },
+        "port": {
+          "type": "object",
+          "description": "TCP port numbers to get the market data.",
+          "required": [
+            "quote"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "quote": {
+              "type": "integer",
+              "description": "TCP port number to get the price quotes."
+            }
+          }
+        },
+        "service-key": {
+          "type": "string",
+          "description": "Service key of the Touchance API. In general, this shouldn't need to change."
+        }
+      }
+    },
+    "log": {
+      "type": "object",
+      "description": "Logging related settings.",
+      "required": [
+        "suppress-warnings"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "suppress-warnings": {
+          "type": "boolean",
+          "description": "Determines if non-force warnings should be suppressed."
+        }
+      }
+    }
+  }
+}

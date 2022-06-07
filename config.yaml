@@ -5,7 +5,7 @@ system:
   service-key: 8076c9867a372d2a9a814ae710c256e2
 
 log:
-  suppress-warnings: true
+  suppress-warnings: false
 
 data:
   stream:

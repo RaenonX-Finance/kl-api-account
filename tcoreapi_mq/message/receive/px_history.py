@@ -18,7 +18,7 @@ class SubscribePxHistoryMessage:
 
 
 @dataclass(kw_only=True)
-class GetPxHistoryDataEntry:
+class PxHistoryDataEntry:
     body: InitVar[dict[str, str]]
 
     timestamp: datetime = field(init=False)
@@ -64,7 +64,7 @@ class GetPxHistoryMessage:
     symbol_name: str = field(init=False)
 
     interval: HistoryInterval = field(init=False)
-    data: list[GetPxHistoryDataEntry] = field(init=False)
+    data: list[PxHistoryDataEntry] = field(init=False)
 
     def __post_init__(self, message: str):
         symbol, data = message.split(":", 1)
@@ -74,4 +74,4 @@ class GetPxHistoryMessage:
         body = json.loads(data)
 
         self.interval = body["DataType"]
-        self.data = [GetPxHistoryDataEntry(body=data) for data in body["HisData"]]
+        self.data = [PxHistoryDataEntry(body=data) for data in body["HisData"]]

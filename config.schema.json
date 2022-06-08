@@ -63,7 +63,8 @@
       "type": "object",
       "description": "Data related settings.",
       "required": [
-        "stream"
+        "stream",
+        "source"
       ],
       "additionalProperties": false,
       "properties": {
@@ -79,6 +80,42 @@
               "type": "number",
               "description": "Data stream timeout in seconds. An error will be raised if no new data received after the given seconds.",
               "exclusiveMinimum": 0
+            }
+          }
+        },
+        "source": {
+          "type": "array",
+          "description": "Product specs to report the price data.",
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "description": "An entity of product spec to report.",
+            "required": [
+              "type",
+              "exchange",
+              "symbol",
+              "expiry"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "type": {
+                "type": "string",
+                "description": "Product type.",
+                "enum": ["Futures"]
+              },
+              "expiry": {
+                "type": "string",
+                "description": "Product expiry.",
+                "enum": ["HOT", "HOT2"]
+              },
+              "exchange": {
+                "type": "string",
+                "description": "Product exchange."
+              },
+              "symbol": {
+                "type": "string",
+                "description": "Product symbol."
+              },
             }
           }
         }

@@ -40,4 +40,10 @@ DATA_TIMEOUT_SECS = _CONFIG_DATA_STREAM["timeout-secs"]
 
 # endregion
 
+# region Data / Source
+
+DATA_SOURCES = _CONFIG_DATA["source"]
+
+# endregion
+
 # endregion

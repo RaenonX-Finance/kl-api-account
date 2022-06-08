@@ -10,3 +10,16 @@ log:
 data:
   stream:
     timeout-secs: 300
+  source:
+    - type: Futures
+      exchange: TWF
+      symbol: FITX
+      expiry: HOT
+    - type: Futures
+      exchange: CBOT
+      symbol: YM
+      expiry: HOT
+    - type: Futures
+      exchange: CME
+      symbol: NQ
+      expiry: HOT

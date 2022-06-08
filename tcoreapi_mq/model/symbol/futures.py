@@ -1,8 +1,9 @@
 from ._base import SymbolBase
+from .types import FuturesExpiry
 
 
 class FuturesSymbol(SymbolBase):
-    def __init__(self, *, exchange: str, symbol: str, expiry: str = "HOT"):
+    def __init__(self, *, exchange: str, symbol: str, expiry: FuturesExpiry = "HOT"):
         self.exchange = exchange
         self.symbol = symbol
         self.expiry = expiry

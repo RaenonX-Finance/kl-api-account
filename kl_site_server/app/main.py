@@ -6,7 +6,7 @@ from tcoreapi_mq.model import configs_sources_as_symbols
 from .socket import register_handlers
 
 
-latest_date: datetime = datetime(2022, 5, 25)
+latest_date: datetime = datetime(2022, 6, 8)
 
 
 def start_server_app():

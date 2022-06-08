@@ -34,7 +34,8 @@ class PxDataCacheEntry:
     def is_ready(self) -> bool:
         is_ready = bool(self.data)
 
-        print_warning(f"[Server] Px data cache entry of [bold]{self.symbol} @ {self.period_sec}[/bold] not ready")
+        if not is_ready:
+            print_warning(f"[Server] Px data cache entry of [bold]{self.symbol} @ {self.period_sec}[/bold] not ready")
 
         return is_ready
 

@@ -5,6 +5,7 @@ from datetime import date, datetime
 from typing import DefaultDict, Iterable
 
 from kl_site_common.const import DATA_PX_UPDATE_MARKET_SEC, DATA_PX_UPDATE_SEC
+from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
 from tcoreapi_mq.model import SymbolBaseType
@@ -31,7 +32,11 @@ class PxDataCacheEntry:
 
     @property
     def is_ready(self) -> bool:
-        return bool(self.data)
+        is_ready = bool(self.data)
+
+        print_warning(f"[Server] Px data cache entry of [bold]{self.symbol} @ {self.period_sec}[/bold] not ready")
+
+        return is_ready
 
     def remove_oldest(self):
         self.data.pop(min(self.data.keys()))
@@ -126,6 +131,10 @@ class PxDataCache:
         self.last_complete_update[symbol_complete] = time.time()
 
         for period_sec, px_data_entry in self.data[symbol_complete].items():
+            print_log(
+                f"[Server] Updating {len(data.data_list)} Px data bars to "
+                f"[yellow]{symbol_complete} @ {period_sec}[/yellow]"
+            )
             px_data_entry.update_all(to_bar_data_dict_tcoreapi(bar, period_sec) for bar in data.data_list)
 
         self._mark_all_force_send_once(symbol_complete)
@@ -134,6 +143,8 @@ class PxDataCache:
         symbol_complete = data.symbol_complete
 
         self.last_market_update[symbol_complete] = time.time()
+
+        print_log(f"[Server] Updating latest Px data of [yellow]{symbol_complete}[/yellow]")
 
         mark_all_force_send = False
 

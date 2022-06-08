@@ -17,14 +17,14 @@ data:
       exchange: TWF
       symbol: FITX
       expiry: HOT
-    - type: Futures
-      exchange: CBOT
-      symbol: YM
-      expiry: HOT
-    - type: Futures
-      exchange: CME
-      symbol: NQ
-      expiry: HOT
+#    - type: Futures
+#      exchange: CBOT
+#      symbol: YM
+#      expiry: HOT
+#    - type: Futures
+#      exchange: CME
+#      symbol: NQ
+#      expiry: HOT
   sr-level:
     strong-threshold: 0.6
     custom:

@@ -72,7 +72,8 @@ def _from_px_data_support_resistance(px_data: "PxData") -> list[PxDataSupportRes
 
     for sr_level in px_data.sr_levels_data.levels_data:
         # Convert integral absolute strength (5) to relative strength (5 / 10 = 0.5)
-        strength = sr_level.strength / max_strength
+        # FIXME: `max_strength` shouldn't be 0, but it's possible for some reason
+        strength = sr_level.strength / max_strength if max_strength else 1
 
         ret.append({
             "level": sr_level.level,

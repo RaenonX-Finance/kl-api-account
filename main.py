@@ -1,13 +1,15 @@
-from fastapi import FastAPI
+import uvicorn
 
-app = FastAPI()
-
-
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
+from kl_site_common.utils import set_current_process_to_highest_priority
+from kl_site_server.app import start_server_app
+from kl_site_server.const import fast_api
 
 
-@app.get("/hello/{name}")
-async def say_hello(name: str):
-    return {"message": f"Hello {name}"}
+@fast_api.on_event("startup")
+async def startup_event():
+    start_server_app()
+    set_current_process_to_highest_priority()
+
+
+if __name__ == "__main__":
+    uvicorn.run("main:fast_api", port=8000, reload=False)

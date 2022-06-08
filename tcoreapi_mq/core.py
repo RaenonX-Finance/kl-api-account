@@ -54,7 +54,7 @@ class TCoreZMQ:
         if self.obj_zmq_keep_alive is not None:
             self.obj_zmq_keep_alive.close()
 
-        print_log(f"[ZMQ] created ping pong helper at port {sub_port}.")
+        print_log(f"[ZMQ] Created ping pong helper at port {sub_port}.")
         self.obj_zmq_keep_alive = KeepAliveHelper(sub_port, self)
 
     def pong(self, id_: str) -> PongMessage:

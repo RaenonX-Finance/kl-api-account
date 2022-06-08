@@ -1,3 +1,11 @@
+# Data API
 zmq
+
+# Data processing
+pandas
+
+# Console output
 rich
+
+# Config file
 pyyaml

@@ -15,6 +15,8 @@ class PxDataCol:
 
     PRICE_TIMES_VOLUME = "price_times_volume"
 
+    EPOCH_SEC_ORIGINAL = "epoch_sec_original"
+
     @staticmethod
     def get_sma_col_name(period: int) -> str:
         return f"sma_{period}"

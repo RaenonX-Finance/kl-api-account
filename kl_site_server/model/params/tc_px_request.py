@@ -20,8 +20,8 @@ class TouchancePxRequestParams:
         self.request_epoch_sec = time.time()
 
     @property
-    def should_re_request(self):
-        return time.time() - self.request_epoch_sec > 5
+    def should_re_request(self) -> bool:
+        return time.time() - self.request_epoch_sec > 30
 
-    def reset_request_timeout(self):
+    def reset_request_timeout(self) -> None:
         self.request_epoch_sec = time.time()

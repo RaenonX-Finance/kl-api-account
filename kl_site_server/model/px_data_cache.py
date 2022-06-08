@@ -23,12 +23,14 @@ class PxDataCacheEntry:
 
     @property
     def current_epoch_sec(self) -> int:
-        if self.period_min >= 86400:
+        if self.period_min >= 1440:
             today = date.today()
 
             return int(datetime(today.year, today.month, today.day).timestamp())
 
-        return int(time.time()) // self.period_min * self.period_min
+        period_sec = self.period_min * 60
+
+        return int(time.time()) // period_sec * period_sec
 
     @property
     def is_ready(self) -> bool:

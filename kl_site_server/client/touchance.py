@@ -1,15 +1,13 @@
 import time
-from datetime import datetime
 from typing import Iterable
 
 from kl_site_common.utils import execute_async_function, print_log, print_warning
 from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_market
 from kl_site_server.model import (
-    OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent, PxData, PxDataCache,
+    OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent, PxData, PxDataCache, TouchancePxRequestParams,
 )
 from tcoreapi_mq.client import TocuhanceApiClient
 from tcoreapi_mq.message import HistoryData, RealtimeData
-from tcoreapi_mq.model import SymbolBaseType
 
 
 class TouchanceDataClient(TocuhanceApiClient):
@@ -17,19 +15,22 @@ class TouchanceDataClient(TocuhanceApiClient):
         super().__init__()
 
         self._px_data_cache: PxDataCache = PxDataCache()
+        self._px_request_params: dict[str, TouchancePxRequestParams] = {}
 
-    def request_px_data(
-            self, symbol_obj: SymbolBaseType, period_mins: list[int], history_range: tuple[datetime, datetime]
-    ) -> None:
-        hist_start, hist_end = history_range
+    def request_px_data(self, params: TouchancePxRequestParams) -> None:
+        # Record params
+        params.reset_request_timeout()
+        self._px_request_params[params.symbol_obj.symbol_complete] = params
 
-        self.get_history(symbol_obj, "1K", hist_start, hist_end)
-        self.subscribe_realtime(symbol_obj)
+        hist_start, hist_end = params.history_range
 
-        product_info = self.get_instrument_info_by_symbol(symbol_obj)
+        self.get_history(params.symbol_obj, "1K", hist_start, hist_end)
+        self.subscribe_realtime(params.symbol_obj)
 
-        for period_min in period_mins:
-            self._px_data_cache.init_entry(symbol_obj, product_info.tick, period_min * 60)
+        product_info = self.get_instrument_info_by_symbol(params.symbol_obj)
+
+        for period_min in params.period_mins:
+            self._px_data_cache.init_entry(params.symbol_obj, product_info.tick, period_min * 60)
 
     def get_all_px_data(self) -> Iterable[PxData]:
         if not self._px_data_cache.is_all_px_data_ready():
@@ -79,6 +80,12 @@ class TouchanceDataClient(TocuhanceApiClient):
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if not self._px_data_cache.is_px_data_ready(data.symbol_complete):
+            params = self._px_request_params[data.symbol_complete]
+
+            if params.should_re_request:
+                print_warning(f"[TC Client] Re-requesting Px data of {data.symbol_complete}")
+                self.request_px_data(params)
+
             return
 
         self._px_data_cache.update_market_data_of_symbol(data)

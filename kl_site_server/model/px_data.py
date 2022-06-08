@@ -38,7 +38,7 @@ class PxData:
 
     def _proc_df_vwap(self):
         # Don't calculate VWAP if period is 3600s+ (meaningless)
-        if self.period_sec >= 3600:
+        if self.period_min >= 3600:
             self.dataframe[PxDataCol.VWAP] = np.full(len(self.dataframe.index), np.nan)
         else:
             self.dataframe[PxDataCol.PRICE_TIMES_VOLUME] = np.multiply(
@@ -65,12 +65,12 @@ class PxData:
             symbol: str,
             bars: list[BarDataDict],
             min_tick: float,
-            period_sec: int,
+            period_min: int,
     ):
         self.symbol: str = symbol
         self.dataframe: DataFrame = DataFrame(bars)
         self.min_tick: float = min_tick
-        self.period_sec: int = period_sec
+        self.period_min: int = period_min
 
         self._proc_df()
 
@@ -86,7 +86,7 @@ class PxData:
     def get_last_day_close(self) -> float | None:
         if len(self.market_dates) < 2:
             raise ValueError(
-                f"Px data of {self.symbol} @ {self.period_sec} "
+                f"Px data of {self.symbol} @ {self.period_min} "
                 f"only has a single market date: {self.market_dates}"
             )
 
@@ -112,7 +112,7 @@ class PxData:
         return last_day_last_entry[PxDataCol.OPEN]
 
     def save_to_file(self):
-        file_path = f"data-{self.symbol}@{self.period_sec}.csv"
+        file_path = f"data-{self.symbol}@{self.period_min}.csv"
         self.dataframe.to_csv(file_path)
 
         print_log(f"[yellow]Px data saved to {file_path}[/yellow]")
@@ -133,4 +133,4 @@ class PxData:
 
     @property
     def unique_identifier(self) -> str:
-        return f"{self.symbol}@{self.period_sec}"
+        return f"{self.symbol}@{self.period_min}"

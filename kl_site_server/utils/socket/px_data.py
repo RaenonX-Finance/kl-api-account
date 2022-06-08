@@ -95,7 +95,7 @@ def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
 def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
     return {
         "uniqueIdentifier": px_data.unique_identifier,
-        "periodSec": px_data.period_sec,
+        "periodSec": px_data.period_min * 60,
         "contract": _from_px_data_contract(px_data),
         "data": _from_px_data_bars(px_data),
         "supportResistance": _from_px_data_support_resistance(px_data),

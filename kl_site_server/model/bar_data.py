@@ -4,7 +4,9 @@ from tcoreapi_mq.message import PxHistoryDataEntry
 BarDataDict = dict[PxDataCol, float | int]
 
 
-def to_bar_data_dict_tcoreapi(data: PxHistoryDataEntry, period_sec: int) -> BarDataDict:
+def to_bar_data_dict_tcoreapi(data: PxHistoryDataEntry, period_min: int) -> BarDataDict:
+    period_sec = period_min * 60
+
     return {
         PxDataCol.OPEN: data.open,
         PxDataCol.HIGH: data.high,

@@ -18,24 +18,24 @@ from .px_data import PxData
 class PxDataCacheEntry:
     symbol: str
     min_tick: float
-    period_sec: int
+    period_min: int
     data: dict[int, BarDataDict]  # Epoch sec / bar data
 
     @property
     def current_epoch_sec(self) -> int:
-        if self.period_sec >= 86400:
+        if self.period_min >= 86400:
             today = date.today()
 
             return int(datetime(today.year, today.month, today.day).timestamp())
 
-        return int(time.time()) // self.period_sec * self.period_sec
+        return int(time.time()) // self.period_min * self.period_min
 
     @property
     def is_ready(self) -> bool:
         is_ready = bool(self.data)
 
         if not is_ready:
-            print_warning(f"[Server] Px data cache entry of [bold]{self.symbol} @ {self.period_sec}[/bold] not ready")
+            print_warning(f"[Server] Px data cache entry of [bold]{self.symbol} @ {self.period_min}[/bold] not ready")
 
         return is_ready
 
@@ -89,7 +89,7 @@ class PxDataCacheEntry:
             symbol=self.symbol,
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
-            period_sec=self.period_sec,
+            period_min=self.period_min,
         )
 
 
@@ -119,19 +119,16 @@ class PxDataCache:
             for px_cache_entry in px_cache_entries_of_symbol.values()
         )
 
-    def init_entry(self, symbol_obj: SymbolBaseType, min_tick: float, period_sec: int) -> None:
-        self.data[symbol_obj.symbol_complete][period_sec] = PxDataCacheEntry(
+    def init_entry(self, symbol_obj: SymbolBaseType, min_tick: float, period_min: int) -> None:
+        self.data[symbol_obj.symbol_complete][period_min] = PxDataCacheEntry(
             symbol=symbol_obj.symbol,
-            period_sec=period_sec,
+            period_min=period_min,
             min_tick=min_tick,
             data={},
         )
 
     def get_entries_of_symbol(self, symbol_complete: str) -> Iterable[PxDataCacheEntry]:
         return self.data[symbol_complete].values()
-
-    def get_entry(self, symbol_obj: SymbolBaseType, period_sec: int) -> PxDataCacheEntry | None:
-        return self.data[symbol_obj.symbol_complete][period_sec]
 
     def _mark_all_force_send_once(self, symbol_complete: str) -> None:
         self.allow_force_send_once_market[symbol_complete] = True
@@ -140,12 +137,12 @@ class PxDataCache:
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.handshake.symbol_complete
 
-        for period_sec, px_data_entry in self.data[symbol_complete].items():
+        for period_min, px_data_entry in self.data[symbol_complete].items():
             print_log(
                 f"[Server] Updating {len(data.data_list)} Px data bars to "
-                f"[yellow]{symbol_complete} @ {period_sec}[/yellow]"
+                f"[yellow]{symbol_complete} @ {period_min}[/yellow]"
             )
-            px_data_entry.update_all(to_bar_data_dict_tcoreapi(bar, period_sec) for bar in data.data_list)
+            px_data_entry.update_all(to_bar_data_dict_tcoreapi(bar, period_min) for bar in data.data_list)
 
         self._mark_all_force_send_once(symbol_complete)
 

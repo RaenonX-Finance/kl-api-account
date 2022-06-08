@@ -30,7 +30,7 @@ class TouchanceDataClient(TocuhanceApiClient):
         product_info = self.get_instrument_info_by_symbol(params.symbol_obj)
 
         for period_min in params.period_mins:
-            self._px_data_cache.init_entry(params.symbol_obj, product_info.tick, period_min * 60)
+            self._px_data_cache.init_entry(params.symbol_obj, product_info.tick, period_min)
 
     def get_all_px_data(self) -> Iterable[PxData]:
         if not self._px_data_cache.is_all_px_data_ready():

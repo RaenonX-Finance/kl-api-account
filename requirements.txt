@@ -3,9 +3,16 @@ zmq
 
 # Data processing
 pandas
+numpy
+wheels/TA_Lib-0.4.24-cp310-cp310-win_amd64.whl
 
 # Console output
 rich
 
 # Config file
 pyyaml
+
+# Server
+fastapi[all]
+fastapi-socketio
+uvicorn[standard]

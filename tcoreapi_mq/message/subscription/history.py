@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from ._base import SubscriptionDataBase
@@ -20,7 +21,7 @@ class HistoryDataHandshake(SubscriptionDataBase):
         return self.data.body["EndTime"]
 
     @property
-    def symbol_name(self) -> str:
+    def symbol_complete(self) -> str:
         return self.data.body["Symbol"]
 
     @property
@@ -32,6 +33,7 @@ class HistoryDataHandshake(SubscriptionDataBase):
         return self.status == "Ready"
 
 
+@dataclass(kw_only=True)
 class HistoryData:
-    def __init__(self, data_list: list["PxHistoryDataEntry"]):
-        self.data_list = data_list
+    data_list: list["PxHistoryDataEntry"]
+    handshake: HistoryDataHandshake

@@ -1,16 +1,15 @@
 import threading
-from abc import ABC
+from abc import ABC, abstractmethod
 
-from .const import DATA_TIMEOUT_SECS, SYS_APP_ID, SYS_PORT_QUOTE, SYS_SERVICE_KEY
+from kl_site_common.utils import print_log, print_warning
+
+from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData
 from .quote_api import QuoteAPI
-from .utils import create_subscription_receiver_socket, print_log, print_warning
+from .utils import create_subscription_receiver_socket
 
 
 class TocuhanceApiClient(QuoteAPI, ABC):
-    def __init__(self):
-        super().__init__(SYS_APP_ID, SYS_SERVICE_KEY)
-
     def start(self):
         login_result = self.connect(SYS_PORT_QUOTE)
 
@@ -20,14 +19,25 @@ class TocuhanceApiClient(QuoteAPI, ABC):
         t2 = threading.Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,))
         t2.start()
 
-    def on_received_realtime_data(self, data: RealtimeData):
-        pass
+    @abstractmethod
+    def on_received_realtime_data(self, data: RealtimeData) -> None:
+        raise NotImplementedError()
 
-    def on_received_history_data(self, data: HistoryData):
-        pass
+    @abstractmethod
+    def on_received_history_data(self, data: HistoryData) -> None:
+        """
+        Method to be called after calling ``get_history()``.
+
+        Note that this event does NOT re-trigger even if the candlestick/data is renewed.
+        """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def on_error(self, message: str) -> None:
+        raise NotImplementedError()
 
     def _quote_subscription_handle_message(self, message: CommonData):
-        print_log(f"[Client] Received Px quote of type: [purple]{message.data_type}[/purple]")
+        print_log(f"[TC API] Received Px quote of type: [purple]{message.data_type}[/purple]")
 
         match message.data_type:
             case "REALTIME":
@@ -44,7 +54,7 @@ class TocuhanceApiClient(QuoteAPI, ABC):
 
                 while True:
                     history_data_list = self.get_paged_history(
-                        handshake.symbol_name, handshake.data_type,
+                        handshake.symbol_complete, handshake.data_type,
                         handshake.start_time_str, handshake.end_time_str, query_idx
                     ).data
 
@@ -54,14 +64,14 @@ class TocuhanceApiClient(QuoteAPI, ABC):
                     history_data_of_event.extend(history_data_list)
                     query_idx = history_data_list[-1].query_idx
 
-                self.on_received_history_data(HistoryData(history_data_of_event))
+                self.on_received_history_data(HistoryData(data_list=history_data_of_event, handshake=handshake))
             case "PING":
                 pass
             case _:
-                print_warning(f"[Client] Unknown message data type: {message.data_type}")
+                print_warning(f"[TC API] Unknown message data type: {message.data_type}")
 
     def _quote_subscription_loop(self, sub_port: int):
-        socket_sub = create_subscription_receiver_socket(sub_port, DATA_TIMEOUT_SECS * 1000)
+        socket_sub = create_subscription_receiver_socket(sub_port, DATA_TIMEOUT_SEC * 1000)
 
         while True:
             # Only care about the message after the first color (:)

@@ -2,7 +2,7 @@ from datetime import datetime
 
 from rich.console import Console
 
-from tcoreapi_mq.const import LOG_SUPPRESS_WARNINGS, console, console_error
+from kl_site_common.const import LOG_SUPPRESS_WARNINGS, console, console_error
 
 
 def print_console(rich_console: Console, message: str):

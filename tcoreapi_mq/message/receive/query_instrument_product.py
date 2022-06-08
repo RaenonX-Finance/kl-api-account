@@ -110,14 +110,22 @@ Sample message of query instrument for product:
     }
 }
 """
+from typing import TYPE_CHECKING
 from dataclasses import InitVar, dataclass, field
+
+if TYPE_CHECKING:
+    from tcoreapi_mq.model import SymbolBaseType
 
 
 @dataclass(kw_only=True)
 class QueryInstrumentProduct:
     body: InitVar[dict[str, str]]
 
+    symbol_obj: "SymbolBaseType"
+
     symbol: str = field(init=False)
+    tick: float = field(init=False)
 
     def __post_init__(self, body: dict[str, str]):
         self.symbol = body["Symbol"]
+        self.tick = float(body["TickSize"])

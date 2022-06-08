@@ -64,7 +64,9 @@
       "description": "Data related settings.",
       "required": [
         "stream",
-        "source"
+        "source",
+        "sr-level",
+        "sma"
       ],
       "additionalProperties": false,
       "properties": {
@@ -72,13 +74,25 @@
           "type": "object",
           "description": "Data streaming related settings.",
           "required": [
-            "timeout-secs"
+            "timeout-sec",
+            "px-update-sec",
+            "px-update-market-sec"
           ],
           "additionalProperties": false,
           "properties": {
-            "timeout-secs": {
+            "timeout-sec": {
               "type": "number",
               "description": "Data stream timeout in seconds. An error will be raised if no new data received after the given seconds.",
+              "exclusiveMinimum": 0
+            },
+            "px-update-sec": {
+              "type": "number",
+              "description": "Complete price data update frequency. This should be greater than market data update frequency since this sends more data and takes more time for calculation.",
+              "exclusiveMinimum": 0
+            },
+            "px-update-market-sec": {
+              "type": "number",
+              "description": "Market price data update frequency. This should be less than complete price data update frequency since this sends less data and takes almost no calculation.",
               "exclusiveMinimum": 0
             }
           }
@@ -101,12 +115,17 @@
               "type": {
                 "type": "string",
                 "description": "Product type.",
-                "enum": ["Futures"]
+                "enum": [
+                  "Futures"
+                ]
               },
               "expiry": {
                 "type": "string",
                 "description": "Product expiry.",
-                "enum": ["HOT", "HOT2"]
+                "enum": [
+                  "HOT",
+                  "HOT2"
+                ]
               },
               "exchange": {
                 "type": "string",
@@ -115,8 +134,67 @@
               "symbol": {
                 "type": "string",
                 "description": "Product symbol."
-              },
+              }
             }
+          }
+        },
+        "sr-level": {
+          "type": "object",
+          "description": "Support-resistance level determination settings.",
+          "required": [
+            "strong-threshold",
+            "custom"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "strong-threshold": {
+              "type": "number",
+              "description": "Threshold to determine that if an S/R level is strong in terms of its relative strength.",
+              "exclusiveMinimum": 0,
+              "exclusiveMaximum": 1
+            },
+            "custom": {
+              "type": "object",
+              "description": "Custom S/R levels of all products. Key must be the product symbol. Note that the key is symbol (NQ), not the complete symbol (TC.F.CME.NQ.HOT).",
+              "patternProperties": {
+                "\\w+": {
+                  "type": "array",
+                  "description": "Custom S/R levels of a single product.",
+                  "uniqueItems": true,
+                  "items": {
+                    "type": "object",
+                    "description": "Single custom S/R level.",
+                    "required": [
+                      "level"
+                    ],
+                    "additionalProperties": false,
+                    "properties": {
+                      "level": {
+                        "type": "number",
+                        "description": "S/R level in Px.",
+                        "minimum": 1
+                      },
+                      "strong": {
+                        "type": "boolean",
+                        "description": "Determines if the S/R level is strong.",
+                        "default": false
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "sma": {
+          "type": "array",
+          "description": "SMA periods to calculate.",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "integer",
+            "description": "SMA period.",
+            "minimum": 1
           }
         }
       }

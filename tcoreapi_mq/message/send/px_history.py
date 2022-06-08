@@ -20,7 +20,7 @@ class SubscribePxHistoryRequest(RequestBase):
             "Request": "SUBQUOTE",
             "SessionKey": self.session_key,
             "Param": {
-                "Symbol": self.symbol.symbol_name,
+                "Symbol": self.symbol.symbol_complete,
                 "SubDataType": self.interval,
                 "StartTime": self.start_time.strftime("%Y%m%d%H"),
                 "EndTime": self.end_time.strftime("%Y%m%d%H")
@@ -31,7 +31,7 @@ class SubscribePxHistoryRequest(RequestBase):
 @dataclass(kw_only=True)
 class GetPxHistoryRequest(RequestBase):
     session_key: str
-    symbol_name: str
+    symbol_complete: str
     interval: HistoryInterval
     start_time_str: str
     end_time_str: str
@@ -42,7 +42,7 @@ class GetPxHistoryRequest(RequestBase):
             "Request": "GETHISDATA",
             "SessionKey": self.session_key,
             "Param": {
-                "Symbol": self.symbol_name,
+                "Symbol": self.symbol_complete,
                 "SubDataType": self.interval,
                 "StartTime": self.start_time_str,
                 "EndTime": self.end_time_str,

@@ -1,17 +1,46 @@
 from datetime import datetime
 
+from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
+from kl_site_common.utils import print_log
+
 from .core import TCoreZMQ
 from .message import (
-    GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval, SubscribePxHistoryMessage, SubscribePxHistoryRequest,
+    GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval, QueryInstrumentProduct, SubscribePxHistoryMessage,
+    SubscribePxHistoryRequest,
     SubscribeRealtimeMessage, SubscribeRealtimeRequest, UnsubscribeRealtimeMessage, UnsubscribeRealtimeRequest,
 )
 from .model import SymbolBaseType
-from .utils import print_log
 
 
 class QuoteAPI(TCoreZMQ):
+    def __init__(self):
+        super().__init__(SYS_APP_ID, SYS_SERVICE_KEY)
+
+        self._info: dict[str, QueryInstrumentProduct] = {}
+
+    def register_symbol_info(self, symbol_obj: SymbolBaseType) -> None:
+        if symbol_obj.symbol_complete in self._info:
+            return
+
+        msg = self.query_instrument_info(symbol_obj)
+
+        self._info[msg.symbol_obj.symbol_complete] = msg.info_product
+
+    def get_instrument_info_by_symbol(self, symbol_obj: SymbolBaseType) -> QueryInstrumentProduct:
+        key = symbol_obj.symbol_complete
+
+        if key not in self._info:
+            raise ValueError(
+                f"Symbol `{symbol_obj}` not yet registered. "
+                f"Run `register_symbol_info()`, `subscribe_realtime()`, or `subscribe_history()` first."
+            )
+
+        return self._info[key]
+
     def subscribe_realtime(self, symbol: SymbolBaseType) -> SubscribeRealtimeMessage:
-        print_log(f"[Quote] Subscribing realtime data of [yellow]{symbol.symbol_name}[/yellow]")
+        print_log(f"[TC Quote] Subscribing realtime data of [yellow]{symbol.symbol_complete}[/yellow]")
+
+        self.register_symbol_info(symbol)
 
         with self.lock:
             req = SubscribeRealtimeRequest(session_key=self.session_key, symbol=symbol)
@@ -20,7 +49,7 @@ class QuoteAPI(TCoreZMQ):
             return SubscribeRealtimeMessage(message=self.socket.get_message())
 
     def unsubscribe_realtime(self, symbol: SymbolBaseType) -> UnsubscribeRealtimeMessage:
-        print_log(f"[Quote] Unsubscribing realtime data from [yellow]{symbol.symbol_name}[/yellow]")
+        print_log(f"[TC Quote] Unsubscribing realtime data from [yellow]{symbol.symbol_complete}[/yellow]")
 
         with self.lock:
             req = UnsubscribeRealtimeRequest(session_key=self.session_key, symbol=symbol)
@@ -28,16 +57,19 @@ class QuoteAPI(TCoreZMQ):
 
             return UnsubscribeRealtimeMessage(message=self.socket.get_message())
 
-    def subscribe_history(
+    def get_history(
             self,
             symbol: SymbolBaseType, interval: HistoryInterval,
             start: datetime, end: datetime,
     ) -> SubscribePxHistoryMessage:
+        """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         print_log(
-            f"[Quote] Subscribing historical data of "
-            f"[yellow]{symbol.symbol_name}[/yellow] at [yellow]{interval}[/yellow]"
+            f"[TC Quote] Subscribing historical data of "
+            f"[yellow]{symbol.symbol_complete}[/yellow] at [yellow]{interval}[/yellow]"
         )
-        print_log(f"[Quote] Historical data starts from {start} to {end}")
+        print_log(f"[TC Quote] Historical data starts from {start} to {end}")
+
+        self.register_symbol_info(symbol)
 
         with self.lock:
             req = SubscribePxHistoryRequest(
@@ -52,7 +84,7 @@ class QuoteAPI(TCoreZMQ):
             return SubscribePxHistoryMessage(message=self.socket.get_message())
 
     def get_paged_history(
-            self, symbol: str, interval: HistoryInterval,
+            self, symbol_complete: str, interval: HistoryInterval,
             start: str, end: str, query_idx: int = 0
     ) -> GetPxHistoryMessage:
         """
@@ -61,15 +93,15 @@ class QuoteAPI(TCoreZMQ):
         Parameters originated from the subscription data of ``subscribe_history()``.
         """
         print_log(
-            f"[Quote] Getting paged historical data of [yellow]{symbol}[/yellow] "
+            f"[TC Quote] Getting paged historical data of [yellow]{symbol_complete}[/yellow] "
             f"at [yellow]{interval}[/yellow] (#{query_idx})"
         )
-        print_log(f"[Quote] Paged historical data starts from {start} to {end}")
+        print_log(f"[TC Quote] Paged historical data starts from {start} to {end}")
 
         with self.lock:
             req = GetPxHistoryRequest(
                 session_key=self.session_key,
-                symbol_name=symbol,
+                symbol_complete=symbol_complete,
                 interval=interval,
                 start_time_str=start,
                 end_time_str=end,

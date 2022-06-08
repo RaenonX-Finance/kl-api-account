@@ -36,13 +36,21 @@ _CONFIG_DATA = config["data"]
 
 _CONFIG_DATA_STREAM = _CONFIG_DATA["stream"]
 
-DATA_TIMEOUT_SECS = _CONFIG_DATA_STREAM["timeout-secs"]
+DATA_TIMEOUT_SEC = _CONFIG_DATA_STREAM["timeout-sec"]
+DATA_PX_UPDATE_SEC = _CONFIG_DATA_STREAM["px-update-sec"]
+DATA_PX_UPDATE_MARKET_SEC = _CONFIG_DATA_STREAM["px-update-market-sec"]
 
 # endregion
 
-# region Data / Source
+SMA_PERIODS: list[int] = _CONFIG_DATA["sma"]
 
 DATA_SOURCES = _CONFIG_DATA["source"]
+
+# region Data / SR levels
+
+_CONFIG_DATA_SR = _CONFIG_DATA["sr-level"]
+SR_STRONG_THRESHOLD = _CONFIG_DATA_SR["strong-threshold"]
+SR_CUSTOM_LEVELS = _CONFIG_DATA_SR["custom"]
 
 # endregion
 

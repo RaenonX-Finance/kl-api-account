@@ -14,7 +14,7 @@ class SubscribeRealtimeRequest(RequestBase):
             "Request": "SUBQUOTE",
             "SessionKey": self.session_key,
             "Param": {
-                "Symbol": self.symbol.symbol_name,
+                "Symbol": self.symbol.symbol_complete,
                 "SubDataType": "REALTIME"
             }
         }
@@ -30,7 +30,7 @@ class UnsubscribeRealtimeRequest(RequestBase):
             "Request": "UNSUBQUOTE",
             "SessionKey": self.session_key,
             "Param": {
-                "Symbol": self.symbol.symbol_name,
+                "Symbol": self.symbol.symbol_complete,
                 "SubDataType": "REALTIME"
             }
         }

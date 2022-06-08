@@ -1,4 +1,4 @@
-from tcoreapi_mq.const import DATA_SOURCES
+from kl_site_common.const import DATA_SOURCES
 
 from .futures import FuturesSymbol
 from .types import DataSourceConfigEntry

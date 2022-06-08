@@ -3,5 +3,9 @@ from abc import ABC
 
 class SymbolBase(ABC):
     @property
-    def symbol_name(self) -> str:
+    def symbol(self) -> str:
+        raise NotImplementedError()
+
+    @property
+    def symbol_complete(self) -> str:
         raise NotImplementedError()

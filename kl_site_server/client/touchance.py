@@ -42,19 +42,26 @@ class TouchanceDataClient(TocuhanceApiClient):
         )
 
     def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> None:
-        print_log(f"[TC Client] Sending available complete Px data of [yellow]{symbol_complete}[/yellow]")
+        complete_px_sent = 0
+
+        self._px_data_cache.mark_complete_data_sent(symbol_complete)
 
         for px_data, proc_sec_single in self._px_data_cache.complete_px_data_to_send(symbol_complete):
+            complete_px_sent += 1
+
             execute_async_function(
                 on_px_data_updated,
                 OnPxDataUpdatedEvent(px_data=px_data, proc_sec=proc_sec_offset + proc_sec_single),
             )
 
+        if complete_px_sent:
+            print_log(f"[TC Client] {complete_px_sent} complete Px data of [yellow]{symbol_complete}[/yellow] sent")
+
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
         if not self._px_data_cache.is_send_market_data_ok(symbol_complete):
             return
 
-        print_log(f"[TC Client] Sending market Px data of [yellow]{symbol_complete}[/yellow]")
+        self._px_data_cache.mark_market_data_sent(symbol_complete)
 
         execute_async_function(
             on_px_data_updated_market,
@@ -72,7 +79,6 @@ class TouchanceDataClient(TocuhanceApiClient):
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if not self._px_data_cache.is_px_data_ready(data.symbol_complete):
-            print_warning(f"[TC Client] Px data of [purple]{data.symbol_complete}[/purple] not ready")
             return
 
         self._px_data_cache.update_market_data_of_symbol(data)

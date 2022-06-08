@@ -1,7 +1,7 @@
 import threading
 from abc import ABC, abstractmethod
 
-from kl_site_common.utils import print_log, print_warning
+from kl_site_common.utils import print_warning
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData
@@ -37,8 +37,6 @@ class TocuhanceApiClient(QuoteAPI, ABC):
         raise NotImplementedError()
 
     def _quote_subscription_handle_message(self, message: CommonData):
-        print_log(f"[TC API] Received Px quote of type: [purple]{message.data_type}[/purple]")
-
         match message.data_type:
             case "REALTIME":
                 self.on_received_realtime_data(RealtimeData(message))

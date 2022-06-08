@@ -10,7 +10,7 @@ from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
 from tcoreapi_mq.model import SymbolBaseType
 
-from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi
+from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi, to_bar_data_dict_merged
 from .px_data import PxData
 
 
@@ -42,8 +42,19 @@ class PxDataCacheEntry:
     def remove_oldest(self):
         self.data.pop(min(self.data.keys()))
 
-    def update_all(self, bars: Iterable[BarDataDict]):
-        self.data = {bar[PxDataCol.EPOCH_SEC]: bar for bar in bars}
+    def update_all(self, bars_raw: Iterable[BarDataDict]):
+        # Different bar may share the same epoch sec because of the interval merger.
+        # Therefore, bars are collected according to their epoch sec first, then get the merged bar.
+        #   For example, 5 mins contain 1 min x 5
+        bar_collector = defaultdict(list)
+
+        for bar in bars_raw:
+            bar_collector[bar[PxDataCol.EPOCH_SEC]].append(bar)
+
+        self.data = {
+            epoch_sec: to_bar_data_dict_merged(bars)
+            for epoch_sec, bars in bar_collector.items()
+        }
 
     def update_latest(self, current: float) -> bool:
         """Returns if force send should be allowed."""
@@ -129,8 +140,6 @@ class PxDataCache:
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.handshake.symbol_complete
 
-        self.last_complete_update[symbol_complete] = time.time()
-
         for period_sec, px_data_entry in self.data[symbol_complete].items():
             print_log(
                 f"[Server] Updating {len(data.data_list)} Px data bars to "
@@ -143,14 +152,10 @@ class PxDataCache:
     def update_market_data_of_symbol(self, data: RealtimeData) -> None:
         symbol_complete = data.symbol_complete
 
-        self.last_market_update[symbol_complete] = time.time()
-
-        print_log(f"[Server] Updating latest Px data of [yellow]{symbol_complete}[/yellow]")
-
         mark_all_force_send = False
 
         for px_data_entry in self.data[symbol_complete].values():
-            mark_all_force_send = mark_all_force_send or px_data_entry.update_latest(data.last_px)
+            mark_all_force_send = px_data_entry.update_latest(data.last_px) or mark_all_force_send
 
         if mark_all_force_send:
             self._mark_all_force_send_once(symbol_complete)
@@ -191,11 +196,15 @@ class PxDataCache:
 
         return time.time() - self.last_complete_update[symbol_complete] > DATA_PX_UPDATE_SEC
 
+    def mark_market_data_sent(self, symbol_complete: str) -> None:
+        self.last_market_update[symbol_complete] = time.time()
+
+    def mark_complete_data_sent(self, symbol_complete: str) -> None:
+        self.last_complete_update[symbol_complete] = time.time()
+
     def complete_px_data_to_send(self, symbol_complete: str) -> Iterable[tuple[PxData, float]]:
         if not self.is_send_complete_data_ok(symbol_complete):
             return
-
-        self.last_complete_update[symbol_complete] = time.time()
 
         for px_data_entry in self.get_entries_of_symbol(symbol_complete):
             _start = time.time()

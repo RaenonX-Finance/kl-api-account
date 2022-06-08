@@ -94,9 +94,8 @@ class QuoteAPI(TCoreZMQ):
         """
         print_log(
             f"[TC Quote] Getting paged historical data of [yellow]{symbol_complete}[/yellow] "
-            f"at [yellow]{interval}[/yellow] (#{query_idx})"
+            f"at [yellow]{interval}[/yellow] (#{query_idx} / {start} ~ {end})"
         )
-        print_log(f"[TC Quote] Paged historical data starts from {start} to {end}")
 
         with self.lock:
             req = GetPxHistoryRequest(

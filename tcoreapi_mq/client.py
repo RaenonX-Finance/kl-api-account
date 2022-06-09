@@ -1,9 +1,9 @@
 import threading
 from abc import ABC, abstractmethod
 
-from kl_site_common.utils import print_warning
-
+from kl_site_common.utils import print_error, print_warning
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
+
 from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData
 from .quote_api import QuoteAPI
 from .utils import create_subscription_receiver_socket
@@ -37,36 +37,46 @@ class TocuhanceApiClient(QuoteAPI, ABC):
         raise NotImplementedError()
 
     def _quote_subscription_handle_message(self, message: CommonData):
-        match message.data_type:
-            case "REALTIME":
-                self.on_received_realtime_data(RealtimeData(message))
-            case "TICKS" | "1K" | "DK":
-                handshake = HistoryDataHandshake(message)
+        try:
+            match message.data_type:
+                case "REALTIME":
+                    data = RealtimeData(message)
 
-                if not handshake.is_ready:
-                    print_warning(f"[Client] Status of history data handshake is not ready ({handshake.status})")
-                    return
+                    if not data.is_valid:
+                        print_warning("[Client] Received invalid (no trade) realtime data")
+                        return
 
-                query_idx = 0
-                history_data_of_event = []
+                    self.on_received_realtime_data(RealtimeData(message))
+                case "TICKS" | "1K" | "DK":
+                    handshake = HistoryDataHandshake(message)
 
-                while True:
-                    history_data_list = self.get_paged_history(
-                        handshake.symbol_complete, handshake.data_type,
-                        handshake.start_time_str, handshake.end_time_str, query_idx
-                    ).data
+                    if not handshake.is_ready:
+                        print_warning(f"[Client] Status of history data handshake is not ready ({handshake.status})")
+                        return
 
-                    if not history_data_list:
-                        break
+                    query_idx = 0
+                    history_data_of_event = []
 
-                    history_data_of_event.extend(history_data_list)
-                    query_idx = history_data_list[-1].query_idx
+                    while True:
+                        history_data_list = self.get_paged_history(
+                            handshake.symbol_complete, handshake.data_type,
+                            handshake.start_time_str, handshake.end_time_str, query_idx
+                        ).data
 
-                self.on_received_history_data(HistoryData(data_list=history_data_of_event, handshake=handshake))
-            case "PING":
-                pass
-            case _:
-                print_warning(f"[TC API] Unknown message data type: {message.data_type}")
+                        if not history_data_list:
+                            break
+
+                        history_data_of_event.extend(history_data_list)
+                        query_idx = history_data_list[-1].query_idx
+
+                    self.on_received_history_data(HistoryData(data_list=history_data_of_event, handshake=handshake))
+                case "PING":
+                    pass
+                case _:
+                    print_warning(f"[TC API] Unknown message data type: {message.data_type}")
+        except Exception as e:
+            print_error(f"[TC API] Error occurred on message received: {message.body}")
+            raise e
 
     def _quote_subscription_loop(self, sub_port: int):
         socket_sub = create_subscription_receiver_socket(sub_port, DATA_TIMEOUT_SEC * 1000)

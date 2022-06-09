@@ -21,6 +21,7 @@ class TouchancePxRequestParams:
 
     @property
     def should_re_request(self) -> bool:
+        # 30 secs CD as suggested by the customer support
         return time.time() - self.request_epoch_sec > 30
 
     def reset_request_timeout(self) -> None:

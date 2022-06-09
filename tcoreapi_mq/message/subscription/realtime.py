@@ -105,6 +105,8 @@ class RealtimeData(SubscriptionDataBase):
         super().__init__(data)
 
         self.quote: dict[str, str] = self.data.body["Quote"]
+        # Trade Qty could be 0, no real trade occur in this case
+        self.is_valid: bool = bool(int(self.quote["TradeQuantity"]))
 
     @property
     def symbol_complete(self) -> str:

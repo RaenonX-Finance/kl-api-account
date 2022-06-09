@@ -1,7 +1,7 @@
 from .error import ErrorMessage
 from .login import LoginMessage
 from .pong import PongMessage
-from .px_history import SubscribePxHistoryMessage, GetPxHistoryMessage, PxHistoryDataEntry
+from .px_history import SubscribePxHistoryMessage, GetPxHistoryMessage, PxHistoryDataEntry, CompletePxHistoryMessage
 from .query_instrument import QueryInstrumentMessage
 from .query_instrument_exchange import QueryInstrumentExchange
 from .query_instrument_product import QueryInstrumentProduct

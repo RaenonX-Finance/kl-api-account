@@ -69,8 +69,12 @@ class TocuhanceApiClient(QuoteAPI, ABC):
                         history_data_of_event.extend(history_data_list)
                         query_idx = history_data_list[-1].query_idx
 
+                    self.complete_get_history(
+                            handshake.symbol_complete, handshake.data_type,
+                            handshake.start_time_str, handshake.end_time_str
+                    )
                     self.on_received_history_data(HistoryData(data_list=history_data_of_event, handshake=handshake))
-                case "PING":
+                case "PING" | "UNSUBQUOTE":
                     pass
                 case _:
                     print_warning(f"[TC API] Unknown message data type: {message.data_type}")

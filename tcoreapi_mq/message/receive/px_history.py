@@ -63,3 +63,15 @@ class GetPxHistoryMessage:
 
         self.interval = body["DataType"]
         self.data = [PxHistoryDataEntry(body=data) for data in body["HisData"]]
+
+
+@dataclass(kw_only=True)
+class CompletePxHistoryMessage:
+    message: InitVar[str]
+
+    success: bool = field(init=False)
+
+    def __post_init__(self, message: str):
+        body = json.loads(message)
+
+        self.success = body["Success"] == "OK"

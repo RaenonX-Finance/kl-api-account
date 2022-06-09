@@ -2,11 +2,10 @@ from datetime import datetime
 
 from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
 from kl_site_common.utils import print_log
-
 from .core import TCoreZMQ
 from .message import (
-    GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval, QueryInstrumentProduct, SubscribePxHistoryMessage,
-    SubscribePxHistoryRequest,
+    CompletePxHistoryMessage, CompletePxHistoryRequest, GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval,
+    QueryInstrumentProduct, SubscribePxHistoryMessage, SubscribePxHistoryRequest,
     SubscribeRealtimeMessage, SubscribeRealtimeRequest, UnsubscribeRealtimeMessage, UnsubscribeRealtimeRequest,
 )
 from .model import SymbolBaseType
@@ -109,3 +108,18 @@ class QuoteAPI(TCoreZMQ):
             self.socket.send_string(req.to_message())
 
             return GetPxHistoryMessage(message=self.socket.get_message())
+
+    def complete_get_history(self, symbol_complete: str, interval: HistoryInterval, start: str, end: str):
+        with self.lock:
+            req = CompletePxHistoryRequest(
+                session_key=self.session_key,
+                symbol_complete=symbol_complete,
+                interval=interval,
+                start_time_str=start,
+                end_time_str=end
+            )
+            self.socket.send_string(req.to_message())
+
+            msg = self.socket.get_message()
+
+            return CompletePxHistoryMessage(message=msg)

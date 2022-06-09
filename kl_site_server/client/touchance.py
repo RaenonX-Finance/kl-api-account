@@ -45,8 +45,6 @@ class TouchanceDataClient(TocuhanceApiClient):
     def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> None:
         complete_px_sent = 0
 
-        self._px_data_cache.mark_complete_data_sent(symbol_complete)
-
         for px_data, proc_sec_single in self._px_data_cache.complete_px_data_to_send(symbol_complete):
             complete_px_sent += 1
 
@@ -56,6 +54,7 @@ class TouchanceDataClient(TocuhanceApiClient):
             )
 
         if complete_px_sent:
+            self._px_data_cache.mark_complete_data_sent(symbol_complete)
             print_log(f"[TC Client] {complete_px_sent} complete Px data of [yellow]{symbol_complete}[/yellow] sent")
 
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
@@ -75,11 +74,6 @@ class TouchanceDataClient(TocuhanceApiClient):
         self._px_data_cache.update_complete_data_of_symbol(data)
 
         proc_sec_update = time.time() - _start
-
-        if data.data_list:
-            print("LAST EPOCH")
-            for a in data.data_list[-3:]:
-                print(a)
 
         self.send_complete_px_data(data.handshake.symbol_complete, proc_sec_update)
 

@@ -7,7 +7,7 @@ from tcoreapi_mq.model import configs_sources_as_symbols
 from .socket import register_handlers
 
 
-latest_date: datetime = datetime.now() + timedelta(days=1)
+latest_date: datetime = datetime.utcnow() + timedelta(hours=1)
 
 
 def start_server_app():
@@ -19,7 +19,7 @@ def start_server_app():
         params = TouchancePxRequestParams(
             symbol_obj=symbol_obj,
             period_mins=[1, 5],
-            history_range=(latest_date - timedelta(days=2), latest_date),
+            history_range=(latest_date - timedelta(days=5), latest_date),
         )
 
         client.request_px_data(params)

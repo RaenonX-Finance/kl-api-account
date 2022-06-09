@@ -73,7 +73,16 @@ class TocuhanceApiClient(QuoteAPI, ABC):
                             handshake.symbol_complete, handshake.data_type,
                             handshake.start_time_str, handshake.end_time_str
                     )
-                    self.on_received_history_data(HistoryData(data_list=history_data_of_event, handshake=handshake))
+
+                    if history_data_of_event:
+                        self.on_received_history_data(HistoryData(
+                            data_list=history_data_of_event, handshake=handshake
+                        ))
+                    else:
+                        print_warning(
+                            f"[Client] No history data available for "
+                            f"[bold]{handshake.symbol_complete}[/bold] ({handshake.data_type})"
+                        )
                 case "PING" | "UNSUBQUOTE":
                     pass
                 case _:

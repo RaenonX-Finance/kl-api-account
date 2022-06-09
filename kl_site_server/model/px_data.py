@@ -67,6 +67,9 @@ class PxData:
             min_tick: float,
             period_min: int,
     ):
+        if not bars:
+            raise ValueError(f"PxData should be initialized with data ({symbol} @ {period_min})")
+
         self.symbol: str = symbol
         self.dataframe: DataFrame = DataFrame(bars)
         self.min_tick: float = min_tick

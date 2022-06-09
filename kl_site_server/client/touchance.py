@@ -76,6 +76,11 @@ class TouchanceDataClient(TocuhanceApiClient):
 
         proc_sec_update = time.time() - _start
 
+        if data.data_list:
+            print("LAST EPOCH")
+            for a in data.data_list[-3:]:
+                print(a)
+
         self.send_complete_px_data(data.handshake.symbol_complete, proc_sec_update)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:

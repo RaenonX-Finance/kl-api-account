@@ -10,6 +10,8 @@ async def startup_event():
     set_current_process_to_highest_priority()
 
 
+start_server_app()  # Must place outside `startup_event()`
+
+
 if __name__ == "__main__":
-    start_server_app()  # Must place outside `startup_event()`
     uvicorn.run("main:fast_api", port=8000, reload=False)

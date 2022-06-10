@@ -2,3 +2,4 @@ venv/
 .idea/
 sandbox*.py
 *.http
+__pycache__/

@@ -6,6 +6,7 @@ system:
 
 log:
   suppress-warnings: false
+  output-directory: D:\UserData\Downloads\Logs
 
 data:
   stream:

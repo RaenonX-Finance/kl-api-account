@@ -25,11 +25,12 @@ if LOG_TO_DIR:
         backupCount=7, encoding="utf-8", delay=False
     )
     _handler.setFormatter(logging.Formatter(
-        fmt="%(asctime)s.%(msecs)03d: %(message)s",
+        fmt="%(levelname)8s %(asctime)s.%(msecs)03d: %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     ))
 
     _logger.addHandler(_handler)
+    _logger.setLevel(logging.DEBUG)  # All messages should be logged
 
 
 def log_message_to_file(level: LogLevels, message: str):

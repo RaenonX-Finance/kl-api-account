@@ -6,31 +6,33 @@ from kl_site_common.const import LOG_SUPPRESS_WARNINGS, LOG_TO_DIR, console, con
 from .log import LogLevels, log_message_to_file
 
 
-def print_console(rich_console: Console, level: LogLevels, message: str):
+def _get_current_timestamp() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
+
+
+def print_console(rich_console: Console, level: LogLevels, message: str, *, timestamp_color: str):
     if LOG_TO_DIR:
         log_message_to_file(level, Text.from_markup(message).plain)
     else:
-        rich_console.print(message, soft_wrap=True)  # Disable soft wrapping
+        rich_console.print(
+            f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}]: {message}",
+            soft_wrap=True,
+        )  # Disable soft wrapping
 
 
-def print_log(message: str, *, timestamp_color: str = "green"):
-    print_console(
-        console,
-        "INFO",
-        f"[{timestamp_color}]{datetime.now().strftime('%H:%M:%S.%f')[:-3]}[/{timestamp_color}]: "
-        f"{message}"
-    )
+def print_log(message: str):
+    print_console(console, "INFO", message, timestamp_color="green")
 
 
 def print_warning(message: str, *, force: bool = False):
     if LOG_SUPPRESS_WARNINGS and not force:
         return
 
-    print_console(console, "WARNING", f"[yellow]{datetime.now().strftime('%H:%M:%S.%f')[:-3]}: {message}[/yellow]")
+    print_console(console, "WARNING", f"[yellow]{message}[/yellow]", timestamp_color="yellow")
 
 
 def print_error(message: str):
-    print_console(console_error, "ERROR", f"[red]{datetime.now().strftime('%H:%M:%S.%f')[:-3]}[/red]: {message}")
+    print_console(console_error, "INFO", message, timestamp_color="red")
 
 
 def print_socket_event(event: str, additional: str = ""):

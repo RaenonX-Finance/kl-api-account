@@ -3,3 +3,4 @@ venv/
 sandbox*.py
 *.http
 __pycache__/
+.wakatime-project

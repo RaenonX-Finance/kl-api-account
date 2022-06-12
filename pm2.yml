@@ -1,0 +1,13 @@
+apps:
+  - name: 'kl-site-back'
+    # Entry point
+    script: 'main.py'
+    # Execution configs
+    exec_mode: 'fork'
+    # Environments
+    env: {}
+    env_production: {}
+    # Others
+    interpreter: py
+    cron_restart: '0 0 */3 * *'  # Restart every 3 days
+    time: true  # Log timestamp in logs

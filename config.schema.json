@@ -56,6 +56,10 @@
         "suppress-warnings": {
           "type": "boolean",
           "description": "Determines if non-force warnings should be suppressed."
+        },
+        "output-directory": {
+          "type": "string",
+          "description": "Target directory to output the logs. Note that setting this disables console output."
         }
       }
     },

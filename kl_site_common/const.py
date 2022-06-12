@@ -25,6 +25,7 @@ SYS_SERVICE_KEY = _CONFIG_SYS["service-key"]
 _CONFIG_LOG = config["log"]
 
 LOG_SUPPRESS_WARNINGS = _CONFIG_LOG["suppress-warnings"]
+LOG_TO_DIR = _CONFIG_LOG.get("output-directory")
 
 # endregion
 

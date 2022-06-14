@@ -14,4 +14,6 @@ async def startup_event():
 
 
 if __name__ == "__main__":
+    # Using this instead of `uvicorn` API to avoid starting the main client twice
+    # https://stackoverflow.com/a/66197795/11571888
     os.system("uvicorn main:fast_api --port=8000")

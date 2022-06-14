@@ -16,8 +16,7 @@ class TocuhanceApiClient(QuoteAPI, ABC):
         if not login_result.success:
             raise RuntimeError("Px quoting connection failed")
 
-        t2 = threading.Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,))
-        t2.start()
+        threading.Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,)).start()
 
     @abstractmethod
     def on_received_realtime_data(self, data: RealtimeData) -> None:

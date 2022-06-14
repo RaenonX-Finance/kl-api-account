@@ -6,9 +6,13 @@ console_error = Console(stderr=True, style="bold red")
 
 with open("config.yaml", "r") as config_file:
     config = yaml.safe_load(config_file)
+
+
+def print_configs():
     # Print current config
     console.print("[cyan]--- Config content ---[/cyan]")
     console.print(yaml.dump(config, default_flow_style=False))
+
 
 # region System
 

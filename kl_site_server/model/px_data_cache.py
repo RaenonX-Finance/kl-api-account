@@ -30,7 +30,7 @@ class PxDataCacheEntry:
 
         period_sec = self.period_min * 60
 
-        return int(time.time()) // period_sec * period_sec
+        return int(time.time() // period_sec * period_sec)
 
     @property
     def is_ready(self) -> bool:

@@ -1,6 +1,5 @@
 import logging
 import os.path
-from logging.handlers import TimedRotatingFileHandler
 from typing import Callable, Literal, TypeAlias
 
 from kl_site_common.const import LOG_TO_DIR
@@ -20,9 +19,8 @@ _log_func_map: dict[LogLevels, Callable[[str], None]] = {
 }
 
 if LOG_TO_DIR:
-    _handler = TimedRotatingFileHandler(
-        filename=os.path.join(LOG_TO_DIR, "server.log"), when="D", interval=1,
-        backupCount=7, encoding="utf-8", delay=False
+    _handler = logging.FileHandler(
+        filename=os.path.join(LOG_TO_DIR, "server.log"), encoding="utf-8",
     )
     _handler.setFormatter(logging.Formatter(
         fmt="%(levelname)8s %(asctime)s.%(msecs)03d: %(message)s",

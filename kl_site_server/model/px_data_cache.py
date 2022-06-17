@@ -88,7 +88,7 @@ class PxDataCacheEntry:
 
     def to_px_data(self) -> PxData:
         return PxData(
-            symbol=self.symbol,
+            symbol_original=self.symbol,
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
             period_min=self.period_min,

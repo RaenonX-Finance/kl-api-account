@@ -117,6 +117,10 @@ class RealtimeData(SubscriptionDataBase):
         return self.quote["Security"]
 
     @property
+    def security_name(self) -> str:
+        return self.quote["SecurityName"]
+
+    @property
     def exchange(self) -> str:
         return f"{self.quote['Exchange']} ({self.quote['ExchangeName']})"
 

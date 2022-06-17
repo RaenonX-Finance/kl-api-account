@@ -8,6 +8,11 @@ from pandas import DataFrame
 from kl_site_server.enums import PxDataCol
 
 
+# ===================================================================
+# Those functions are left for architecture referencing purpose only.
+# ===================================================================
+
+
 def is_far_from_level(value: float, levels: list[float], avg: float) -> bool:
     return not np.any([abs(value - level) < avg for level in levels])
 

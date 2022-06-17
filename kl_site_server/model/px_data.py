@@ -5,7 +5,6 @@ import pandas as pd
 import talib
 from pandas import DataFrame, DatetimeIndex, Series, to_datetime
 
-from kl_site_common.const import SMA_PERIODS
 from kl_site_common.utils import print_log
 from kl_site_server.calc import calc_support_resistance_levels
 from kl_site_server.enums import PxDataCol
@@ -29,7 +28,8 @@ class PxData:
         ))
 
     def _proc_df_smas(self):
-        for sma_period in SMA_PERIODS:
+        # EXNOTE: SMA periods to use for indicators/strategies - 5 & 10
+        for sma_period in [5, 10]:
             self.dataframe[PxDataCol.get_sma_col_name(sma_period)] = talib.SMA(
                 self.dataframe[PxDataCol.CLOSE],
                 timeperiod=sma_period

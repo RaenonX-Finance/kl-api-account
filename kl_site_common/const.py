@@ -47,8 +47,6 @@ DATA_PX_UPDATE_MARKET_SEC = _CONFIG_DATA_STREAM["px-update-market-sec"]
 
 # endregion
 
-SMA_PERIODS: list[int] = _CONFIG_DATA["sma"]
-
 DATA_SOURCES = _CONFIG_DATA["source"]
 
 # region Data / SR levels

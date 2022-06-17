@@ -37,10 +37,3 @@ data:
         - level: 16505
         - level: 16620
           strong: true
-  sma:
-    - 5
-    - 10
-    - 22
-    - 66
-    - 128
-    - 256

@@ -69,8 +69,7 @@
       "required": [
         "stream",
         "source",
-        "sr-level",
-        "sma"
+        "sr-level"
       ],
       "additionalProperties": false,
       "properties": {
@@ -188,17 +187,6 @@
                 }
               }
             }
-          }
-        },
-        "sma": {
-          "type": "array",
-          "description": "SMA periods to calculate.",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "type": "integer",
-            "description": "SMA period.",
-            "minimum": 1
           }
         }
       }

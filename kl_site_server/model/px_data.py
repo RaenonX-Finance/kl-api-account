@@ -86,34 +86,6 @@ class PxData:
     def get_last_n(self, n: int) -> Series:
         return self.dataframe.iloc[-n]
 
-    def get_last_day_close(self) -> float | None:
-        if len(self.market_dates) < 2:
-            raise ValueError(
-                f"Px data of {self.symbol} @ {self.period_min} "
-                f"only has a single market date: {self.market_dates}"
-            )
-
-        market_date_prev = self.market_dates[-2]
-
-        last_day_df = self.dataframe[self.dataframe[PxDataCol.DATE_MARKET] == market_date_prev]
-
-        if not len(last_day_df.index):
-            return None
-
-        last_day_last_entry = last_day_df.iloc[-1]
-        return last_day_last_entry[PxDataCol.CLOSE]
-
-    def get_today_open(self) -> float | None:
-        market_date_prev = self.market_dates[-1]
-
-        today_df = self.dataframe[self.dataframe[PxDataCol.DATE_MARKET] == market_date_prev]
-
-        if not len(today_df.index):
-            return None
-
-        last_day_last_entry = today_df.iloc[0]
-        return last_day_last_entry[PxDataCol.OPEN]
-
     def save_to_file(self):
         file_path = f"data-{self.symbol}@{self.period_min}.csv"
         self.dataframe.to_csv(file_path)

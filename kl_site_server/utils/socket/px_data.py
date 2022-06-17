@@ -31,19 +31,12 @@ class PxDataContract(TypedDict):
     symbol: str
 
 
-class PxDataLastDayDiff(TypedDict):
-    px: float
-    percent: float
-
-
 class PxDataDict(TypedDict):
     uniqueIdentifier: str
     periodSec: int
     contract: PxDataContract
     data: list[PxDataBar]
     supportResistance: list[PxDataSupportResistance]
-    lastDayClose: float | None
-    todayOpen: float | None
     smaPeriods: list[int]
 
 
@@ -99,8 +92,6 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         "contract": _from_px_data_contract(px_data),
         "data": _from_px_data_bars(px_data),
         "supportResistance": _from_px_data_support_resistance(px_data),
-        "lastDayClose": px_data.get_last_day_close(),
-        "todayOpen": px_data.get_today_open(),
         "smaPeriods": SMA_PERIODS,
     }
 

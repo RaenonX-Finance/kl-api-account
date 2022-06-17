@@ -9,6 +9,7 @@ from kl_site_common.const import SMA_PERIODS
 from kl_site_common.utils import print_log
 from kl_site_server.calc import calc_support_resistance_levels
 from kl_site_server.enums import PxDataCol
+from tcoreapi_mq.message import RealtimeData
 
 from .bar_data import BarDataDict
 from .const import SYMBOL_NAMES
@@ -67,6 +68,7 @@ class PxData:
             bars: list[BarDataDict],
             min_tick: float,
             period_min: int,
+            latest_market: RealtimeData,
     ):
         if not bars:
             raise ValueError(f"PxData should be initialized with data ({symbol} @ {period_min})")
@@ -79,6 +81,7 @@ class PxData:
         self.dataframe: DataFrame = DataFrame(bars)
         self.min_tick: float = min_tick
         self.period_min: int = period_min
+        self.latest_market: RealtimeData | None = latest_market
 
         self._proc_df()
 

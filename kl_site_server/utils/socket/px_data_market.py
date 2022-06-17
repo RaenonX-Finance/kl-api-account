@@ -1,8 +1,7 @@
 import json
-from typing import TYPE_CHECKING, TypedDict
+from typing import TypedDict
 
-if TYPE_CHECKING:
-    from kl_site_server.model import OnMarketDataReceivedEvent
+from tcoreapi_mq.message import RealtimeData
 
 
 class PxDataMarket(TypedDict):
@@ -11,19 +10,21 @@ class PxDataMarket(TypedDict):
     high: float
     low: float
     close: float
-    change_val: float
-    change_pct: float
+    changeVal: float
+    changePct: float
 
 
-def to_socket_message_px_data_market(e: "OnMarketDataReceivedEvent") -> str:
-    data: PxDataMarket = {
-        "symbol": e.data.security,
-        "open": e.data.open,
-        "high": e.data.high,
-        "low": e.data.low,
-        "close": e.data.close,
-        "change_val": e.data.change_val,
-        "change_pct": e.data.change_pct,
+def from_realtime_data(data: RealtimeData) -> PxDataMarket:
+    return {
+        "symbol": data.security,
+        "open": data.open,
+        "high": data.high,
+        "low": data.low,
+        "close": data.close,
+        "changeVal": data.change_val,
+        "changePct": data.change_pct,
     }
 
-    return json.dumps(data)
+
+def to_socket_message_px_data_market(data: RealtimeData) -> str:
+    return json.dumps(from_realtime_data(data))

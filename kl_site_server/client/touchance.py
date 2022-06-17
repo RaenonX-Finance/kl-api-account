@@ -42,7 +42,7 @@ class TouchanceDataClient(TocuhanceApiClient):
             if px_cache_entry.is_ready
         )
 
-    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> None:
+    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
         complete_px_sent = 0
 
         for px_data, proc_sec_single in self._px_data_cache.complete_px_data_to_send(symbol_complete):
@@ -56,6 +56,8 @@ class TouchanceDataClient(TocuhanceApiClient):
         if complete_px_sent:
             self._px_data_cache.mark_complete_data_sent(symbol_complete)
             print_log(f"[TC Client] {complete_px_sent} complete Px data of [yellow]{symbol_complete}[/yellow] sent")
+
+        return complete_px_sent > 0
 
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
         if not self._px_data_cache.is_send_market_data_ok(symbol_complete):
@@ -78,6 +80,8 @@ class TouchanceDataClient(TocuhanceApiClient):
         self.send_complete_px_data(data.handshake.symbol_complete, proc_sec_update)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
+        self._px_data_cache.update_latest_market_data_of_symbol(data)
+
         if not self._px_data_cache.is_px_data_ready(data.symbol_complete):
             params = self._px_request_params[data.symbol_complete]
 
@@ -89,8 +93,9 @@ class TouchanceDataClient(TocuhanceApiClient):
 
         self._px_data_cache.update_market_data_of_symbol(data)
 
-        self.send_complete_px_data(data.symbol_complete, 0)
-        self.send_market_px_data(data.symbol_complete, data)
+        if not self.send_complete_px_data(data.symbol_complete, 0):
+            # Only send market px data if none of complete px data is sent
+            self.send_market_px_data(data.symbol_complete, data)
 
     def on_error(self, message: str) -> None:
         e = OnErrorEvent(message=message)

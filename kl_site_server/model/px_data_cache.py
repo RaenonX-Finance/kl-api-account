@@ -20,6 +20,7 @@ class PxDataCacheEntry:
     min_tick: float
     period_min: int
     data: dict[int, BarDataDict]  # Epoch sec / bar data
+    latest_market: RealtimeData | None = field(init=False, default=None)
 
     @property
     def current_epoch_sec(self) -> int:
@@ -34,7 +35,7 @@ class PxDataCacheEntry:
 
     @property
     def is_ready(self) -> bool:
-        is_ready = bool(self.data)
+        is_ready = bool(self.data and self.latest_market)
 
         if not is_ready:
             print_warning(f"[Server] Px data cache entry of [bold]{self.symbol} @ {self.period_min}[/bold] not ready")
@@ -58,8 +59,27 @@ class PxDataCacheEntry:
             for epoch_sec, bars in bar_collector.items()
         }
 
+    def update_latest_market(self, data: RealtimeData) -> None:
+        """
+        Updates the latest market data. Does NOT update the underlying cached data.
+
+        This should be called before the `is_ready` check.
+        """
+        if self.symbol != data.security:
+            print_warning(
+                f"[Server] `update_latest_market()` called at the wrong place - "
+                f"symbol not match ({self.symbol} / {data.security})"
+            )
+            return
+
+        self.latest_market = data
+
     def update_latest(self, current: float) -> bool:
-        """Returns if force send should be allowed."""
+        """
+        Updates the latest price, then return if force-send should be allowed.
+
+        This should be called after the `is_ready` check.
+        """
         epoch_latest = max(self.data.keys())
         epoch_current = self.current_epoch_sec
 
@@ -92,6 +112,7 @@ class PxDataCacheEntry:
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
             period_min=self.period_min,
+            latest_market=self.latest_market,
         )
 
 
@@ -132,8 +153,9 @@ class PxDataCache:
     def get_entries_of_symbol(self, symbol_complete: str) -> Iterable[PxDataCacheEntry]:
         return self.data[symbol_complete].values()
 
-    def _mark_all_force_send_once(self, symbol_complete: str) -> None:
-        self.allow_force_send_once_market[symbol_complete] = True
+    def _mark_force_send_once(self, symbol_complete: str) -> None:
+        # Not marking market data to force send
+        # because the latest market data will also be updated in the completed one
         self.allow_force_send_once_complete[symbol_complete] = True
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
@@ -146,7 +168,11 @@ class PxDataCache:
             )
             px_data_entry.update_all(to_bar_data_dict_tcoreapi(bar, period_min) for bar in data.data_list)
 
-        self._mark_all_force_send_once(symbol_complete)
+        self._mark_force_send_once(symbol_complete)
+
+    def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
+        for px_cache_entry in self.data[data.symbol_complete].values():
+            px_cache_entry.update_latest_market(data)
 
     def update_market_data_of_symbol(self, data: RealtimeData) -> None:
         symbol_complete = data.symbol_complete
@@ -157,7 +183,7 @@ class PxDataCache:
             mark_all_force_send = px_data_entry.update_latest(data.last_px) or mark_all_force_send
 
         if mark_all_force_send:
-            self._mark_all_force_send_once(symbol_complete)
+            self._mark_force_send_once(symbol_complete)
 
     def is_no_market_data_update(self, symbol_complete: str) -> bool:
         # > 3 secs no incoming market data

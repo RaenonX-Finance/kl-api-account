@@ -3,6 +3,7 @@ from typing import Iterable, TYPE_CHECKING, TypedDict
 
 from kl_site_common.const import SMA_PERIODS, SR_STRONG_THRESHOLD
 from kl_site_server.enums import PxDataCol
+from .px_data_market import PxDataMarket, from_realtime_data
 from .utils import df_rows_to_list_of_data
 
 if TYPE_CHECKING:
@@ -39,6 +40,24 @@ class PxDataDict(TypedDict):
     data: list[PxDataBar]
     supportResistance: list[PxDataSupportResistance]
     smaPeriods: list[int]
+    latestMarket: PxDataMarket
+
+
+def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarket:
+    current = px_data.get_current()
+
+    open_val = current[PxDataCol.OPEN]
+    change_val = current[PxDataCol.CLOSE] - open_val
+
+    return {
+        "symbol": px_data.symbol,
+        "open": open_val,
+        "high": current[PxDataCol.HIGH],
+        "low": current[PxDataCol.LOW],
+        "close": current[PxDataCol.CLOSE],
+        "change_val": change_val,
+        "change_pct": change_val / open_val * 100,
+    }
 
 
 def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
@@ -95,6 +114,13 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         "data": _from_px_data_bars(px_data),
         "supportResistance": _from_px_data_support_resistance(px_data),
         "smaPeriods": SMA_PERIODS,
+        # Sending initial data also calls this method
+        # In this case, `latest_market` will be `None` since no market data has received yet
+        "latestMarket": (
+            from_realtime_data(px_data.latest_market)
+            if px_data.latest_market
+            else _from_px_data_last_bar_to_latest_market(px_data)
+        ),
     }
 
 

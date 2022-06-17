@@ -17,7 +17,7 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     print_log(f"[Server] Px Updated / MKT ({e})")
     await fast_api_socket.emit(
         SocketEvent.PX_UPDATED_MARKET,
-        to_socket_message_px_data_market(e.symbol, e.px)
+        to_socket_message_px_data_market(e)
     )
 
 

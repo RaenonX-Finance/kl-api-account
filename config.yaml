@@ -14,8 +14,8 @@ data:
     px-update-market-sec: 0.2
   source:
     - type: Futures
-      exchange: TWF
-      symbol: FITX
+      exchange: CME
+      symbol: NQ
       expiry: HOT
   sr-level:
     strong-threshold: 0.6

@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING
 from dataclasses import dataclass
 
+from tcoreapi_mq.message import RealtimeData
+
 if TYPE_CHECKING:
     from kl_site_server.model import PxData
 
@@ -20,8 +22,7 @@ class OnPxDataUpdatedEvent:
 
 @dataclass(kw_only=True)
 class OnMarketDataReceivedEvent:
-    symbol: str
-    px: float
+    data: RealtimeData
 
     def __str__(self):
-        return f"{self.symbol} - {self.px:.2f}"
+        return f"{self.data.security} - {self.data.last_px:.2f}"

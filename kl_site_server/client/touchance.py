@@ -65,7 +65,7 @@ class TouchanceDataClient(TocuhanceApiClient):
 
         execute_async_function(
             on_px_data_updated_market,
-            OnMarketDataReceivedEvent(symbol=data.security, px=data.last_px),
+            OnMarketDataReceivedEvent(data=data),
         )
 
     def on_received_history_data(self, data: HistoryData) -> None:

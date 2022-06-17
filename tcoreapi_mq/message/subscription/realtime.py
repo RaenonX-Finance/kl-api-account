@@ -123,3 +123,27 @@ class RealtimeData(SubscriptionDataBase):
     @property
     def last_px(self) -> float:
         return float(self.quote["TradingPrice"])
+
+    @property
+    def open(self) -> float:
+        return float(self.quote["OpeningPrice"])
+
+    @property
+    def high(self) -> float:
+        return float(self.quote["HighPrice"])
+
+    @property
+    def low(self) -> float:
+        return float(self.quote["LowPrice"])
+
+    @property
+    def close(self) -> float:
+        return float(self.quote["ClosingPrice"] or self.last_px)
+
+    @property
+    def change_val(self) -> float:
+        return float(self.quote["Change"])
+
+    @property
+    def change_pct(self) -> float:
+        return self.change_val / self.open * 100

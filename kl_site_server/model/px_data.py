@@ -11,7 +11,7 @@ from kl_site_server.calc import calc_support_resistance_levels
 from kl_site_server.enums import PxDataCol
 
 from .bar_data import BarDataDict
-from .const import SYMBOL_OVERRIDE_NAMES
+from .const import SYMBOL_NAMES
 
 
 class PxData:
@@ -63,19 +63,19 @@ class PxData:
 
     def __init__(
             self, *,
-            symbol_original: str,
+            symbol: str,
             bars: list[BarDataDict],
             min_tick: float,
             period_min: int,
     ):
         if not bars:
-            raise ValueError(f"PxData should be initialized with data ({symbol_original} @ {period_min})")
+            raise ValueError(f"PxData should be initialized with data ({symbol} @ {period_min})")
 
-        if symbol_original not in SYMBOL_OVERRIDE_NAMES:
-            raise ValueError(f"Symbol `{symbol_original}` doesn't have corresponding override name set")
+        if symbol not in SYMBOL_NAMES:
+            raise ValueError(f"Symbol `{symbol}` doesn't have corresponding override name set")
 
-        self.symbol_original: str = symbol_original
-        self.symbol: str = SYMBOL_OVERRIDE_NAMES[symbol_original]
+        self.symbol: str = symbol
+        self.symbol_name: str = SYMBOL_NAMES[symbol]
         self.dataframe: DataFrame = DataFrame(bars)
         self.min_tick: float = min_tick
         self.period_min: int = period_min
@@ -92,7 +92,7 @@ class PxData:
         return self.dataframe.iloc[-n]
 
     def save_to_file(self):
-        file_path = f"data-{self.symbol_original}@{self.period_min}.csv"
+        file_path = f"data-{self.symbol}@{self.period_min}.csv"
         self.dataframe.to_csv(file_path)
 
         print_log(f"[yellow]Px data saved to {file_path}[/yellow]")
@@ -113,4 +113,4 @@ class PxData:
 
     @property
     def unique_identifier(self) -> str:
-        return f"{self.symbol_original}@{self.period_min}"
+        return f"{self.symbol}@{self.period_min}"

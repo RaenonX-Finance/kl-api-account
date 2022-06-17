@@ -29,6 +29,7 @@ class PxDataSupportResistance(TypedDict):
 class PxDataContract(TypedDict):
     minTick: float
     symbol: str
+    name: str
 
 
 class PxDataDict(TypedDict):
@@ -81,6 +82,7 @@ def _from_px_data_support_resistance(px_data: "PxData") -> list[PxDataSupportRes
 def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
     return {
         "symbol": px_data.symbol,
+        "name": px_data.symbol_name,
         "minTick": px_data.min_tick,
     }
 

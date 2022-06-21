@@ -130,7 +130,8 @@ class RealtimeData(SubscriptionDataBase):
 
     @property
     def open(self) -> float:
-        return float(self.quote["OpeningPrice"])
+        # `OpeningPrice` could be `0` for some reason - might because of holiday
+        return float(self.quote["OpeningPrice"]) or float(self.quote["ReferencePrice"])
 
     @property
     def high(self) -> float:

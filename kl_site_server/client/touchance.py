@@ -6,11 +6,11 @@ from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_
 from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent, PxData, PxDataCache, TouchancePxRequestParams,
 )
-from tcoreapi_mq.client import TocuhanceApiClient
+from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, RealtimeData
 
 
-class TouchanceDataClient(TocuhanceApiClient):
+class TouchanceDataClient(TouchanceApiClient):
     def __init__(self):
         super().__init__()
 

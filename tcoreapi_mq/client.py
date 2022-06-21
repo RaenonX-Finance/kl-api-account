@@ -9,7 +9,7 @@ from .quote_api import QuoteAPI
 from .utils import create_subscription_receiver_socket
 
 
-class TocuhanceApiClient(QuoteAPI, ABC):
+class TouchanceApiClient(QuoteAPI, ABC):
     def start(self):
         login_result = self.connect(SYS_PORT_QUOTE)
 

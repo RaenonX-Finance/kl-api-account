@@ -16,6 +16,7 @@ class QuoteAPI(TCoreZMQ):
         super().__init__(SYS_APP_ID, SYS_SERVICE_KEY)
 
         self._info: dict[str, QueryInstrumentProduct] = {}
+        self._subscribing_realtime: set[str] = set()
 
     def register_symbol_info(self, symbol_obj: SymbolBaseType) -> None:
         if symbol_obj.symbol_complete in self._info:
@@ -40,6 +41,7 @@ class QuoteAPI(TCoreZMQ):
         print_log(f"[TC Quote] Subscribing realtime data of [yellow]{symbol.symbol_complete}[/yellow]")
 
         self.register_symbol_info(symbol)
+        self._subscribing_realtime.add(symbol.symbol_complete)
 
         with self.lock:
             req = SubscribeRealtimeRequest(session_key=self.session_key, symbol=symbol)
@@ -47,11 +49,17 @@ class QuoteAPI(TCoreZMQ):
 
             return SubscribeRealtimeMessage(message=self.socket.get_message())
 
-    def unsubscribe_realtime(self, symbol: SymbolBaseType) -> UnsubscribeRealtimeMessage:
-        print_log(f"[TC Quote] Unsubscribing realtime data from [yellow]{symbol.symbol_complete}[/yellow]")
+    def is_subscribing_realtime(self, symbol_complete: str) -> bool:
+        return symbol_complete in self._subscribing_realtime
+
+    def unsubscribe_realtime(self, symbol_complete: str) -> UnsubscribeRealtimeMessage:
+        print_log(f"[TC Quote] Unsubscribing realtime data from [yellow]{symbol_complete}[/yellow]")
+
+        if self.is_subscribing_realtime(symbol_complete):
+            self._subscribing_realtime.remove(symbol_complete)
 
         with self.lock:
-            req = UnsubscribeRealtimeRequest(session_key=self.session_key, symbol=symbol)
+            req = UnsubscribeRealtimeRequest(session_key=self.session_key, symbol_complete=symbol_complete)
             self.socket.send_string(req.to_message())
 
             return UnsubscribeRealtimeMessage(message=self.socket.get_message())

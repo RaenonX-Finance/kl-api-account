@@ -45,7 +45,18 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         print_warning("[Client] Received invalid (no trade) realtime data")
                         return
 
-                    self.on_received_realtime_data(RealtimeData(message))
+                    data = RealtimeData(message)
+
+                    if not self.is_subscribing_realtime(data.symbol_complete):
+                        # Subscription is not actively terminated even if the app is exited
+                        # Therefore, it is possible to receive realtime data even if it's not subscribed
+                        # ------------------------------------------
+                        # If such thing happens, ignore that
+                        # > Not unsubscribing the data because multiple app instances may run at the same time
+                        # > Sending subscription cancellation request will interrupt the other app
+                        return
+
+                    self.on_received_realtime_data(data)
                 case "TICKS" | "1K" | "DK":
                     handshake = HistoryDataHandshake(message)
 

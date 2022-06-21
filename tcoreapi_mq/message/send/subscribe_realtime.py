@@ -23,14 +23,14 @@ class SubscribeRealtimeRequest(RequestBase):
 @dataclass(kw_only=True)
 class UnsubscribeRealtimeRequest(RequestBase):
     session_key: str
-    symbol: SymbolBaseType
+    symbol_complete: str
 
     def to_message_json(self) -> dict:
         return {
             "Request": "UNSUBQUOTE",
             "SessionKey": self.session_key,
             "Param": {
-                "Symbol": self.symbol.symbol_complete,
+                "Symbol": self.symbol_complete,
                 "SubDataType": "REALTIME"
             }
         }

@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 
+from kl_site_common.utils import print_log
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.model import TouchancePxRequestParams
 from tcoreapi_mq.model import configs_sources_as_symbols
@@ -16,6 +17,7 @@ def start_server_app():
     client.start()
 
     for symbol_obj in configs_sources_as_symbols():
+        print_log(f"[Server] Requesting Px data of [yellow]{symbol_obj.symbol_complete}[/yellow]R")
         params = TouchancePxRequestParams(
             symbol_obj=symbol_obj,
             period_mins=[1, 5],

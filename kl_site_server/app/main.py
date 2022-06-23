@@ -17,7 +17,7 @@ def start_server_app():
     client.start()
 
     for symbol_obj in configs_sources_as_symbols():
-        print_log(f"[Server] Requesting Px data of [yellow]{symbol_obj.symbol_complete}[/yellow]R")
+        print_log(f"[Server] Requesting Px data of [yellow]{symbol_obj.symbol_complete}[/yellow]")
         params = TouchancePxRequestParams(
             symbol_obj=symbol_obj,
             period_mins=[1, 5],

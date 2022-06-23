@@ -20,7 +20,7 @@ def from_realtime_data(data: RealtimeData) -> PxDataMarket:
         "open": data.open,
         "high": data.high,
         "low": data.low,
-        "close": data.close,
+        "close": data.last_px,  # DO NOT use `close` because it is a fixed number for FITX
         "changeVal": data.change_val,
         "changePct": data.change_pct,
     }

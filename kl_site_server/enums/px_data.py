@@ -6,14 +6,10 @@ class PxDataCol:
     EPOCH_SEC = "epoch_sec"
     VOLUME = "volume"
 
-    VWAP = "vwap"
-
     DIFF = "diff"
 
     DATE = "date"
     DATE_MARKET = "market_date"
-
-    PRICE_TIMES_VOLUME = "price_times_volume"
 
     EPOCH_SEC_ORIGINAL = "epoch_sec_original"
 

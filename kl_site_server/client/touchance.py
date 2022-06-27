@@ -27,17 +27,18 @@ class TouchanceDataClient(TouchanceApiClient):
         self.get_history(params.symbol_obj, "1K", hist_start, hist_end)
         self.subscribe_realtime(params.symbol_obj)
 
-        product_info = self.get_instrument_info_by_symbol(params.symbol_obj)
-
-        for period_min in params.period_mins:
-            self._px_data_cache.init_entry(params.symbol_obj, product_info.tick, period_min)
+        self._px_data_cache.init_entry(
+            params.symbol_obj,
+            self.get_instrument_info_by_symbol(params.symbol_obj).tick,
+            params.period_mins
+        )
 
     def get_all_px_data(self) -> Iterable[PxData]:
         if not self._px_data_cache.is_all_px_data_ready():
             print_warning("[TC Client] `get_all_px_data()` called while not all of the Px data are ready")
 
         return iter(
-            px_cache_entry.to_px_data()
+            px_cache_entry.to_px_data().values()[0]
             for px_cache_entry in self._px_data_cache.px_cache_entries
             if px_cache_entry.is_ready
         )

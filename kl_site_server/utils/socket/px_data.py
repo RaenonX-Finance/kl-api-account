@@ -16,7 +16,6 @@ class PxDataBar(TypedDict):
     high: float
     low: float
     close: float
-    vwap: float
     diff: float
 
 
@@ -49,7 +48,7 @@ def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarket:
     change_val = current[PxDataCol.CLOSE] - open_val
 
     return {
-        "symbol": px_data.symbol,
+        "symbol": px_data.pool.symbol,
         "open": open_val,
         "high": current[PxDataCol.HIGH],
         "low": current[PxDataCol.LOW],
@@ -66,7 +65,6 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         PxDataCol.HIGH: "high",
         PxDataCol.LOW: "low",
         PxDataCol.CLOSE: "close",
-        PxDataCol.VWAP: "vwap",
         PxDataCol.DIFF: "diff",
     }
 
@@ -95,9 +93,9 @@ def _from_px_data_support_resistance(px_data: "PxData") -> list[PxDataSupportRes
 
 def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
     return {
-        "symbol": px_data.symbol,
-        "name": px_data.symbol_name,
-        "minTick": px_data.min_tick,
+        "symbol": px_data.pool.symbol,
+        "name": px_data.pool.symbol_name,
+        "minTick": px_data.pool.min_tick,
     }
 
 
@@ -111,8 +109,8 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         # Sending initial data also calls this method
         # In this case, `latest_market` will be `None` since no market data has received yet
         "latestMarket": (
-            from_realtime_data(px_data.latest_market)
-            if px_data.latest_market
+            from_realtime_data(px_data.pool.latest_market)
+            if px_data.pool.latest_market
             else _from_px_data_last_bar_to_latest_market(px_data)
         ),
     }

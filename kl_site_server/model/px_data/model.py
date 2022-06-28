@@ -7,7 +7,7 @@ from pandas import DataFrame, Series
 from kl_site_common.utils import print_log
 from kl_site_server.calc import calc_support_resistance_levels
 from kl_site_server.enums import PxDataCol
-from .calc import aggregate_df, calc_diff, calc_sma
+from .calc import aggregate_df, calc_diff
 
 if TYPE_CHECKING:
     from kl_site_server.model import PxDataPool
@@ -15,7 +15,6 @@ if TYPE_CHECKING:
 
 class PxData:
     def _proc_df(self):
-        self.dataframe = calc_sma(self.dataframe)
         self.dataframe = calc_diff(self.dataframe)
 
         # Remove NaNs

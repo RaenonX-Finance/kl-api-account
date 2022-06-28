@@ -4,7 +4,7 @@ import numpy as np
 from pandas import DataFrame
 
 from tcoreapi_mq.message import RealtimeData
-from .calc import calc_market_date
+from .calc import calc_market_date, calc_strength
 from .const import SYMBOL_NAMES
 from .model import PxData
 
@@ -15,6 +15,7 @@ if TYPE_CHECKING:
 class PxDataPool:
     def _proc_df(self):
         self.dataframe = calc_market_date(self.dataframe)
+        self.dataframe = calc_strength(self.dataframe)
 
         # Remove NaNs
         self.dataframe = self.dataframe.fillna(np.nan)

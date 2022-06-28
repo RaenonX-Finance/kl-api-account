@@ -1,8 +1,10 @@
+from typing import Callable
+
 from pandas import DataFrame
 
 from kl_site_server.enums import PxDataCol
 
-_AGGREGATE_DICT = {
+_AGGREGATE_DICT: dict[str, Callable | str | list[Callable | str] | dict[str, Callable | str]] = {
     PxDataCol.OPEN: "first",
     PxDataCol.HIGH: "max",
     PxDataCol.LOW: "min",
@@ -11,7 +13,16 @@ _AGGREGATE_DICT = {
     PxDataCol.DATE: "first",
     PxDataCol.DATE_MARKET: "first",
     PxDataCol.EPOCH_SEC: "first",  # To keep `PxDataCol.EPOCH_SEC` accessible from the indexer
-    PxDataCol.EPOCH_SEC_ORIGINAL: "first",
+    PxDataCol.STRENGTH: "last",
+}
+
+_AGGREGATE_IGNORE_COLUMNS: set[str] = {
+    PxDataCol.EPOCH_SEC,  # Group basis, will be included
+} | {
+    # SMA periods used for calculating strength
+    PxDataCol.get_sma_col_name(sma_period * k_period)
+    for sma_period in [5, 10]
+    for k_period in [1, 3, 5]
 }
 
 
@@ -27,7 +38,7 @@ def aggregate_df(df_1k: DataFrame, period_min: int) -> DataFrame:
     df[PxDataCol.EPOCH_SEC] = (df[PxDataCol.EPOCH_SEC] // period_sec * period_sec).astype(int)
 
     # Column processing check
-    aggregated_columns = set(_AGGREGATE_DICT.keys()) | {PxDataCol.EPOCH_SEC}
+    aggregated_columns = set(_AGGREGATE_DICT.keys()) | _AGGREGATE_IGNORE_COLUMNS
     df_1k_columns = set(df_1k.columns)  # `.columns` has overridden `__eq__`
     if aggregated_columns != df_1k_columns:
         raise ValueError(

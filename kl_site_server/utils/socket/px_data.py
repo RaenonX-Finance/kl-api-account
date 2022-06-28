@@ -17,6 +17,7 @@ class PxDataBar(TypedDict):
     low: float
     close: float
     diff: float
+    strength: int
 
 
 class PxDataSupportResistance(TypedDict):
@@ -66,6 +67,7 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         PxDataCol.LOW: "low",
         PxDataCol.CLOSE: "close",
         PxDataCol.DIFF: "diff",
+        PxDataCol.STRENGTH: "strength"
     }
 
     return df_rows_to_list_of_data(px_data.dataframe, columns)

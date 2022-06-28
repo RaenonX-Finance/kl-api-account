@@ -28,3 +28,4 @@ class PxDataCol:
     # KL indicators
 
     STRENGTH = "strength"
+    CANDLESTICK_DIR = "candlestick_dir"

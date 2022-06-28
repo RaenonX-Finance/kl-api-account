@@ -21,6 +21,10 @@ class PxDataCol:
     def get_sma_col_name(period: int) -> str:
         return f"sma_{period}"
 
+    @staticmethod
+    def get_current_avg_col_name(period: int) -> str:
+        return f"avg_cur_{period}"
+
     # KL indicators
 
     STRENGTH = "strength"

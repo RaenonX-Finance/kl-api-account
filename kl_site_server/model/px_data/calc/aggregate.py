@@ -18,11 +18,6 @@ _AGGREGATE_DICT: dict[str, Callable | str | list[Callable | str] | dict[str, Cal
 
 _AGGREGATE_IGNORE_COLUMNS: set[str] = {
     PxDataCol.EPOCH_SEC,  # Group basis, will be included
-} | {
-    # SMA periods used for calculating strength
-    PxDataCol.get_sma_col_name(sma_period * k_period)
-    for sma_period in [5, 10]
-    for k_period in [1, 3, 5]
 }
 
 

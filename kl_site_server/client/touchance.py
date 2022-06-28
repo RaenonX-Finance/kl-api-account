@@ -18,7 +18,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
 
     def request_px_data(self, params: TouchancePxRequestParams) -> None:
-        # Record params
         params.reset_request_timeout()
         self._px_request_params[params.symbol_obj.symbol_complete] = params
 
@@ -38,9 +37,12 @@ class TouchanceDataClient(TouchanceApiClient):
             print_warning("[TC Client] `get_all_px_data()` called while not all of the Px data are ready")
 
         return iter(
-            px_cache_entry.to_px_data().values()[0]
-            for px_cache_entry in self._px_data_cache.px_cache_entries
+            px_data
+            for px_cache_entry
+            in self._px_data_cache.px_cache_entries
             if px_cache_entry.is_ready
+            for px_data, _
+            in px_cache_entry.to_px_data(self._px_data_cache.period_mins[px_cache_entry.symbol_complete]).values()
         )
 
     def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:

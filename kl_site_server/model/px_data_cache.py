@@ -15,6 +15,7 @@ from .px_data import PxData, PxDataPool
 @dataclass(kw_only=True)
 class PxDataCacheEntry:
     symbol: str
+    symbol_complete: str
     min_tick: float
     data: dict[int, BarDataDict]  # Epoch sec / bar data
     latest_market: RealtimeData | None = field(init=False, default=None)
@@ -140,6 +141,7 @@ class PxDataCache:
 
         self.data[symbol_complete] = PxDataCacheEntry(
             symbol=symbol_obj.symbol,
+            symbol_complete=symbol_obj.symbol_complete,
             min_tick=min_tick,
             data={},
         )

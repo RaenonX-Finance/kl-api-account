@@ -15,8 +15,11 @@ class OnPxDataUpdatedEvent:
 
     def __str__(self):
         return (
-            f"{self.px_data.pool.symbol} - {self.px_data.current_close:.2f} / {self.px_data.latest_time} "
-            f"@ {self.px_data.period_min} / {self.proc_sec:.3f} s"
+            f"{self.px_data.pool.symbol} - "
+            f"{self.px_data.current_close:.2f} / "
+            f"{self.px_data.latest_time} @ {self.px_data.period_min} / "
+            f"{self.proc_sec:.3f} s / "
+            f"{self.px_data.data_count}"
         )
 
 

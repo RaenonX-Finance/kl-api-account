@@ -63,3 +63,7 @@ class PxData:
     @property
     def unique_identifier(self) -> str:
         return f"{self.pool.symbol}@{self.period_min}"
+
+    @property
+    def data_count(self):
+        return len(self.dataframe)

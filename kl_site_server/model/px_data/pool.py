@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 class PxDataPool:
     def _proc_df(self):
-        self.dataframe = calc_market_date(self.dataframe)
+        self.dataframe = calc_market_date(self.dataframe, self.symbol)
         self.dataframe = calc_strength(self.dataframe)
 
         # Remove NaNs

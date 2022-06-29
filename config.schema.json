@@ -195,7 +195,7 @@
       "type": "object",
       "description": "Logging related settings.",
       "required": [
-        "ema-color-changing",
+        "ema-color-change",
         "ema-net"
       ],
       "additionalProperties": false,
@@ -221,7 +221,7 @@
             }
           }
         },
-        "ema-color-changing": {
+        "ema-color-change": {
           "type": "array",
           "description": "EMA period pairs to use for color changing EMAs.",
           "minItems": 1,

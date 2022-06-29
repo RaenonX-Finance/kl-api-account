@@ -2,7 +2,7 @@ import json
 from typing import Iterable, TYPE_CHECKING, TypeAlias, TypedDict
 
 from kl_site_common.const import (
-    EmaPeriodPair, EMA_PERIOD_PAIRS_COLOR_CHANGING, EMA_PERIOD_PAIR_NET,
+    EmaPeriodPair, EMA_PERIOD_PAIRS_COLOR_CHANGE, EMA_PERIOD_PAIR_NET,
     SR_STRONG_THRESHOLD, INDICATOR_EMA_PERIODS,
 )
 from kl_site_server.enums import PxDataCol
@@ -43,7 +43,7 @@ PxDataEmaPeriodPair: TypeAlias = EmaPeriodPair
 
 class PxDataEmaConfig(TypedDict):
     net: PxDataEmaPeriodPair
-    colorChanging: list[PxDataEmaPeriodPair]
+    colorChange: list[PxDataEmaPeriodPair]
 
 
 class PxDataIndicatorConfig(TypedDict):
@@ -128,7 +128,7 @@ def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
 def _get_ema_config() -> PxDataEmaConfig:
     return {
         "net": EMA_PERIOD_PAIR_NET,
-        "colorChanging": EMA_PERIOD_PAIRS_COLOR_CHANGING,
+        "colorChange": EMA_PERIOD_PAIRS_COLOR_CHANGE,
     }
 
 

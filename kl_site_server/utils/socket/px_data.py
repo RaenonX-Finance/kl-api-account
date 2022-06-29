@@ -1,7 +1,10 @@
 import json
-from typing import Iterable, TYPE_CHECKING, TypedDict
+from typing import Iterable, TYPE_CHECKING, TypeAlias, TypedDict
 
-from kl_site_common.const import SR_STRONG_THRESHOLD
+from kl_site_common.const import (
+    EmaPeriodPair, EMA_PERIOD_PAIRS_COLOR_CHANGING, EMA_PERIOD_PAIR_NET,
+    SR_STRONG_THRESHOLD, INDICATOR_EMA_PERIODS,
+)
 from kl_site_server.enums import PxDataCol
 from .px_data_market import PxDataMarket, from_realtime_data
 from .utils import df_rows_to_list_of_data
@@ -35,6 +38,18 @@ class PxDataContract(TypedDict):
     name: str
 
 
+PxDataEmaPeriodPair: TypeAlias = EmaPeriodPair
+
+
+class PxDataEmaConfig(TypedDict):
+    net: PxDataEmaPeriodPair
+    colorChanging: list[PxDataEmaPeriodPair]
+
+
+class PxDataIndicatorConfig(TypedDict):
+    ema: PxDataEmaConfig
+
+
 class PxDataDict(TypedDict):
     uniqueIdentifier: str
     periodSec: int
@@ -42,6 +57,7 @@ class PxDataDict(TypedDict):
     data: list[PxDataBar]
     supportResistance: list[PxDataSupportResistance]
     latestMarket: PxDataMarket
+    indicator: PxDataIndicatorConfig
 
 
 def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarket:
@@ -72,6 +88,10 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         PxDataCol.STRENGTH: "strength",
         PxDataCol.CANDLESTICK_DIR: "candlestick",
         PxDataCol.TIE_POINT: "tiePoint"
+    }
+    columns |= {
+        PxDataCol.get_ema_col_name(period): f"ema{period}"
+        for period in INDICATOR_EMA_PERIODS
     }
 
     return df_rows_to_list_of_data(px_data.dataframe, columns)
@@ -105,6 +125,19 @@ def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
     }
 
 
+def _get_ema_config() -> PxDataEmaConfig:
+    return {
+        "net": EMA_PERIOD_PAIR_NET,
+        "colorChanging": EMA_PERIOD_PAIRS_COLOR_CHANGING,
+    }
+
+
+def _get_indicator_config() -> PxDataIndicatorConfig:
+    return {
+        "ema": _get_ema_config()
+    }
+
+
 def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
     return {
         "uniqueIdentifier": px_data.unique_identifier,
@@ -119,6 +152,7 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
             if px_data.pool.latest_market
             else _from_px_data_last_bar_to_latest_market(px_data)
         ),
+        "indicator": _get_indicator_config()
     }
 
 

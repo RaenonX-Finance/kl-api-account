@@ -22,6 +22,10 @@ class PxDataCol:
         return f"sma_{period}"
 
     @staticmethod
+    def get_ema_col_name(period: int) -> str:
+        return f"ema_{period}"
+
+    @staticmethod
     def get_current_avg_col_name(period: int) -> str:
         return f"avg_cur_{period}"
 

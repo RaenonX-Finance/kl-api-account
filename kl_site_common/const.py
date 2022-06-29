@@ -1,3 +1,5 @@
+from typing import TypedDict
+
 import yaml
 from rich.console import Console
 
@@ -56,5 +58,32 @@ SR_STRONG_THRESHOLD = _CONFIG_DATA_SR["strong-threshold"]
 SR_CUSTOM_LEVELS = _CONFIG_DATA_SR["custom"]
 
 # endregion
+
+# endregion
+
+# region Indicator
+
+_CONFIG_INDICATOR = config["indicator"]
+
+
+class EmaPeriodPair(TypedDict):
+    fast: int
+    slow: int
+
+
+def _extract_ema_periods(pair: EmaPeriodPair) -> set[int]:
+    return {pair["fast"], pair["slow"]}
+
+
+EMA_PERIOD_PAIR_NET: EmaPeriodPair = _CONFIG_INDICATOR["ema-net"]
+EMA_PERIOD_PAIRS_COLOR_CHANGING: list[EmaPeriodPair] = _CONFIG_INDICATOR["ema-color-changing"]
+
+INDICATOR_EMA_PERIODS: set[int] = \
+    _extract_ema_periods(EMA_PERIOD_PAIR_NET) | \
+    {
+        period
+        for pair in EMA_PERIOD_PAIRS_COLOR_CHANGING
+        for period in _extract_ema_periods(pair)
+    }
 
 # endregion

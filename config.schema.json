@@ -190,6 +190,65 @@
           }
         }
       }
+    },
+    "indicator": {
+      "type": "object",
+      "description": "Logging related settings.",
+      "required": [
+        "ema-color-changing",
+        "ema-net"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "ema-net": {
+          "type": "object",
+          "description": "EMA periods to use for EMA net.",
+          "required": [
+            "fast",
+            "slow"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "fast": {
+              "type": "integer",
+              "description": "Faster EMA period to use.",
+              "exclusiveMinimum": 0
+            },
+            "slow": {
+              "type": "integer",
+              "description": "Slower EMA period to use.",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "ema-color-changing": {
+          "type": "array",
+          "description": "EMA period pairs to use for color changing EMAs.",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "description": "Available pairs for color changing EMAs.",
+            "required": [
+              "fast",
+              "slow"
+            ],
+            "additionalProperties": false,
+            "properties": {
+              "fast": {
+                "type": "integer",
+                "description": "Faster EMA period to use.",
+                "exclusiveMinimum": 0
+              },
+              "slow": {
+                "type": "integer",
+                "description": "Slower EMA period to use.",
+                "exclusiveMinimum": 0
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

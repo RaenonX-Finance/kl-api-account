@@ -19,6 +19,7 @@ class PxDataBar(TypedDict):
     diff: float
     strength: int
     candlestick: int
+    tiePoint: float
 
 
 class PxDataSupportResistance(TypedDict):
@@ -69,7 +70,8 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         PxDataCol.CLOSE: "close",
         PxDataCol.DIFF: "diff",
         PxDataCol.STRENGTH: "strength",
-        PxDataCol.CANDLESTICK_DIR: "candlestick"
+        PxDataCol.CANDLESTICK_DIR: "candlestick",
+        PxDataCol.TIE_POINT: "tiePoint"
     }
 
     return df_rows_to_list_of_data(px_data.dataframe, columns)

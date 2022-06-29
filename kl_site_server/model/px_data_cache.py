@@ -22,7 +22,7 @@ class PxDataCacheEntry:
 
     @property
     def is_ready(self) -> bool:
-        is_ready = bool(self.data and self.latest_market)
+        is_ready = bool(self.data)
 
         if not is_ready:
             print_warning(f"[Server] Px data cache entry of [bold]{self.symbol}[/bold] not ready")

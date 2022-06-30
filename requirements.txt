@@ -11,6 +11,7 @@ rich
 
 # Config file
 pyyaml
+jsonschema
 
 # Server
 fastapi[all]

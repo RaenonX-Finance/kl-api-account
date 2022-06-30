@@ -3,11 +3,12 @@ from typing import TypedDict
 import yaml
 from rich.console import Console
 
+from .config import get_config
+
 console = Console()
 console_error = Console(stderr=True, style="bold red")
 
-with open("config.yaml", "r") as config_file:
-    config = yaml.safe_load(config_file)
+config = get_config()
 
 
 def print_configs():

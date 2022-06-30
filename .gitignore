@@ -5,3 +5,4 @@ sandbox*.py
 __pycache__/
 .wakatime-project
 *.csv
+config-override.yaml

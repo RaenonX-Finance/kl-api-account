@@ -3,7 +3,7 @@ from typing import Iterable, TYPE_CHECKING, TypeAlias, TypedDict
 
 from kl_site_common.const import (
     EmaPeriodPair, EMA_PERIOD_PAIRS_STRONG_SR, EMA_PERIOD_PAIR_NET,
-    SR_STRONG_THRESHOLD, INDICATOR_EMA_PERIODS,
+    INDICATOR_EMA_PERIODS,
 )
 from kl_site_server.enums import PxDataCol
 from .px_data_market import PxDataMarket, from_realtime_data
@@ -26,10 +26,7 @@ class PxDataBar(TypedDict):
 
 
 class PxDataSupportResistance(TypedDict):
-    level: float
-    strength: float
-    strengthCount: float
-    strong: bool
+    groups: list[list[float]]
 
 
 class PxDataContract(TypedDict):
@@ -55,7 +52,7 @@ class PxDataDict(TypedDict):
     periodSec: int
     contract: PxDataContract
     data: list[PxDataBar]
-    supportResistance: list[PxDataSupportResistance]
+    supportResistance: PxDataSupportResistance
     latestMarket: PxDataMarket
     indicator: PxDataIndicatorConfig
 
@@ -97,24 +94,10 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
     return df_rows_to_list_of_data(px_data.dataframe, columns)
 
 
-def _from_px_data_support_resistance(px_data: "PxData") -> list[PxDataSupportResistance]:
-    ret: list[PxDataSupportResistance] = []
-
-    max_strength = max(px_data.sr_levels_data.levels_data, key=lambda data: data.strength).strength
-
-    for sr_level in px_data.sr_levels_data.levels_data:
-        # Convert integral absolute strength (5) to relative strength (5 / 10 = 0.5)
-        # FIXME: `max_strength` shouldn't be 0, but it's possible for some reason
-        strength = sr_level.strength / max_strength if max_strength else 1
-
-        ret.append({
-            "level": sr_level.level,
-            "strength": strength,
-            "strengthCount": sr_level.strength,
-            "strong": strength > SR_STRONG_THRESHOLD
-        })
-
-    return ret
+def _from_px_data_support_resistance(px_data: "PxData") -> PxDataSupportResistance:
+    return {
+        "groups": px_data.sr_levels_data.groups
+    }
 
 
 def _from_px_data_contract(px_data: "PxData") -> PxDataContract:

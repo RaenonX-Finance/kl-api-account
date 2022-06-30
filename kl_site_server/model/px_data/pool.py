@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 from pandas import DataFrame
 
-from kl_site_server.calc import calc_pool
+from kl_site_server.calc import calc_pool, calc_support_resistance_levels
 from tcoreapi_mq.message import RealtimeData
 from .const import SYMBOL_NAMES
 from .model import PxData
@@ -32,6 +32,8 @@ class PxDataPool:
 
         self.dataframe: DataFrame = DataFrame(bars)
         self.dataframe = calc_pool(self.dataframe, self.symbol)
+
+        self.sr_levels_data = calc_support_resistance_levels(self.dataframe, self.symbol)
 
     def to_px_data(self, period_min: int) -> PxData:
         return PxData(pool=self, period_min=period_min)

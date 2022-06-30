@@ -4,7 +4,7 @@ from typing import TYPE_CHECKING
 from pandas import DataFrame, Series
 
 from kl_site_common.utils import print_log
-from kl_site_server.calc import aggregate_df, calc_model, calc_support_resistance_levels
+from kl_site_server.calc import aggregate_df, calc_model
 from kl_site_server.enums import PxDataCol
 
 if TYPE_CHECKING:
@@ -23,7 +23,7 @@ class PxData:
         self.dataframe: DataFrame = aggregate_df(pool.dataframe, period_min)
         self.dataframe = calc_model(self.dataframe, period_min)
 
-        self.sr_levels_data = calc_support_resistance_levels(self.dataframe)
+        self.sr_levels_data = pool.sr_levels_data
 
     def get_current(self) -> Series:
         return self.get_last_n(1)

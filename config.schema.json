@@ -145,17 +145,10 @@
           "type": "object",
           "description": "Support-resistance level determination settings.",
           "required": [
-            "strong-threshold",
             "custom"
           ],
           "additionalProperties": false,
           "properties": {
-            "strong-threshold": {
-              "type": "number",
-              "description": "Threshold to determine that if an S/R level is strong in terms of its relative strength.",
-              "exclusiveMinimum": 0,
-              "exclusiveMaximum": 1
-            },
             "custom": {
               "type": "object",
               "description": "Custom S/R levels of all products. Key must be the product symbol. Note that the key is symbol (NQ), not the complete symbol (TC.F.CME.NQ.HOT).",
@@ -176,11 +169,6 @@
                         "type": "number",
                         "description": "S/R level in Px.",
                         "minimum": 1
-                      },
-                      "strong": {
-                        "type": "boolean",
-                        "description": "Determines if the S/R level is strong.",
-                        "default": false
                       }
                     }
                   }

@@ -55,7 +55,6 @@ DATA_SOURCES = _CONFIG_DATA["source"]
 # region Data / SR levels
 
 _CONFIG_DATA_SR = _CONFIG_DATA["sr-level"]
-SR_STRONG_THRESHOLD = _CONFIG_DATA_SR["strong-threshold"]
 SR_CUSTOM_LEVELS = _CONFIG_DATA_SR["custom"]
 
 # endregion

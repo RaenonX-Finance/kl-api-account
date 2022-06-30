@@ -6,7 +6,6 @@ from kl_site_common.const import SR_CUSTOM_LEVELS
 
 class CustomSrLevel(TypedDict):
     level: float
-    strong: bool
 
 
 CustomSrLevelDict: TypeAlias = dict[str, list[CustomSrLevel]]
@@ -21,7 +20,6 @@ def _to_custom_sr_level_dict() -> CustomSrLevelDict:
         symbol: [
             {
                 "level": sr_level["level"],
-                "strong": sr_level.get("strong", False),
             }
             for sr_level in sr_levels
         ]

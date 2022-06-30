@@ -1,83 +1,54 @@
-"""
-Most of the source code originated from:
-https://medium.datadriveninvestor.com/how-to-detect-support-resistance-levels-and-breakout-using-python-f8b5dac42f21.
-"""
-import numpy as np
+from typing import Callable
+
+import pandas as pd
 from pandas import DataFrame
 
 from kl_site_server.enums import PxDataCol
 
 
-# ===================================================================
-# Those functions are left for architecture referencing purpose only.
-# ===================================================================
+def _calc_key_time_nq_ym(df_1k: DataFrame):
+    day_open = df_1k[PxDataCol.DATE].dt.time == pd.to_datetime("20:00").time()
+    day_close = df_1k[PxDataCol.DATE].dt.time == pd.to_datetime("13:30").time()
+
+    return df_1k[day_open | day_close]
 
 
-def is_far_from_level(value: float, levels: list[float], avg: float) -> bool:
-    return not np.any([abs(value - level) < avg for level in levels])
+def _calc_key_time_fitx_1(df_1k: DataFrame) -> DataFrame:
+    day_open = df_1k[PxDataCol.DATE].dt.time == pd.to_datetime("00:45").time()
+    day_close = df_1k[PxDataCol.DATE].dt.time == pd.to_datetime("05:30").time()
+
+    return df_1k[day_open | day_close]
 
 
-def support_resistance_fractal(df: DataFrame, min_gap: float) -> list[float]:
-    series_high = df[PxDataCol.HIGH].tolist()
-    series_low = df[PxDataCol.LOW].tolist()
-
-    def is_bullish_fractal(i: int):
-        return (
-            series_low[i] < series_low[i - 1] < series_low[i - 2]
-            and series_low[i] < series_low[i + 1] < series_low[i + 2]
-        )
-
-    def is_bearish_fractal(i: int):
-        return (
-            series_high[i] > series_high[i - 1] < series_high[i - 2]
-            and series_high[i] > series_high[i + 1] > series_high[i + 2]
-        )
-
-    levels = []
-
-    for i in reversed(range(2, len(df.index) - 3)):
-        if is_bullish_fractal(i):
-            low = series_low[i]
-            if is_far_from_level(low, levels, min_gap):
-                levels.append(low)
-        elif is_bearish_fractal(i):
-            high = series_high[i]
-            if is_far_from_level(high, levels, min_gap):
-                levels.append(high)
-
-    return sorted(levels)
+_calc_function_map: dict[str, Callable[[DataFrame], DataFrame]] = {
+    "NQ": _calc_key_time_nq_ym,
+    "YM": _calc_key_time_nq_ym,
+    "FITX": _calc_key_time_fitx_1,
+}
 
 
-def support_resistance_window(df: DataFrame, min_gap: float) -> list[float]:
-    levels = []
-    max_list = []
-    min_list = []
+def support_resistance_range_of_2_close(df_1k: DataFrame, symbol: str) -> list[list[float]]:
+    if calc_key_time := _calc_function_map.get(symbol):
+        df_selected = calc_key_time(df_1k)
+    else:
+        raise ValueError(f"Symbol `{symbol}` does not have key time picking logic")
 
-    series_high = df[PxDataCol.HIGH].tolist()
-    series_low = df[PxDataCol.LOW].tolist()
+    values_dict = df_selected.groupby(PxDataCol.DATE_MARKET)[PxDataCol.OPEN].apply(list).to_dict()
+    levels: list[list[float]] = []
 
-    for i in reversed(range(5, len(df.index) - 6)):
-        # taking a window of 9 candles
-        current_max = max(series_high[i - 5:i + 4])
+    for level_pair in values_dict.values():
+        if len(level_pair) != 2:
+            continue  # Pair incomplete - skip
 
-        # if we find a new maximum value, empty the max_list
-        if current_max not in max_list:
-            max_list = []
+        higher = max(level_pair)
+        lower = min(level_pair)
 
-        max_list.append(current_max)
+        diff = higher - lower
 
-        # if the maximum value remains the same after shifting 5 times
-        if len(max_list) == 5 and is_far_from_level(current_max, levels, min_gap):
-            levels.append(current_max)
+        levels_group = []
+        levels_group.extend([lower - diff * diff_mult for diff_mult in range(8)])
+        levels_group.extend([higher + diff * diff_mult for diff_mult in range(8)])
 
-        current_min = min(series_low[i - 5:i + 5])
+        levels.append(sorted(levels_group))
 
-        if current_min not in min_list:
-            min_list = []
-
-        min_list.append(current_min)
-
-        if len(min_list) == 5 and is_far_from_level(current_min, levels, min_gap):
-            levels.append(current_min)
-
-    return sorted(levels)
+    return levels

@@ -39,8 +39,6 @@ class TouchanceApiClient(QuoteAPI, ABC):
         try:
             match message.data_type:
                 case "REALTIME":
-                    print_log(str(message.body))
-
                     data = RealtimeData(message)
 
                     if not data.is_valid:

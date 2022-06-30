@@ -1,7 +1,7 @@
 import threading
 from abc import ABC, abstractmethod
 
-from kl_site_common.utils import print_error, print_warning
+from kl_site_common.utils import print_error, print_log, print_warning
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 
 from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData
@@ -39,6 +39,8 @@ class TouchanceApiClient(QuoteAPI, ABC):
         try:
             match message.data_type:
                 case "REALTIME":
+                    print_log(str(message.body))
+
                     data = RealtimeData(message)
 
                     if not data.is_valid:

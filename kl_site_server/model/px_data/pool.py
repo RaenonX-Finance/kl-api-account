@@ -1,10 +1,9 @@
 from typing import TYPE_CHECKING
 
-import numpy as np
 from pandas import DataFrame
 
+from kl_site_server.calc import calc_pool
 from tcoreapi_mq.message import RealtimeData
-from .calc import calc_market_date, calc_strength
 from .const import SYMBOL_NAMES
 from .model import PxData
 
@@ -13,19 +12,12 @@ if TYPE_CHECKING:
 
 
 class PxDataPool:
-    def _proc_df(self):
-        self.dataframe = calc_market_date(self.dataframe, self.symbol)
-        self.dataframe = calc_strength(self.dataframe)
-
-        # Remove NaNs
-        self.dataframe = self.dataframe.fillna(np.nan)
-
     def __init__(
-            self, *,
-            symbol: str,
-            bars: list["BarDataDict"],
-            min_tick: float,
-            latest_market: RealtimeData,
+        self, *,
+        symbol: str,
+        bars: list["BarDataDict"],
+        min_tick: float,
+        latest_market: RealtimeData,
     ):
         if not bars:
             raise ValueError(f"PxData should be initialized with data ({symbol} @ Pool)")
@@ -39,7 +31,7 @@ class PxDataPool:
         self.latest_market: RealtimeData | None = latest_market
 
         self.dataframe: DataFrame = DataFrame(bars)
-        self._proc_df()
+        self.dataframe = calc_pool(self.dataframe, self.symbol)
 
     def to_px_data(self, period_min: int) -> PxData:
         return PxData(pool=self, period_min=period_min)

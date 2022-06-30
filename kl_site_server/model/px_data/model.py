@@ -1,38 +1,27 @@
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-import numpy as np
 from pandas import DataFrame, Series
 
 from kl_site_common.utils import print_log
-from kl_site_server.calc import calc_support_resistance_levels
+from kl_site_server.calc import aggregate_df, calc_model, calc_support_resistance_levels
 from kl_site_server.enums import PxDataCol
-from .calc import aggregate_df, calc_candlestick, calc_diff, calc_ema, calc_tie_point
 
 if TYPE_CHECKING:
     from kl_site_server.model import PxDataPool
 
 
 class PxData:
-    def _proc_df(self):
-        self.dataframe = calc_diff(self.dataframe)
-        self.dataframe = calc_candlestick(self.dataframe)
-        self.dataframe = calc_ema(self.dataframe)
-        self.dataframe = calc_tie_point(self.dataframe, self.period_min)
-
-        # Remove NaNs
-        self.dataframe = self.dataframe.fillna(np.nan).replace([np.nan], [None])
-
     def __init__(
-            self, *,
-            pool: "PxDataPool",
-            period_min: int,
+        self, *,
+        pool: "PxDataPool",
+        period_min: int,
     ):
         self.pool: "PxDataPool" = pool
         self.period_min: int = period_min
 
         self.dataframe: DataFrame = aggregate_df(pool.dataframe, period_min)
-        self._proc_df()
+        self.dataframe = calc_model(self.dataframe, period_min)
 
         self.sr_levels_data = calc_support_resistance_levels(self.dataframe)
 

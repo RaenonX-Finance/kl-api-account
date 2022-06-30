@@ -6,7 +6,7 @@ from kl_site_common.const import (
     INDICATOR_EMA_PERIODS,
 )
 from kl_site_server.enums import PxDataCol
-from .px_data_market import PxDataMarket, from_realtime_data
+from .px_data_market import PxDataMarket, from_realtime_data_single
 from .utils import df_rows_to_list_of_data
 
 if TYPE_CHECKING:
@@ -131,7 +131,7 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         # Sending initial data also calls this method
         # In this case, `latest_market` will be `None` since no market data has received yet
         "latestMarket": (
-            from_realtime_data(px_data.pool.latest_market)
+            from_realtime_data_single(px_data.pool.latest_market)
             if px_data.pool.latest_market
             else _from_px_data_last_bar_to_latest_market(px_data)
         ),

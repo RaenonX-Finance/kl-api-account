@@ -25,7 +25,7 @@ class OnPxDataUpdatedEvent:
 
 @dataclass(kw_only=True)
 class OnMarketDataReceivedEvent:
-    data: RealtimeData
+    data: dict[str, RealtimeData]  # Security / Data
 
     def __str__(self):
-        return f"{self.data.security} - {self.data.last_px:.2f}"
+        return " / ".join(f"{data.security} @ {data.last_px:.2f}" for data in self.data.values())

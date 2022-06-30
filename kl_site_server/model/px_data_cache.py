@@ -109,25 +109,15 @@ class PxDataCacheEntry:
 class PxDataCache:
     data: DefaultDict[str, PxDataCacheEntry | None] = field(init=False)
 
-    last_market_update: DefaultDict[str, float | None] = field(
-        init=False,
-        default_factory=lambda: defaultdict(lambda: None)
-    )
-    last_complete_update: DefaultDict[str, float | None] = field(
-        init=False,
-        default_factory=lambda: defaultdict(lambda: None)
-    )
+    last_market_update: float | None = field(init=False, default=None)
+    last_complete_update: float | None = field(init=False, default=None)
 
-    allow_force_send_once_market: DefaultDict[str, bool] = field(
-        init=False,
-        default_factory=lambda: defaultdict(lambda: False),
-    )
-    allow_force_send_once_complete: DefaultDict[str, bool] = field(
-        init=False,
-        default_factory=lambda: defaultdict(lambda: False),
-    )
+    allow_force_send_once_market: bool = field(init=False, default=False)
+    allow_force_send_once_complete: bool = field(init=False, default=False)
 
     period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
+
+    buffer_market_data: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
 
     def __post_init__(self):
         self.data = defaultdict(lambda: None)
@@ -147,10 +137,10 @@ class PxDataCache:
         )
         self.period_mins[symbol_complete] = period_mins
 
-    def _mark_force_send_once(self, symbol_complete: str) -> None:
+    def _mark_force_send_once(self) -> None:
         # Not marking market data to force send
         # because the latest market data will also be updated in the completed one
-        self.allow_force_send_once_complete[symbol_complete] = True
+        self.allow_force_send_once_complete = True
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.handshake.symbol_complete
@@ -160,7 +150,7 @@ class PxDataCache:
         )
         self.data[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_list)
 
-        self._mark_force_send_once(symbol_complete)
+        self._mark_force_send_once()
 
     def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
         self.data[data.symbol_complete].update_latest_market(data)
@@ -169,49 +159,53 @@ class PxDataCache:
         symbol_complete = data.symbol_complete
 
         if self.data[symbol_complete].update_latest(data.last_px):
-            self._mark_force_send_once(symbol_complete)
+            self._mark_force_send_once()
 
     def is_no_market_data_update(self, symbol_complete: str) -> bool:
         # > 3 secs no incoming market data
         return (
                 self.last_market_update is not None
-                and time.time() - self.last_market_update[symbol_complete] > 3
+                and time.time() - self.last_market_update > 3
                 and self.is_px_data_ready(symbol_complete)
         )
 
     def is_send_market_data_ok(self, symbol_complete: str) -> bool:
-        if self.allow_force_send_once_market[symbol_complete]:
-            self.allow_force_send_once_market[symbol_complete] = False
+        if self.allow_force_send_once_market:
+            self.allow_force_send_once_market = False
             return True
 
         if not self.is_px_data_ready(symbol_complete):
             return False
 
-        if self.last_market_update[symbol_complete] is None:
+        if self.last_market_update is None:
             # First market data transmission
             return True
 
-        return time.time() - self.last_market_update[symbol_complete] > DATA_PX_UPDATE_MARKET_SEC
+        return time.time() - self.last_market_update > DATA_PX_UPDATE_MARKET_SEC
 
     def is_send_complete_data_ok(self, symbol_complete: str) -> bool:
-        if self.allow_force_send_once_complete[symbol_complete]:
-            self.allow_force_send_once_complete[symbol_complete] = False
+        if self.allow_force_send_once_complete:
+            self.allow_force_send_once_complete = False
             return True
 
         if not self.is_px_data_ready(symbol_complete):
             return False
 
-        if self.last_complete_update[symbol_complete] is None:
+        if self.last_complete_update is None:
             # First market data transmission
             return True
 
-        return time.time() - self.last_complete_update[symbol_complete] > DATA_PX_UPDATE_SEC
+        return time.time() - self.last_complete_update > DATA_PX_UPDATE_SEC
 
-    def mark_market_data_sent(self, symbol_complete: str) -> None:
-        self.last_market_update[symbol_complete] = time.time()
+    def rec_buffer_market_data(self, data: RealtimeData):
+        self.buffer_market_data[data.security] = data
 
-    def mark_complete_data_sent(self, symbol_complete: str) -> None:
-        self.last_complete_update[symbol_complete] = time.time()
+    def mark_market_data_sent(self) -> None:
+        self.last_market_update = time.time()
+        self.buffer_market_data = {}
+
+    def mark_complete_data_sent(self) -> None:
+        self.last_complete_update = time.time()
 
     def complete_px_data_to_send(self, symbol_complete: str) -> Iterable[tuple[PxData, float]]:
         if not self.is_send_complete_data_ok(symbol_complete):

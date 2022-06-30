@@ -57,21 +57,22 @@ class TouchanceDataClient(TouchanceApiClient):
             )
 
         if complete_px_sent:
-            self._px_data_cache.mark_complete_data_sent(symbol_complete)
+            self._px_data_cache.mark_complete_data_sent()
             print_log(f"[TC Client] {complete_px_sent} complete Px data of [yellow]{symbol_complete}[/yellow] sent")
 
         return complete_px_sent > 0
 
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
         if not self._px_data_cache.is_send_market_data_ok(symbol_complete):
+            self._px_data_cache.rec_buffer_market_data(data)
             return
-
-        self._px_data_cache.mark_market_data_sent(symbol_complete)
 
         execute_async_function(
             on_px_data_updated_market,
-            OnMarketDataReceivedEvent(data=data),
+            OnMarketDataReceivedEvent(data=self._px_data_cache.buffer_market_data | {data.security: data}),
         )
+
+        self._px_data_cache.mark_market_data_sent()
 
     def on_received_history_data(self, data: HistoryData) -> None:
         _start = time.time()

@@ -193,9 +193,9 @@
     },
     "indicator": {
       "type": "object",
-      "description": "Logging related settings.",
+      "description": "Indicator related settings.",
       "required": [
-        "ema-color-change",
+        "ema-strong-sr",
         "ema-net"
       ],
       "additionalProperties": false,
@@ -221,14 +221,14 @@
             }
           }
         },
-        "ema-color-change": {
+        "ema-strong-sr": {
           "type": "array",
-          "description": "EMA period pairs to use for color changing EMAs.",
+          "description": "EMA period pairs to use for EMA pairs that provide strong support/resistance.",
           "minItems": 1,
           "uniqueItems": true,
           "items": {
             "type": "object",
-            "description": "Available pairs for color changing EMAs.",
+            "description": "Available pairs for strong S/R EMA period pairs.",
             "required": [
               "fast",
               "slow"

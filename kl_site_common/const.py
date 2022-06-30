@@ -77,13 +77,13 @@ def _extract_ema_periods(pair: EmaPeriodPair) -> set[int]:
 
 
 EMA_PERIOD_PAIR_NET: EmaPeriodPair = _CONFIG_INDICATOR["ema-net"]
-EMA_PERIOD_PAIRS_COLOR_CHANGE: list[EmaPeriodPair] = _CONFIG_INDICATOR["ema-color-change"]
+EMA_PERIOD_PAIRS_STRONG_SR: list[EmaPeriodPair] = _CONFIG_INDICATOR["ema-strong-sr"]
 
 INDICATOR_EMA_PERIODS: set[int] = \
     _extract_ema_periods(EMA_PERIOD_PAIR_NET) | \
     {
         period
-        for pair in EMA_PERIOD_PAIRS_COLOR_CHANGE
+        for pair in EMA_PERIOD_PAIRS_STRONG_SR
         for period in _extract_ema_periods(pair)
     }
 

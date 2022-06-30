@@ -42,7 +42,7 @@ indicator:
   ema-net:
     fast: 10
     slow: 34
-  ema-color-change:
+  ema-strong-sr:
     - fast: 144
       slow: 169
     - fast: 576

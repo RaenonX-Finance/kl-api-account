@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import Callable
 
 import numpy as np
+import pandas as pd
 from pandas import DataFrame, DatetimeIndex, to_datetime
 
 from kl_site_server.enums import PxDataCol
@@ -9,7 +10,7 @@ from kl_site_server.enums import PxDataCol
 
 def _calc_market_date_nq_ym(df_1k: DataFrame):
     df_1k[PxDataCol.DATE_MARKET] = to_datetime(np.where(
-        df_1k[PxDataCol.DATE].dt.hour < 22,
+        df_1k[PxDataCol.DATE].dt.time < pd.to_datetime("22:00").time(),
         df_1k[PxDataCol.DATE].dt.date,
         df_1k[PxDataCol.DATE].dt.date + timedelta(days=1)
     ))
@@ -17,9 +18,9 @@ def _calc_market_date_nq_ym(df_1k: DataFrame):
 
 def _calc_market_date_fitx(df_1k: DataFrame):
     df_1k[PxDataCol.DATE_MARKET] = to_datetime(np.where(
-        (df_1k[PxDataCol.DATE].dt.hour <= 0) & df_1k[PxDataCol.DATE].dt.minute < 45,
+        df_1k[PxDataCol.DATE].dt.time >= pd.to_datetime("00:45").time(),
         df_1k[PxDataCol.DATE].dt.date,
-        df_1k[PxDataCol.DATE].dt.date + timedelta(days=1)
+        df_1k[PxDataCol.DATE].dt.date - timedelta(days=1)
     ))
 
 

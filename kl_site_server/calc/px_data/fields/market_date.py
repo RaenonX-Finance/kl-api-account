@@ -1,26 +1,29 @@
-from datetime import timedelta
 from typing import Callable
 
 import numpy as np
 import pandas as pd
 from pandas import DataFrame, DatetimeIndex, to_datetime
+from pandas.tseries.offsets import BDay
 
 from kl_site_server.enums import PxDataCol
+
+
+# + BDay(0) because `df_1k[PxDataCol.DATE].dt.date` somehow gives int, causing `to_datetime` error
 
 
 def _calc_market_date_nq_ym(df_1k: DataFrame):
     df_1k[PxDataCol.DATE_MARKET] = to_datetime(np.where(
         df_1k[PxDataCol.DATE].dt.time < pd.to_datetime("22:00").time(),
-        df_1k[PxDataCol.DATE].dt.date,
-        df_1k[PxDataCol.DATE].dt.date + timedelta(days=1)
+        df_1k[PxDataCol.DATE].dt.date + BDay(0),
+        df_1k[PxDataCol.DATE].dt.date + BDay(1),
     ))
 
 
 def _calc_market_date_fitx(df_1k: DataFrame):
     df_1k[PxDataCol.DATE_MARKET] = to_datetime(np.where(
         df_1k[PxDataCol.DATE].dt.time >= pd.to_datetime("00:45").time(),
-        df_1k[PxDataCol.DATE].dt.date,
-        df_1k[PxDataCol.DATE].dt.date - timedelta(days=1)
+        df_1k[PxDataCol.DATE].dt.date + BDay(0),
+        df_1k[PxDataCol.DATE].dt.date - BDay(1),
     ))
 
 

@@ -34,3 +34,5 @@ class PxDataCol:
     STRENGTH = "strength"
     CANDLESTICK_DIR = "candlestick_dir"
     TIE_POINT = "tie_point"
+
+    AUTO_SR_GROUP_BASIS = "auto_sr_group_basis"

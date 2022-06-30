@@ -99,11 +99,6 @@ class QuoteAPI(TCoreZMQ):
 
         Parameters originated from the subscription data of ``subscribe_history()``.
         """
-        print_log(
-            f"[TC Quote] Getting paged historical data of [yellow]{symbol_complete}[/yellow] "
-            f"at [yellow]{interval}[/yellow] (#{query_idx} / {start} ~ {end})"
-        )
-
         with self.lock:
             req = GetPxHistoryRequest(
                 session_key=self.session_key,
@@ -118,6 +113,10 @@ class QuoteAPI(TCoreZMQ):
             return GetPxHistoryMessage(message=self.socket.get_message())
 
     def complete_get_history(self, symbol_complete: str, interval: HistoryInterval, start: str, end: str):
+        print_log(
+            f"[TC Quote] Historical data fetching completed for [yellow]{symbol_complete}[/yellow] "
+            f"at [yellow]{interval}[/yellow]"
+        )
         with self.lock:
             req = CompletePxHistoryRequest(
                 session_key=self.session_key,

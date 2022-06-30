@@ -3,6 +3,7 @@ from typing import Callable
 import pandas as pd
 from pandas import DataFrame
 
+from kl_site_common.const import SR_LEVEL_MIN_DIFF
 from kl_site_server.enums import PxDataCol
 
 
@@ -46,8 +47,10 @@ def support_resistance_range_of_2_close(df_1k: DataFrame, symbol: str) -> list[l
         diff = higher - lower
 
         levels_group = []
-        levels_group.extend([lower - diff * diff_mult for diff_mult in range(8)])
-        levels_group.extend([higher + diff * diff_mult for diff_mult in range(8)])
+
+        if diff >= SR_LEVEL_MIN_DIFF:
+            levels_group.extend([lower - diff * diff_mult for diff_mult in range(8)])
+            levels_group.extend([higher + diff * diff_mult for diff_mult in range(8)])
 
         levels.append(sorted(levels_group))
 

@@ -235,6 +235,21 @@
               }
             }
           }
+        },
+        "sr-level": {
+          "type": "object",
+          "description": "S/R level calculation settings.",
+          "required": [
+            "min-diff"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "min-diff": {
+              "type": "number",
+              "description": "Minimum difference between levels.",
+              "exclusiveMinimum": 0
+            },
+          }
         }
       }
     }

@@ -26,15 +26,7 @@ data:
       symbol: FITX
       expiry: HOT
   sr-level:
-    custom:
-      FITX:
-        - level: 16303
-        - level: 16320
-        - level: 16356
-        - level: 16400
-        - level: 16461
-        - level: 16505
-        - level: 16620
+    custom: {}
 
 indicator:
   ema-net:
@@ -45,3 +37,5 @@ indicator:
       slow: 169
     - fast: 576
       slow: 676
+  sr-level:
+    min-diff: 35

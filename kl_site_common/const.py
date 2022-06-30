@@ -86,4 +86,8 @@ INDICATOR_EMA_PERIODS: set[int] = \
         for period in _extract_ema_periods(pair)
     }
 
+
+_CONFIG_INDICATOR_SR_LEVEL = _CONFIG_INDICATOR["sr-level"]
+SR_LEVEL_MIN_DIFF = _CONFIG_INDICATOR_SR_LEVEL["min-diff"]
+
 # endregion

@@ -21,7 +21,7 @@ def start_server_app():
         params = TouchancePxRequestParams(
             symbol_obj=symbol_obj,
             period_mins=[1, 5],
-            history_range=(latest_date - timedelta(days=5), latest_date),
+            history_range=(latest_date - timedelta(days=7), latest_date),
         )
 
         client.request_px_data(params)

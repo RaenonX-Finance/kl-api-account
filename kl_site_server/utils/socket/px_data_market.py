@@ -17,7 +17,7 @@ class PxDataMarketSingle(TypedDict):
 PxDataMarket: TypeAlias = dict[str, PxDataMarketSingle]
 
 
-def from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
+def _from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
     return {
         "symbol": data.security,
         "open": data.open,
@@ -29,8 +29,12 @@ def from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
     }
 
 
-def to_socket_message_px_data_market(data: dict[str, RealtimeData]) -> str:
-    return json.dumps({
-        security: from_realtime_data_single(data_single)
+def _from_realtime_data_dict(data: dict[str, RealtimeData]) -> PxDataMarket:
+    return {
+        security: _from_realtime_data_single(data_single)
         for security, data_single in data.items()
-    })
+    }
+
+
+def to_socket_message_px_data_market(data: dict[str, RealtimeData]) -> str:
+    return json.dumps(_from_realtime_data_dict(data))

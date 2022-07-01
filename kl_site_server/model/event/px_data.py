@@ -9,18 +9,16 @@ if TYPE_CHECKING:
 
 @dataclass(kw_only=True)
 class OnPxDataUpdatedEvent:
-    px_data: "PxData"
+    px_data_list: list["PxData"]
 
-    proc_sec: float
+    proc_sec_list: list[float]
 
     def __str__(self):
-        return (
-            f"{self.px_data.pool.symbol} - "
-            f"{self.px_data.current_close:.2f} / "
-            f"{self.px_data.latest_time} @ {self.px_data.period_min} / "
-            f"{self.proc_sec:.3f} s / "
-            f"{self.px_data.data_count}"
-        )
+        return " / ".join((
+            f"{px_data.pool.symbol} @ {px_data.current_close:.2f} - "
+            f"{px_data.latest_time.strftime('%m-%d %H:%M')} ({px_data.period_min}) - "
+            f"{proc_sec:.3f} s ({px_data.data_count})"
+        ) for px_data, proc_sec in zip(self.px_data_list, self.proc_sec_list))
 
 
 @dataclass(kw_only=True)

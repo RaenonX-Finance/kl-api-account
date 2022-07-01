@@ -107,7 +107,7 @@ class PxDataCacheEntry:
 
 @dataclass(kw_only=True)
 class PxDataCache:
-    data: DefaultDict[str, PxDataCacheEntry | None] = field(init=False)
+    data: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
     last_market_update: float | None = field(init=False, default=None)
     last_complete_update: float | None = field(init=False, default=None)
@@ -118,9 +118,6 @@ class PxDataCache:
     period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
 
     buffer_market_data: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
-
-    def __post_init__(self):
-        self.data = defaultdict(lambda: None)
 
     @property
     def px_cache_entries(self) -> Iterable[PxDataCacheEntry]:
@@ -207,11 +204,23 @@ class PxDataCache:
     def mark_complete_data_sent(self) -> None:
         self.last_complete_update = time.time()
 
-    def complete_px_data_to_send(self, symbol_complete: str) -> Iterable[tuple[PxData, float]]:
-        if not self.is_send_complete_data_ok(symbol_complete):
-            return []
+    def complete_px_data_to_send(self, symbol_complete: str) -> tuple[list[PxData], list[float]]:
+        px_data_list = []
+        proc_sec_list = []
 
-        return self.data[symbol_complete].to_px_data(self.period_mins[symbol_complete]).values()
+        for symbol_complete_data, px_cache_entry in self.data.items():
+            if not px_cache_entry.is_ready:
+                print_warning(
+                    f"[Server] Complete data of [yellow]{symbol_complete_data}[/yellow] not ready, "
+                    f"skipped processing"
+                )
+                continue
+
+            for px_data, proc_sec in px_cache_entry.to_px_data(self.period_mins[symbol_complete]).values():
+                px_data_list.append(px_data)
+                proc_sec_list.append(proc_sec)
+
+        return px_data_list, proc_sec_list
 
     def is_px_data_ready(self, symbol_complete: str) -> bool:
         return self.data[symbol_complete].is_ready

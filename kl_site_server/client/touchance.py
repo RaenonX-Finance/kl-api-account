@@ -1,7 +1,7 @@
 import time
 from typing import Iterable
 
-from kl_site_common.utils import execute_async_function, print_log, print_warning
+from kl_site_common.utils import execute_async_function, print_warning
 from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_market
 from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent, PxData, PxDataCache, TouchancePxRequestParams,
@@ -46,21 +46,20 @@ class TouchanceDataClient(TouchanceApiClient):
         )
 
     def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
-        complete_px_sent = 0
+        if not self._px_data_cache.is_send_complete_data_ok(symbol_complete):
+            return False
 
-        for px_data, proc_sec_single in self._px_data_cache.complete_px_data_to_send(symbol_complete):
-            complete_px_sent += 1
+        px_data_list, proc_sec_list = self._px_data_cache.complete_px_data_to_send(symbol_complete)
 
-            execute_async_function(
-                on_px_data_updated,
-                OnPxDataUpdatedEvent(px_data=px_data, proc_sec=proc_sec_offset + proc_sec_single),
-            )
+        proc_sec_list = [proc_sec + proc_sec_offset for proc_sec in proc_sec_list]
 
-        if complete_px_sent:
-            self._px_data_cache.mark_complete_data_sent()
-            print_log(f"[TC Client] {complete_px_sent} complete Px data of [yellow]{symbol_complete}[/yellow] sent")
+        execute_async_function(
+            on_px_data_updated,
+            OnPxDataUpdatedEvent(px_data_list=px_data_list, proc_sec_list=proc_sec_list),
+        )
 
-        return complete_px_sent > 0
+        self._px_data_cache.mark_complete_data_sent()
+        return True
 
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
         if not self._px_data_cache.is_send_market_data_ok(symbol_complete):

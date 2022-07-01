@@ -6,3 +6,5 @@ class SocketEvent:
     PX_UPDATED_MARKET = "pxUpdatedMarket"
 
     ERROR = "error"
+
+    PING = "ping"

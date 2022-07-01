@@ -18,6 +18,9 @@ def calc_model(df: DataFrame, period_min: int) -> DataFrame:
     # Remove NaNs
     df = df.fillna(np.nan).replace([np.nan], [None])
 
+    # Keep last 1000 rows only
+    df = df.tail(1000)
+
     return df
 
 

@@ -112,7 +112,6 @@ class PxDataCache:
     last_market_update: float | None = field(init=False, default=None)
     last_complete_update: float | None = field(init=False, default=None)
 
-    allow_force_send_once_market: bool = field(init=False, default=False)
     allow_force_send_once_complete: bool = field(init=False, default=False)
 
     period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
@@ -167,10 +166,6 @@ class PxDataCache:
         )
 
     def is_send_market_data_ok(self, symbol_complete: str) -> bool:
-        if self.allow_force_send_once_market:
-            self.allow_force_send_once_market = False
-            return True
-
         if not self.is_px_data_ready(symbol_complete):
             return False
 

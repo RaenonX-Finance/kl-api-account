@@ -35,8 +35,11 @@ def print_error(message: str):
     print_console(console_error, "INFO", message, timestamp_color="red")
 
 
-def print_socket_event(event: str, additional: str = ""):
+def print_socket_event(event: str, *, session_id: str, additional: str = ""):
     message = f"[Socket] Received `[purple]{event}[/purple]`"
+
+    if session_id:
+        message += f" - SID: [yellow]{session_id}[/yellow]"
 
     if additional:
         message += f" - {additional}"

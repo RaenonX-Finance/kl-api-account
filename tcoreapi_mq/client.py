@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_error, print_warning
-from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData
+from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData, SystemTimeData
 from .quote_api import QuoteAPI
 from .utils import create_subscription_receiver_socket
 
@@ -28,6 +28,11 @@ class TouchanceApiClient(QuoteAPI, ABC):
 
         Note that this event does NOT re-trigger even if the candlestick/data is renewed.
         """
+        raise NotImplementedError()
+
+    @abstractmethod
+    def on_system_time_min_change(self, data: SystemTimeData) -> None:
+        """This method is triggered exactly every minute."""
         raise NotImplementedError()
 
     @abstractmethod
@@ -94,6 +99,8 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         )
                 case "PING" | "UNSUBQUOTE":
                     pass
+                case "SYSTEMTIME":
+                    self.on_system_time_min_change(SystemTimeData(message))
                 case _:
                     print_warning(f"[TC API] Unknown message data type: {message.data_type}")
         except Exception as e:

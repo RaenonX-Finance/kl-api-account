@@ -7,7 +7,7 @@ from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent, PxData, PxDataCache, TouchancePxRequestParams,
 )
 from tcoreapi_mq.client import TouchanceApiClient
-from tcoreapi_mq.message import HistoryData, RealtimeData
+from tcoreapi_mq.message import HistoryData, RealtimeData, SystemTimeData
 
 
 class TouchanceDataClient(TouchanceApiClient):
@@ -99,6 +99,9 @@ class TouchanceDataClient(TouchanceApiClient):
         if not self.send_complete_px_data(data.symbol_complete, 0):
             # Only send market px data if none of complete px data is sent
             self.send_market_px_data(data.symbol_complete, data)
+
+    def on_system_time_min_change(self, data: SystemTimeData) -> None:
+        pass
 
     def on_error(self, message: str) -> None:
         e = OnErrorEvent(message=message)

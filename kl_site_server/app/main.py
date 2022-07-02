@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from typing import Type
 
 from kl_site_common.utils import print_log
 from kl_site_server.client import TouchanceDataClient
@@ -11,8 +12,8 @@ from .socket import register_handlers
 latest_date: datetime = datetime.utcnow() + timedelta(hours=1)
 
 
-def start_server_app():
-    client = TouchanceDataClient()
+def start_server_app(client_cls: Type[TouchanceDataClient] | None = TouchanceDataClient):
+    client = client_cls()
 
     client.start()
 

@@ -12,8 +12,18 @@ rich
 # Config file
 pyyaml
 jsonschema
+python-dotenv
 
 # Server
 fastapi[all]
 fastapi-socketio
 uvicorn[standard]
+
+# Database
+# > Do NOT install `bson` here as `pymongo` installs its own `bson`.
+pymongo
+
+# Security
+python-jose[cryptography]
+passlib[bcrypt]
+pydantic

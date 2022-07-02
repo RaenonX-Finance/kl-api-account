@@ -1,8 +1,22 @@
+# Development
 venv/
-.idea/
 sandbox*.py
+.env
+
+# Project file
+.idea/
+
+# Endpoint testing
 *.http
+
+# Compiled files
 __pycache__/
-.wakatime-project
+
+# Data files
 *.csv
+
+# Server config
 config-override.yaml
+
+# Miscellaneous
+.wakatime-project

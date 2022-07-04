@@ -2,6 +2,7 @@
 venv/
 sandbox*.py
 .env
+.mongo
 
 # Project file
 .idea/

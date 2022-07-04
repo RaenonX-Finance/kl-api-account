@@ -82,7 +82,7 @@ async def authenticate_user_by_credentials(form_data: OAuth2PasswordRequestForm 
         raise generate_unauthorized_exception("User not exists")
 
     if not is_password_match(form_data.password, user.hashed_password):
-        raise generate_unauthorized_exception(f"Incorrect password")
+        raise generate_unauthorized_exception("Incorrect password")
 
     return user
 

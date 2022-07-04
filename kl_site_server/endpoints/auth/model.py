@@ -14,8 +14,8 @@ class UserDataModel(BaseModel):
     """User data model. This does not and should not contain account secret, such as password."""
     id: PyObjectId | None = Field(default_factory=PyObjectId, alias="_id")
     account_id: str = Field(..., description="Account ID.")
-    email: EmailStr | None = Field(description="User email.")
-    expiry: datetime | None = Field(description="Account membership expiry.")
+    email: EmailStr | None = Field(None, description="User email.")
+    expiry: datetime | None = Field(None, description="Account membership expiry.")
     blocked: bool = Field(False, description="If the account is blocked. Blocked account does not have access.")
     admin: bool = Field(False, description="If the account holder is an admin. Admin has all possible permissions.")
     permissions: list[Literal[Permission]] = Field(

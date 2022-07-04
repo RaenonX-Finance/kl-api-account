@@ -82,27 +82,15 @@ class PxDataCacheEntry:
 
         return current > bar_current[PxDataCol.HIGH] or current < bar_current[PxDataCol.LOW]
 
-    def to_px_data(self, period_mins: list[int]) -> dict[int, tuple[PxData, float]]:
-        _start_pool = time.time()
+    def to_px_data(self, period_mins: list[int]) -> list[PxData]:
         pool = PxDataPool(
             symbol=self.symbol,
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
             latest_market=self.latest_market,
         )
-        proc_time_pool = time.time() - _start_pool
 
-        ret = {}
-
-        for period_min in period_mins:
-            _start = time.time()
-
-            ret[period_min] = (
-                pool.to_px_data(period_min),
-                proc_time_pool + (time.time() - _start)
-            )
-
-        return ret
+        return [pool.to_px_data(period_min) for period_min in period_mins]
 
 
 @dataclass(kw_only=True)
@@ -199,9 +187,8 @@ class PxDataCache:
     def mark_complete_data_sent(self) -> None:
         self.last_complete_update = time.time()
 
-    def complete_px_data_to_send(self, symbol_complete: str) -> tuple[list[PxData], list[float]]:
+    def complete_px_data_to_send(self, symbol_complete: str) -> list[PxData]:
         px_data_list = []
-        proc_sec_list = []
 
         for symbol_complete_data, px_cache_entry in self.data.items():
             if not px_cache_entry.is_ready:
@@ -211,11 +198,10 @@ class PxDataCache:
                 )
                 continue
 
-            for px_data, proc_sec in px_cache_entry.to_px_data(self.period_mins[symbol_complete]).values():
+            for px_data in px_cache_entry.to_px_data(self.period_mins[symbol_complete]):
                 px_data_list.append(px_data)
-                proc_sec_list.append(proc_sec)
 
-        return px_data_list, proc_sec_list
+        return px_data_list
 
     def is_px_data_ready(self, symbol_complete: str) -> bool:
         return self.data[symbol_complete].is_ready

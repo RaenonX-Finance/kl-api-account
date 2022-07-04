@@ -41,21 +41,21 @@ class TouchanceDataClient(TouchanceApiClient):
             for px_cache_entry
             in self._px_data_cache.px_cache_entries
             if px_cache_entry.is_ready
-            for px_data, _
-            in px_cache_entry.to_px_data(self._px_data_cache.period_mins[px_cache_entry.symbol_complete]).values()
+            for px_data
+            in px_cache_entry.to_px_data(self._px_data_cache.period_mins[px_cache_entry.symbol_complete])
         )
 
     def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
         if not self._px_data_cache.is_send_complete_data_ok(symbol_complete):
             return False
 
-        px_data_list, proc_sec_list = self._px_data_cache.complete_px_data_to_send(symbol_complete)
+        _start = time.time()
 
-        proc_sec_list = [proc_sec + proc_sec_offset for proc_sec in proc_sec_list]
+        px_data_list = self._px_data_cache.complete_px_data_to_send(symbol_complete)
 
         execute_async_function(
             on_px_data_updated,
-            OnPxDataUpdatedEvent(px_data_list=px_data_list, proc_sec_list=proc_sec_list),
+            OnPxDataUpdatedEvent(px_data_list=px_data_list, proc_sec=time.time() - _start + proc_sec_offset),
         )
 
         self._px_data_cache.mark_complete_data_sent()

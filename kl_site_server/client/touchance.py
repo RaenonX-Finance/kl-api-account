@@ -105,4 +105,4 @@ class TouchanceDataClient(TouchanceApiClient):
 
     def on_error(self, message: str) -> None:
         e = OnErrorEvent(message=message)
-        execute_async_function(on_error, (e,))
+        execute_async_function(on_error, e)

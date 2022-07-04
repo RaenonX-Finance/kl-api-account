@@ -105,6 +105,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     print_warning(f"[TC API] Unknown message data type: {message.data_type}")
         except Exception as e:
             print_error(f"[TC API] Error occurred on message received: {message.body}")
+            self.on_error(f"Error occurred on receiving message type: {message.data_type} ({e.args})")
             raise e
 
     def _quote_subscription_loop(self, sub_port: int):

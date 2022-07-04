@@ -2,7 +2,7 @@ import secrets
 from datetime import timedelta
 
 import pymongo.errors
-from fastapi import Body, Depends
+from fastapi import Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError
 
@@ -106,7 +106,7 @@ async def generate_validation_secrets(
     return model
 
 
-async def signup_user_ensure_unique(user: UserSignupModel = Body(...)) -> UserSignupModel:
+async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSignupModel:
     if auth_db_users.count_documents({}) == 0:
         auth_db_users.insert_one(user.to_db_user_model(admin=True).dict())
 

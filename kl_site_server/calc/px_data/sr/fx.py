@@ -22,8 +22,8 @@ def _get_bool_series_at_time(df: DataFrame, close_ts: str) -> Series:
 def _calc_key_time_add_group_basis(df: DataFrame, ts: str) -> DataFrame:
     df[PxDataCol.AUTO_SR_GROUP_BASIS] = np.where(
         _get_bool_series_at_time(df, ts),
-        df[PxDataCol.DATE_MARKET].dt.date + BDay(1),
-        df[PxDataCol.DATE_MARKET].dt.date + BDay(0),
+        df[PxDataCol.DATE_MARKET] + BDay(1),
+        df[PxDataCol.DATE_MARKET] + BDay(0),
     )
 
     return df

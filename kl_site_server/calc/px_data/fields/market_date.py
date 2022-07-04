@@ -14,16 +14,18 @@ from kl_site_server.enums import PxDataCol
 def _calc_market_date_nq_ym(df_1k: DataFrame):
     df_1k[PxDataCol.DATE_MARKET] = to_datetime(np.where(
         df_1k[PxDataCol.DATE].dt.time < pd.to_datetime("22:00").time(),
-        df_1k[PxDataCol.DATE].dt.date + BDay(0),
-        df_1k[PxDataCol.DATE].dt.date + BDay(1),
+        # Don't use `dt.date` as it changes datatype and drags the performance down
+        df_1k[PxDataCol.DATE].dt.normalize() + BDay(0),
+        df_1k[PxDataCol.DATE].dt.normalize() + BDay(1),
     ))
 
 
 def _calc_market_date_fitx(df_1k: DataFrame):
     df_1k[PxDataCol.DATE_MARKET] = to_datetime(np.where(
         df_1k[PxDataCol.DATE].dt.time >= pd.to_datetime("00:45").time(),
-        df_1k[PxDataCol.DATE].dt.date + BDay(0),
-        df_1k[PxDataCol.DATE].dt.date - BDay(1),
+        # Don't use `dt.date` as it changes datatype and drags the performance down
+        df_1k[PxDataCol.DATE].dt.normalize() + BDay(0),
+        df_1k[PxDataCol.DATE].dt.normalize() - BDay(1),
     ))
 
 

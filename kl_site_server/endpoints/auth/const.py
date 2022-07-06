@@ -11,7 +11,7 @@ from .type import Permission
 if TYPE_CHECKING:
     from .model import DbUserModel, ValidationSecretsModel
 
-auth_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
+auth_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token-doc")
 auth_crypto_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 auth_db: Database = mongo_client.get_database("auth")

@@ -11,7 +11,7 @@ data:
   stream:
     timeout-sec: 300
     px-update-sec: 2
-    px-update-market-sec: 0.15
+    px-update-market-sec: 0.1
   source:
     - type: Futures
       exchange: CME

@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends, status
 
 from .db_control import (
-    generate_access_token, generate_validation_secrets, get_active_user_by_oauth2_token,
-    signup_user,
+    generate_access_token, generate_access_token_on_doc, generate_validation_secrets,
+    get_active_user_by_oauth2_token, signup_user,
 )
 from .model import GenerateValidationSecretsModel, OAuthToken, UserDataModel, ValidationSecretsModel
 
@@ -24,6 +24,17 @@ async def get_user_data(current_user: UserDataModel = Depends(get_active_user_by
     response_model=OAuthToken
 )
 async def get_access_token_by_credentials(access_token: str = Depends(generate_access_token)) -> OAuthToken:
+    return OAuthToken(access_token=access_token, token_type="bearer")
+
+
+@auth_router.post(
+    "/token-doc",
+    description="Get an access token using account credentials. Should be used on the interactive document only.",
+    response_model=OAuthToken
+)
+async def get_access_token_by_credentials_on_doc(
+    access_token: str = Depends(generate_access_token_on_doc)
+) -> OAuthToken:
     return OAuthToken(access_token=access_token, token_type="bearer")
 
 

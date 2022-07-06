@@ -20,4 +20,8 @@ They should be self-explanatory, and should have default value set to it, unless
 
 > Run `openssl rand -hex 32` to generate.
 
+`FASTAPI_AUTH_CALLBACK`: OAuth callback URI. This is used when a user uses the `/auth/token` EP.
+
+> Throws HTTP 400 bad request if the callback URI doesn't match.
+
 `MONGO_URL`: Mongo DB connection string. This should use SRV record (`mongodb+srv://`).

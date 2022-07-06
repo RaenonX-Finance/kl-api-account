@@ -18,7 +18,7 @@ def generate_blocked_exception() -> HTTPException:
 
 def generate_bad_request_exception(message: str) -> HTTPException:
     return HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
+        status_code=status.HTTP_400_BAD_REQUEST,
         detail=message,
         headers={"WWW-Authenticate": "Bearer"},
     )

@@ -2,12 +2,12 @@ import secrets
 from datetime import timedelta
 
 import pymongo.errors
-from fastapi import Depends
+from fastapi import Body, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError
 
-from kl_site_common.env import FAST_API_AUTH_TOKEN_EXPIRY_MINS
-from .const import auth_db_users, auth_db_validation, auth_oauth2_scheme, auth_crypto_ctx
+from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FAST_API_AUTH_TOKEN_EXPIRY_MINS
+from .const import auth_crypto_ctx, auth_db_users, auth_db_validation, auth_oauth2_scheme
 from .exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
 from .model import (
     DbUserModel, OAuthTokenData, UserDataModel, UserSignupModel,
@@ -75,19 +75,41 @@ async def get_admin_user_by_oauth2_token(
     return current_user
 
 
-async def authenticate_user_by_credentials(form_data: OAuth2PasswordRequestForm = Depends()) -> DbUserModel:
-    user = await get_user_by_account_id(form_data.username)
+async def authenticate_user_by_credentials(
+    form: OAuth2PasswordRequestForm = Depends()
+) -> DbUserModel:
+    user = await get_user_by_account_id(form.username)
 
     if not user:
         raise generate_unauthorized_exception("User not exists")
 
-    if not is_password_match(form_data.password, user.hashed_password):
+    if not is_password_match(form.password, user.hashed_password):
         raise generate_unauthorized_exception("Incorrect password")
 
     return user
 
 
-async def generate_access_token(user: DbUserModel = Depends(authenticate_user_by_credentials)) -> str:
+async def generate_access_token_on_doc(user: DbUserModel = Depends(authenticate_user_by_credentials)) -> str:
+    return create_access_token(
+        account_id=user.account_id,
+        expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
+    )
+
+
+async def authenticate_user_with_callback(
+    form: OAuth2PasswordRequestForm = Depends(),
+    redirect_uri: str = Body(...),
+) -> DbUserModel:
+    if not auth_db_validation.find_one({"client_id": form.client_id}):
+        raise generate_bad_request_exception("Invalid client ID")
+
+    if FASTAPI_AUTH_CALLBACK != redirect_uri:
+        raise generate_bad_request_exception("Callback URI mismatch")
+
+    return await authenticate_user_by_credentials(form)
+
+
+async def generate_access_token(user: DbUserModel = Depends(authenticate_user_with_callback)) -> str:
     return create_access_token(
         account_id=user.account_id,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)

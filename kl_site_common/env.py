@@ -19,3 +19,10 @@ FAST_API_AUTH_TOKEN_EXPIRY_MINS = os.environ.get("FAST_API_AUTH_TOKEN_EXPIRY_MIN
 MONGO_URL = os.environ.get("MONGO_URL")
 if not MONGO_URL:
     raise ValueError("Set `MONGO_URL` as the MongoDB connection string. Check README for more details.")
+
+FASTAPI_AUTH_CALLBACK = os.environ.get("FASTAPI_AUTH_CALLBACK")
+if not FASTAPI_AUTH_CALLBACK:
+    raise ValueError(
+        "Set `FASTAPI_AUTH_CALLBACK` as the OAuth2 redirection callback URL. "
+        "Check README for more details."
+    )

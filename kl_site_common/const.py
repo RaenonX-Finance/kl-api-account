@@ -46,6 +46,7 @@ _CONFIG_DATA_STREAM = _CONFIG_DATA["stream"]
 
 DATA_TIMEOUT_SEC = _CONFIG_DATA_STREAM["timeout-sec"]
 DATA_PX_UPDATE_SEC = _CONFIG_DATA_STREAM["px-update-sec"]
+DATA_PX_UPDATE_OFFSET_SEC = _CONFIG_DATA_STREAM["px-update-offset-sec"]
 DATA_PX_UPDATE_MARKET_SEC = _CONFIG_DATA_STREAM["px-update-market-sec"]
 
 # endregion

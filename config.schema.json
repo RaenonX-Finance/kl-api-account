@@ -79,6 +79,7 @@
           "required": [
             "timeout-sec",
             "px-update-sec",
+            "px-update-offset-sec",
             "px-update-market-sec"
           ],
           "additionalProperties": false,
@@ -91,6 +92,11 @@
             "px-update-sec": {
               "type": "number",
               "description": "Complete price data update frequency. This should be greater than market data update frequency since this sends more data and takes more time for calculation.",
+              "exclusiveMinimum": 0
+            },
+            "px-update-offset-sec": {
+              "type": "number",
+              "description": "Time offset in seconds to apply on complete price data time-gating. This can be filled with the estimate calculating duration of a full complete px data, therefore offsetting the additional time-gate delay caused by the aforementioned calculation. Check https://github.com/RaenonX-Finance/kl-site-back/issues/42 for more details.",
               "exclusiveMinimum": 0
             },
             "px-update-market-sec": {

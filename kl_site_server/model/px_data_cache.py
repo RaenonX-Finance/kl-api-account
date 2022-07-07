@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import DATA_PX_UPDATE_MARKET_SEC, DATA_PX_UPDATE_SEC
+from kl_site_common.const import DATA_PX_UPDATE_MARKET_SEC, DATA_PX_UPDATE_OFFSET_SEC, DATA_PX_UPDATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
@@ -50,9 +50,9 @@ class PxDataCacheEntry:
 
         self.latest_market = data
 
-    def update_latest(self, current: float) -> bool:
+    def update_latest(self, current: float) -> str | None:
         """
-        Updates the latest price, then return if force-send should be allowed.
+        Updates the latest price, then return the reason of force-send, if allowed.
 
         This should be called after the `is_ready` check.
         """
@@ -71,7 +71,7 @@ class PxDataCacheEntry:
             }
             self.data[epoch_current] = new_bar
             self.remove_oldest()
-            return True
+            return "New bar"
 
         bar_current = self.data[epoch_current]
         self.data[epoch_current] = bar_current | {
@@ -80,7 +80,12 @@ class PxDataCacheEntry:
             PxDataCol.CLOSE: current,
         }
 
-        return current > bar_current[PxDataCol.HIGH] or current < bar_current[PxDataCol.LOW]
+        if current > bar_current[PxDataCol.HIGH]:
+            return "Breaking high"
+        if current < bar_current[PxDataCol.LOW]:
+            return "Breaking low"
+
+        return None
 
     def to_px_data(self, period_mins: list[int]) -> list[PxData]:
         pool = PxDataPool(
@@ -121,9 +126,13 @@ class PxDataCache:
         )
         self.period_mins[symbol_complete] = period_mins
 
-    def _mark_force_send_once(self) -> None:
+    def _mark_force_send_once(self, symbol_complete: str, reason: str) -> None:
         # Not marking market data to force send
         # because the latest market data will also be updated in the completed one
+        print_log(
+            f"[Server] Mark [yellow]force send Px[/yellow] allowed once "
+            f"for [yellow]{symbol_complete}[/yellow] ({reason})"
+        )
         self.allow_force_send_once_complete = True
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
@@ -134,7 +143,7 @@ class PxDataCache:
         )
         self.data[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_list)
 
-        self._mark_force_send_once()
+        self._mark_force_send_once(data.handshake.symbol_complete, "Complete data updated")
 
     def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
         self.data[data.symbol_complete].update_latest_market(data)
@@ -142,8 +151,8 @@ class PxDataCache:
     def update_market_data_of_symbol(self, data: RealtimeData) -> None:
         symbol_complete = data.symbol_complete
 
-        if self.data[symbol_complete].update_latest(data.last_px):
-            self._mark_force_send_once()
+        if reason := self.data[symbol_complete].update_latest(data.last_px):
+            self._mark_force_send_once(data.symbol_complete, reason)
 
     def is_no_market_data_update(self, symbol_complete: str) -> bool:
         # > 3 secs no incoming market data
@@ -185,7 +194,7 @@ class PxDataCache:
         self.buffer_market_data = {}
 
     def mark_complete_data_sent(self) -> None:
-        self.last_complete_update = time.time()
+        self.last_complete_update = time.time() - DATA_PX_UPDATE_OFFSET_SEC
 
     def complete_px_data_to_send(self, symbol_complete: str) -> list[PxData]:
         px_data_list = []

@@ -45,9 +45,9 @@ class TouchanceDataClient(TouchanceApiClient):
             in px_cache_entry.to_px_data(self._px_data_cache.period_mins[px_cache_entry.symbol_complete])
         )
 
-    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
+    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> None:
         if not self._px_data_cache.is_send_complete_data_ok(symbol_complete):
-            return False
+            return
 
         _start = time.time()
 
@@ -59,7 +59,6 @@ class TouchanceDataClient(TouchanceApiClient):
         )
 
         self._px_data_cache.mark_complete_data_sent()
-        return True
 
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
         if not self._px_data_cache.is_send_market_data_ok(symbol_complete):
@@ -96,9 +95,10 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache.update_market_data_of_symbol(data)
 
-        if not self.send_complete_px_data(data.symbol_complete, 0):
-            # Only send market px data if none of complete px data is sent
-            self.send_market_px_data(data.symbol_complete, data)
+        # `send_market_px_data()` must place before `send_complete_px_data()`
+        # because the latter takes time to calc
+        self.send_market_px_data(data.symbol_complete, data)
+        self.send_complete_px_data(data.symbol_complete, 0)
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         pass

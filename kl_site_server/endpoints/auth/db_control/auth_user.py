@@ -1,19 +1,14 @@
-import secrets
 from datetime import timedelta
 
-import pymongo.errors
 from fastapi import Body, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import JWTError
 
 from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FAST_API_AUTH_TOKEN_EXPIRY_MINS
-from .const import auth_crypto_ctx, auth_db_users, auth_db_validation, auth_oauth2_scheme
-from .exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
-from .model import (
-    DbUserModel, OAuthTokenData, UserDataModel, UserSignupModel,
-    ValidationSecretsModel,
-)
-from .secret import create_access_token, decode_access_token, is_password_match
+from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
+from ..exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
+from ..model import DbUserModel, OAuthTokenData, UserDataModel
+from ..secret import create_access_token, decode_access_token, is_password_match
 
 
 async def get_user_by_account_id(account_id: str) -> DbUserModel | None:
@@ -38,7 +33,7 @@ async def get_user_data_by_account_id(account_id: str) -> UserDataModel | None:
     return UserDataModel(**find_one_result)
 
 
-async def get_user_by_oauth2_token(token: str = Depends(auth_oauth2_scheme)) -> UserDataModel:
+async def get_user_data_by_oauth2_token(token: str = Depends(auth_oauth2_scheme)) -> UserDataModel:
     try:
         payload = decode_access_token(token)
         account_id: str = payload.get("sub")
@@ -58,7 +53,7 @@ async def get_user_by_oauth2_token(token: str = Depends(auth_oauth2_scheme)) -> 
 
 
 async def get_active_user_by_oauth2_token(
-    current_user: UserDataModel = Depends(get_user_by_oauth2_token)
+    current_user: UserDataModel = Depends(get_user_data_by_oauth2_token)
 ) -> UserDataModel:
     if current_user.blocked:
         raise generate_blocked_exception()
@@ -114,33 +109,3 @@ async def generate_access_token(user: DbUserModel = Depends(authenticate_user_wi
         account_id=user.account_id,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
     )
-
-
-async def generate_validation_secrets(
-    _: UserDataModel = Depends(get_admin_user_by_oauth2_token)
-) -> ValidationSecretsModel:
-    model = ValidationSecretsModel(
-        client_id=auth_crypto_ctx.hash(secrets.token_hex(32)),
-        client_secret=auth_crypto_ctx.hash(secrets.token_urlsafe(32)),
-    )
-    auth_db_validation.insert_one(model.dict())
-
-    return model
-
-
-async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSignupModel:
-    if auth_db_users.count_documents({}) == 0:
-        auth_db_users.insert_one(user.to_db_user_model(admin=True).dict())
-
-        return user
-
-    try:
-        auth_db_users.insert_one(user.to_db_user_model(admin=False).dict())
-    except pymongo.errors.DuplicateKeyError as ex:
-        raise generate_bad_request_exception("Duplicated account ID") from ex
-
-    return user
-
-
-async def signup_user(user: UserSignupModel = Depends(signup_user_ensure_unique)) -> UserDataModel:
-    return await get_user_data_by_account_id(user.account_id)

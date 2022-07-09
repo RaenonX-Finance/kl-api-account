@@ -40,3 +40,6 @@ indicator:
       slow: 676
   sr-level:
     min-diff: 35
+
+account:
+  sign-up-key-expiry-sec: 86400

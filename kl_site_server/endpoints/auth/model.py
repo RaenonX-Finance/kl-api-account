@@ -75,7 +75,14 @@ class SignupKeyModel(BaseModel):
 
     This model is used in the database.
     """
+
     signup_key: str = Field(..., description="Account signup key.")
+    expiry: datetime = Field(..., description="Signup key expiry. The signup key will be deleted after this time.")
+    account_expiry: datetime = Field(
+        ...,
+        description="Account expiry. "
+                    "User who signup with this key will have this time as the initial account membership expiry."
+    )
 
 
 @dataclass
@@ -84,16 +91,19 @@ class UserSignupModel:
 
     username: str = Form(...)
     password: str = Form(...)
-    signup_key: str | None = Form(None, description="Key used to sign up this account. ")
+    signup_key: str | None = Form(None, description="Key used to sign up this account.")
 
-    def to_db_user_model(self, *, admin: bool = False) -> DbUserModel:
+    def to_db_user_model(self, *, expiry: datetime | None, admin: bool = False) -> DbUserModel:
         if not admin and not self.signup_key:
             raise ValueError("The user is not an admin, but `signup_key` is `None`.")
 
         return DbUserModel(
+            # From `UserDataModel`
             username=self.username,
-            hashed_password=get_password_hash(self.password),
             admin=admin,
+            expiry=expiry,
             permissions=DEFAULT_ACCOUNT_PERMISSIONS,
+            # From `DbUserModel`
+            hashed_password=get_password_hash(self.password),
             signup_key=None if admin else self.signup_key,
         )

@@ -11,7 +11,9 @@ from ..model import DbUserModel, UserDataModel
 from ..secret import create_access_token, decode_access_token, is_password_match
 
 
-async def get_user_by_username(username: str) -> DbUserModel | None:
+async def get_user_by_username(
+    username: str
+) -> DbUserModel | None:
     find_one_result = auth_db_users.find_one({"username": username})
 
     if not find_one_result:
@@ -20,7 +22,9 @@ async def get_user_by_username(username: str) -> DbUserModel | None:
     return DbUserModel(**find_one_result)
 
 
-async def get_user_data_by_username(username: str) -> UserDataModel | None:
+async def get_user_data_by_username(
+    username: str
+) -> UserDataModel | None:
     find_one_result = auth_db_users.find_one({"username": username})
 
     if not find_one_result:
@@ -33,7 +37,9 @@ async def get_user_data_by_username(username: str) -> UserDataModel | None:
     return UserDataModel(**find_one_result)
 
 
-async def get_user_data_by_oauth2_token(token: str = Depends(auth_oauth2_scheme)) -> UserDataModel:
+async def get_user_data_by_oauth2_token(
+    token: str = Depends(auth_oauth2_scheme)
+) -> UserDataModel:
     try:
         payload = decode_access_token(token)
         username: str = payload.get("sub")
@@ -82,7 +88,9 @@ async def authenticate_user_by_credentials(
     return user
 
 
-async def generate_access_token_on_doc(user: DbUserModel = Depends(authenticate_user_by_credentials)) -> str:
+async def generate_access_token_on_doc(
+    user: DbUserModel = Depends(authenticate_user_by_credentials)
+) -> str:
     return create_access_token(
         username=user.username,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
@@ -102,7 +110,9 @@ async def authenticate_user_with_callback(
     return await authenticate_user_by_credentials(form)
 
 
-async def generate_access_token(user: DbUserModel = Depends(authenticate_user_with_callback)) -> str:
+async def generate_access_token(
+    user: DbUserModel = Depends(authenticate_user_with_callback)
+) -> str:
     return create_access_token(
         username=user.username,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)

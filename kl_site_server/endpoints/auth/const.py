@@ -24,5 +24,6 @@ if auth_db_validation is None:
     auth_db_validation = auth_db.create_collection("validation", capped=True, size=4096, max=1)
 
 auth_db_signup_key: Collection["SignupKeyModel"] = Collection(auth_db, "signup_key")
+auth_db_signup_key.create_index("expiry", expireAfterSeconds=0)
 
 DEFAULT_ACCOUNT_PERMISSIONS: list[Permission] = []

@@ -7,7 +7,9 @@
   "required": [
     "system",
     "log",
-    "data"
+    "data",
+    "indicator",
+    "account"
   ],
   "additionalProperties": false,
   "properties": {
@@ -254,8 +256,23 @@
               "type": "number",
               "description": "Minimum difference between levels.",
               "exclusiveMinimum": 0
-            },
+            }
           }
+        }
+      }
+    },
+    "account": {
+      "type": "object",
+      "description": "Account management related settings.",
+      "required": [
+        "sign-up-key-expiry-sec"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "sign-up-key-expiry-sec": {
+          "type": "integer",
+          "description": "Expiry for account sign up key in seconds.",
+          "exclusiveMinimum": 0
         }
       }
     }

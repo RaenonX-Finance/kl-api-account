@@ -46,6 +46,10 @@ class DbUserModel(UserDataModel):
     This model is used in the database.
     """
     hashed_password: str = Field(..., description="Hashed account password.")
+    signup_key: str | None = Field(
+        ...,
+        description="Key used when the user signed up. `None` if the user is the admin."
+    )
 
 
 class ActionModel(BaseModel):
@@ -83,9 +87,13 @@ class UserSignupModel:
     signup_key: str | None = Form(None, description="Key used to sign up this account. ")
 
     def to_db_user_model(self, *, admin: bool = False) -> DbUserModel:
+        if not admin and not self.signup_key:
+            raise ValueError("The user is not an admin, but `signup_key` is `None`.")
+
         return DbUserModel(
             username=self.username,
             hashed_password=get_password_hash(self.password),
             admin=admin,
             permissions=DEFAULT_ACCOUNT_PERMISSIONS,
+            signup_key=None if admin else self.signup_key,
         )

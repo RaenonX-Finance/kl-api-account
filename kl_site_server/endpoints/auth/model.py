@@ -1,7 +1,17 @@
+"""
+Use ``pydantic`` models for database or response model.
+
+Use ``dataclass`` with ``fastapi.Form()`` for form data and intermediate data models.
+
+> Content type of ``POST`` request should use ``dataclass`` or normal class
+> to correctly parse the data sent via ``Content-Type`` of ``application/x-www-form-urlencoded``.
+"""
+from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
 from bson import ObjectId
+from fastapi import Form
 from pydantic import BaseModel, EmailStr, Field
 
 from kl_site_common.db import PyObjectId
@@ -30,13 +40,12 @@ class UserDataModel(BaseModel):
 
 
 class DbUserModel(UserDataModel):
-    """Complete user data model. This is the schema stored in the database."""
+    """
+    Complete user data model.
+
+    This model is used in the database.
+    """
     hashed_password: str = Field(..., description="Hashed account password.")
-
-
-class OAuthTokenData(BaseModel):
-    """Decoded access token data from JWT."""
-    username: str | None = None
 
 
 class ActionModel(BaseModel):
@@ -49,10 +58,6 @@ class OAuthToken(BaseModel):
     token_type: Literal["bearer"]
 
 
-class GenerateValidationSecretsModel(ActionModel):
-    """Data model to generate identity validation secrets."""
-
-
 class ValidationSecretsModel(BaseModel):
     """Validation secrets."""
 
@@ -61,15 +66,21 @@ class ValidationSecretsModel(BaseModel):
 
 
 class SignupKeyModel(BaseModel):
-    """Data model containing the account signup key."""
+    """
+    Data model containing the account signup key.
+
+    This model is used in the database.
+    """
     signup_key: str = Field(..., description="Account signup key.")
 
 
-class UserSignupModel(BaseModel):
+@dataclass
+class UserSignupModel:
     """Data model to sign up a user."""
-    username: str = Field(..., description="User name.")
-    password: str = Field(...)
-    signup_key: str | None = Field(description="Key used to sign up this account. ")
+
+    username: str = Form(...)
+    password: str = Form(...)
+    signup_key: str | None = Form(None, description="Key used to sign up this account. ")
 
     def to_db_user_model(self, *, admin: bool = False) -> DbUserModel:
         return DbUserModel(

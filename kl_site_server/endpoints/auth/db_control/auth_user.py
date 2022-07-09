@@ -7,7 +7,7 @@ from jose import JWTError
 from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FAST_API_AUTH_TOKEN_EXPIRY_MINS
 from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
 from ..exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
-from ..model import DbUserModel, OAuthTokenData, UserDataModel
+from ..model import DbUserModel, UserDataModel
 from ..secret import create_access_token, decode_access_token, is_password_match
 
 
@@ -40,12 +40,10 @@ async def get_user_data_by_oauth2_token(token: str = Depends(auth_oauth2_scheme)
 
         if username is None:
             raise generate_unauthorized_exception("Invalid token - no user name")
-
-        token_data = OAuthTokenData(username=username)
     except JWTError:
         raise generate_unauthorized_exception("Invalid token - JWT decode error")
 
-    user = await get_user_data_by_username(token_data.username)
+    user = await get_user_data_by_username(username)
     if user is None:
         raise generate_unauthorized_exception("Invalid token - user not exists")
 

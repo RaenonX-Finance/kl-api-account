@@ -2,7 +2,7 @@ import pymongo.errors
 from fastapi import Depends
 
 from .auth_user import get_user_data_by_username
-from ..const import auth_db_users, auth_db_signup_key
+from ..const import auth_db_signup_key, auth_db_users
 from ..exceptions import generate_bad_request_exception
 from ..model import UserDataModel, UserSignupModel
 

@@ -4,7 +4,7 @@ from .db_control import (
     generate_access_token, generate_access_token_on_doc, generate_validation_secrets,
     get_active_user_by_oauth2_token, signup_user, generate_account_creation_key as generate_account_creation_key_db
 )
-from .model import GenerateValidationSecretsModel, OAuthToken, UserDataModel, ValidationSecretsModel, SignupKeyModel
+from .model import OAuthToken, UserDataModel, ValidationSecretsModel, SignupKeyModel
 
 auth_router = APIRouter(prefix="/auth")
 
@@ -47,8 +47,8 @@ async def get_access_token_by_credentials_on_doc(
     status_code=status.HTTP_201_CREATED
 )
 async def create_validation_secrets(
-    secrets: GenerateValidationSecretsModel = Depends(generate_validation_secrets)
-) -> GenerateValidationSecretsModel:
+    secrets: ValidationSecretsModel = Depends(generate_validation_secrets)
+) -> ValidationSecretsModel:
     return secrets
 
 

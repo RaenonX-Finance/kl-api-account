@@ -1,7 +1,7 @@
 import pymongo.errors
 from fastapi import Depends
 
-from kl_site_common.db import mongo_client
+from kl_site_common.db import start_mongo_transaction
 from .auth_user import get_user_data_by_username
 from ..const import auth_db_signup_key, auth_db_users
 from ..exceptions import generate_bad_request_exception
@@ -15,7 +15,7 @@ async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSi
 
         return user
 
-    with mongo_client.start_session(causal_consistency=True) as session:
+    with start_mongo_transaction() as session:
         if not auth_db_signup_key.find_one_and_delete({"signup_key": user.signup_key}, session=session):
             raise generate_bad_request_exception("Invalid signup key")
 

@@ -13,7 +13,7 @@ from .type import Permission
 class UserDataModel(BaseModel):
     """User data model. This does not and should not contain account secret, such as password."""
     id: PyObjectId | None = Field(default_factory=PyObjectId, alias="_id")
-    account_id: str = Field(..., description="Account ID.")
+    username: str = Field(..., description="User name.")
     email: EmailStr | None = Field(None, description="User email.")
     expiry: datetime | None = Field(None, description="Account membership expiry.")
     blocked: bool = Field(False, description="If the account is blocked. Blocked account does not have access.")
@@ -36,7 +36,7 @@ class DbUserModel(UserDataModel):
 
 class OAuthTokenData(BaseModel):
     """Decoded access token data from JWT."""
-    account_id: str | None = None
+    username: str | None = None
 
 
 class ActionModel(BaseModel):
@@ -67,13 +67,13 @@ class SignupKeyModel(BaseModel):
 
 class UserSignupModel(BaseModel):
     """Data model to sign up a user."""
-    account_id: str = Field(..., description="Account ID.")
+    username: str = Field(..., description="User name.")
     password: str = Field(...)
     signup_key: str | None = Field(description="Key used to sign up this account. ")
 
     def to_db_user_model(self, *, admin: bool = False) -> DbUserModel:
         return DbUserModel(
-            account_id=self.account_id,
+            username=self.username,
             hashed_password=get_password_hash(self.password),
             admin=admin,
             permissions=DEFAULT_ACCOUNT_PERMISSIONS,

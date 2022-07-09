@@ -17,7 +17,7 @@ auth_crypto_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
 auth_db: Database = mongo_client.get_database("auth")
 
 auth_db_users: Collection["DbUserModel"] = Collection(auth_db, "users")
-auth_db_users.create_index("account_id", unique=True)
+auth_db_users.create_index("username", unique=True)
 
 auth_db_validation: Collection["ValidationSecretsModel"] = auth_db.get_collection("validation")
 if auth_db_validation is None:

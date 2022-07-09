@@ -1,7 +1,7 @@
 import pymongo.errors
 from fastapi import Depends
 
-from .auth_user import get_user_data_by_account_id
+from .auth_user import get_user_data_by_username
 from ..const import auth_db_users, auth_db_signup_key
 from ..exceptions import generate_bad_request_exception
 from ..model import UserDataModel, UserSignupModel
@@ -26,4 +26,4 @@ async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSi
 
 
 async def signup_user(user: UserSignupModel = Depends(signup_user_ensure_unique)) -> UserDataModel:
-    return await get_user_data_by_account_id(user.account_id)
+    return await get_user_data_by_username(user.username)

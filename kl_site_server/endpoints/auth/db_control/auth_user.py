@@ -11,8 +11,8 @@ from ..model import DbUserModel, OAuthTokenData, UserDataModel
 from ..secret import create_access_token, decode_access_token, is_password_match
 
 
-async def get_user_by_account_id(account_id: str) -> DbUserModel | None:
-    find_one_result = auth_db_users.find_one({"account_id": account_id})
+async def get_user_by_username(username: str) -> DbUserModel | None:
+    find_one_result = auth_db_users.find_one({"username": username})
 
     if not find_one_result:
         return None
@@ -20,8 +20,8 @@ async def get_user_by_account_id(account_id: str) -> DbUserModel | None:
     return DbUserModel(**find_one_result)
 
 
-async def get_user_data_by_account_id(account_id: str) -> UserDataModel | None:
-    find_one_result = auth_db_users.find_one({"account_id": account_id})
+async def get_user_data_by_username(username: str) -> UserDataModel | None:
+    find_one_result = auth_db_users.find_one({"username": username})
 
     if not find_one_result:
         return None
@@ -36,16 +36,16 @@ async def get_user_data_by_account_id(account_id: str) -> UserDataModel | None:
 async def get_user_data_by_oauth2_token(token: str = Depends(auth_oauth2_scheme)) -> UserDataModel:
     try:
         payload = decode_access_token(token)
-        account_id: str = payload.get("sub")
+        username: str = payload.get("sub")
 
-        if account_id is None:
+        if username is None:
             raise generate_unauthorized_exception("Invalid token - no user name")
 
-        token_data = OAuthTokenData(account_id=account_id)
+        token_data = OAuthTokenData(username=username)
     except JWTError:
         raise generate_unauthorized_exception("Invalid token - JWT decode error")
 
-    user = await get_user_data_by_account_id(token_data.account_id)
+    user = await get_user_data_by_username(token_data.username)
     if user is None:
         raise generate_unauthorized_exception("Invalid token - user not exists")
 
@@ -73,7 +73,7 @@ async def get_admin_user_by_oauth2_token(
 async def authenticate_user_by_credentials(
     form: OAuth2PasswordRequestForm = Depends()
 ) -> DbUserModel:
-    user = await get_user_by_account_id(form.username)
+    user = await get_user_by_username(form.username)
 
     if not user:
         raise generate_unauthorized_exception("User not exists")
@@ -86,7 +86,7 @@ async def authenticate_user_by_credentials(
 
 async def generate_access_token_on_doc(user: DbUserModel = Depends(authenticate_user_by_credentials)) -> str:
     return create_access_token(
-        account_id=user.account_id,
+        username=user.username,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
     )
 
@@ -106,6 +106,6 @@ async def authenticate_user_with_callback(
 
 async def generate_access_token(user: DbUserModel = Depends(authenticate_user_with_callback)) -> str:
     return create_access_token(
-        account_id=user.account_id,
+        username=user.username,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
     )

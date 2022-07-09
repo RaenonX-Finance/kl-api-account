@@ -15,16 +15,16 @@ def get_password_hash(password: str) -> str:
     return auth_crypto_ctx.hash(password)
 
 
-def make_jwt_dict(account_id: str, expiry: datetime) -> JwtDataDict:
+def make_jwt_dict(username: str, expiry: datetime) -> JwtDataDict:
     return {
-        "sub": account_id,
+        "sub": username,
         "exp": expiry,
     }
 
 
-def create_access_token(*, account_id: str, expiry_delta: timedelta | None = None) -> str:
+def create_access_token(*, username: str, expiry_delta: timedelta | None = None) -> str:
     jwt_dict = make_jwt_dict(
-        account_id,
+        username,
         datetime.utcnow() + (expiry_delta or timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS))
     )
 

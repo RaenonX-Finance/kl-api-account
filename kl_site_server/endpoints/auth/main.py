@@ -2,9 +2,9 @@ from fastapi import APIRouter, Depends, status
 
 from .db_control import (
     generate_access_token, generate_access_token_on_doc, generate_validation_secrets,
-    get_active_user_by_oauth2_token, signup_user,
+    get_active_user_by_oauth2_token, signup_user, generate_account_creation_key as generate_account_creation_key_db
 )
-from .model import GenerateValidationSecretsModel, OAuthToken, UserDataModel, ValidationSecretsModel
+from .model import GenerateValidationSecretsModel, OAuthToken, UserDataModel, ValidationSecretsModel, SignupKeyModel
 
 auth_router = APIRouter(prefix="/auth")
 
@@ -60,3 +60,15 @@ async def create_validation_secrets(
 )
 async def sign_up_user(user: UserDataModel = Depends(signup_user)) -> UserDataModel:
     return user
+
+
+@auth_router.post(
+    "/generate-account",
+    description="Generate an account signup key.",
+    response_model=str,
+    status_code=status.HTTP_201_CREATED
+)
+async def generate_account_creation_key(
+    signup_key: SignupKeyModel = Depends(generate_account_creation_key_db)
+) -> str:
+    return signup_key.signup_key

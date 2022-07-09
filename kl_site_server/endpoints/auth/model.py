@@ -60,10 +60,16 @@ class ValidationSecretsModel(BaseModel):
     client_secret: str
 
 
+class SignupKeyModel(BaseModel):
+    """Data model containing the account signup key."""
+    signup_key: str = Field(..., description="Account signup key.")
+
+
 class UserSignupModel(BaseModel):
     """Data model to sign up a user."""
     account_id: str = Field(..., description="Account ID.")
     password: str = Field(...)
+    signup_key: str | None = Field(description="Key used to sign up this account. ")
 
     def to_db_user_model(self, *, admin: bool = False) -> DbUserModel:
         return DbUserModel(

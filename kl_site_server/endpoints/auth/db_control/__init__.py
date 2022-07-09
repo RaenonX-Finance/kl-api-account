@@ -1,3 +1,4 @@
+from .account_creation import generate_account_creation_key
 from .admin import generate_validation_secrets
 from .auth_user import (
     generate_access_token, generate_access_token_on_doc,

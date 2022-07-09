@@ -9,7 +9,7 @@ from kl_site_common.db import mongo_client
 from .type import Permission
 
 if TYPE_CHECKING:
-    from .model import DbUserModel, ValidationSecretsModel
+    from .model import DbUserModel, ValidationSecretsModel, SignupKeyModel
 
 auth_oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token-doc")
 auth_crypto_ctx = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -22,5 +22,7 @@ auth_db_users.create_index("account_id", unique=True)
 auth_db_validation: Collection["ValidationSecretsModel"] = auth_db.get_collection("validation")
 if auth_db_validation is None:
     auth_db_validation = auth_db.create_collection("validation", capped=True, size=4096, max=1)
+
+auth_db_signup_key: Collection["SignupKeyModel"] = Collection(auth_db, "signup_key")
 
 DEFAULT_ACCOUNT_PERMISSIONS: list[Permission] = []

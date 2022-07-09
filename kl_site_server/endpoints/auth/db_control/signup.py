@@ -1,6 +1,7 @@
 import pymongo.errors
 from fastapi import Depends
 
+from kl_site_common.db import mongo_client
 from .auth_user import get_user_data_by_username
 from ..const import auth_db_signup_key, auth_db_users
 from ..exceptions import generate_bad_request_exception
@@ -14,13 +15,14 @@ async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSi
 
         return user
 
-    if not auth_db_signup_key.find_one_and_delete({"signup_key": user.signup_key}):
-        raise generate_bad_request_exception("Invalid signup key")
+    with mongo_client.start_session(causal_consistency=True) as session:
+        if not auth_db_signup_key.find_one_and_delete({"signup_key": user.signup_key}, session=session):
+            raise generate_bad_request_exception("Invalid signup key")
 
-    try:
-        auth_db_users.insert_one(user.to_db_user_model(admin=False).dict())
-    except pymongo.errors.DuplicateKeyError as ex:
-        raise generate_bad_request_exception("Duplicated account ID") from ex
+        try:
+            auth_db_users.insert_one(user.to_db_user_model(admin=False).dict(), session=session)
+        except pymongo.errors.DuplicateKeyError as ex:
+            raise generate_bad_request_exception("Duplicated account ID") from ex
 
     return user
 

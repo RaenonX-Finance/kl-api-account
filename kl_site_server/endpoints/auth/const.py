@@ -26,4 +26,4 @@ if auth_db_validation is None:
 auth_db_signup_key: Collection["SignupKeyModel"] = Collection(auth_db, "signup_key")
 auth_db_signup_key.create_index("expiry", expireAfterSeconds=0)
 
-DEFAULT_ACCOUNT_PERMISSIONS: list[Permission] = []
+DEFAULT_ACCOUNT_PERMISSIONS: list[Permission] = ["chart:view"]

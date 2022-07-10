@@ -43,3 +43,4 @@ indicator:
 
 account:
   sign-up-key-expiry-sec: 86400
+  token-auto-refresh-leeway-sec: 86400

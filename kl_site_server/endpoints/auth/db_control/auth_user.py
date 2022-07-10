@@ -7,7 +7,7 @@ from jose import ExpiredSignatureError, JWTError
 from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FAST_API_AUTH_TOKEN_EXPIRY_MINS
 from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
 from ..exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
-from ..model import DbUserModel, UserDataModel
+from ..model import DbUserModel, RefreshAccessTokenModel, UserDataModel
 from ..secret import create_access_token, decode_access_token, is_password_match
 
 
@@ -117,5 +117,18 @@ async def generate_access_token(
 ) -> str:
     return create_access_token(
         username=user.username,
+        expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
+    )
+
+
+async def refresh_access_token(
+    body: RefreshAccessTokenModel = Depends(),
+    user_data: UserDataModel = Depends(get_user_data_by_oauth2_token)
+) -> str:
+    if not auth_db_validation.find_one({"client_id": body.client_id, "client_secret": body.client_secret}):
+        raise generate_bad_request_exception("Invalid client ID or secret")
+
+    return create_access_token(
+        username=user_data.username,
         expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
     )

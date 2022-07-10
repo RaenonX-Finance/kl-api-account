@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from jose import jwt
 
+from kl_site_common.const import JWT_LEEWAY_SEC
 from kl_site_common.env import FASTAPI_AUTH_SECRET, FAST_API_AUTH_ALGORITHM, FAST_API_AUTH_TOKEN_EXPIRY_MINS
 from .const import auth_crypto_ctx
 from .type import JwtDataDict
@@ -32,4 +33,9 @@ def create_access_token(*, username: str, expiry_delta: timedelta | None = None)
 
 
 def decode_access_token(token: str) -> JwtDataDict:
-    return jwt.decode(token, FASTAPI_AUTH_SECRET, algorithms=[FAST_API_AUTH_ALGORITHM])
+    return jwt.decode(
+        token,
+        FASTAPI_AUTH_SECRET,
+        algorithms=[FAST_API_AUTH_ALGORITHM],
+        options={"leeway": JWT_LEEWAY_SEC}
+    )

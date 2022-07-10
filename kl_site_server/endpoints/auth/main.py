@@ -2,7 +2,8 @@ from fastapi import APIRouter, Depends, status
 
 from .db_control import (
     generate_access_token, generate_access_token_on_doc, generate_validation_secrets,
-    get_active_user_by_oauth2_token, signup_user, generate_account_creation_key as generate_account_creation_key_db
+    get_active_user_by_oauth2_token, refresh_access_token, signup_user,
+    generate_account_creation_key as generate_account_creation_key_db,
 )
 from .model import OAuthToken, UserDataModel, ValidationSecretsModel, SignupKeyModel
 
@@ -24,6 +25,15 @@ async def get_user_data(current_user: UserDataModel = Depends(get_active_user_by
     response_model=OAuthToken
 )
 async def get_access_token_by_credentials(access_token: str = Depends(generate_access_token)) -> OAuthToken:
+    return OAuthToken(access_token=access_token, token_type="bearer")
+
+
+@auth_router.post(
+    "/token-refresh",
+    description="Get an access token using expired but not invalidated access token.",
+    response_model=OAuthToken
+)
+async def get_access_token_by_auto_refresh(access_token: str = Depends(refresh_access_token)) -> OAuthToken:
     return OAuthToken(access_token=access_token, token_type="bearer")
 
 

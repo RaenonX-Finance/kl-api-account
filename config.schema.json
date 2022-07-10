@@ -265,13 +265,19 @@
       "type": "object",
       "description": "Account management related settings.",
       "required": [
-        "sign-up-key-expiry-sec"
+        "sign-up-key-expiry-sec",
+        "token-auto-refresh-leeway-sec"
       ],
       "additionalProperties": false,
       "properties": {
         "sign-up-key-expiry-sec": {
           "type": "integer",
           "description": "Expiry for account sign up key in seconds.",
+          "exclusiveMinimum": 0
+        },
+        "token-auto-refresh-leeway-sec": {
+          "type": "integer",
+          "description": "JWT auto refresh leeway in seconds. Check https://pyjwt.readthedocs.io/en/latest/usage.html#expiration-time-claim-exp for the details regarding leeway.",
           "exclusiveMinimum": 0
         }
       }

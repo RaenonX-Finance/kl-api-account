@@ -65,6 +65,14 @@ class OAuthToken(BaseModel):
     token_type: Literal["bearer"]
 
 
+@dataclass
+class RefreshAccessTokenModel:
+    """Data model containing the data needed for refreshing the access token."""
+
+    client_id: str = Form(..., description="OAuth client ID.")
+    client_secret: str = Form(..., description="OAuth client secret.")
+
+
 class ValidationSecretsModel(BaseModel):
     """Validation secrets."""
 

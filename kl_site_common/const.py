@@ -97,5 +97,6 @@ SR_LEVEL_MIN_DIFF = _CONFIG_INDICATOR_SR_LEVEL["min-diff"]
 _CONFIG_ACCOUNT = config["account"]
 
 ACCOUNT_SIGNUP_KEY_EXPIRY_SEC = _CONFIG_ACCOUNT["sign-up-key-expiry-sec"]
+JWT_LEEWAY_SEC = _CONFIG_ACCOUNT["token-auto-refresh-leeway-sec"]
 
 # endregion

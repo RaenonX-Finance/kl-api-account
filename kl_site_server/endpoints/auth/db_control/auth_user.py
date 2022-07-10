@@ -2,7 +2,7 @@ from datetime import timedelta
 
 from fastapi import Body, Depends
 from fastapi.security import OAuth2PasswordRequestForm
-from jose import JWTError
+from jose import ExpiredSignatureError, JWTError
 
 from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FAST_API_AUTH_TOKEN_EXPIRY_MINS
 from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
@@ -46,8 +46,10 @@ async def get_user_data_by_oauth2_token(
 
         if username is None:
             raise generate_unauthorized_exception("Invalid token - no user name")
-    except JWTError:
-        raise generate_unauthorized_exception("Invalid token - JWT decode error")
+    except ExpiredSignatureError:
+        raise generate_unauthorized_exception("Invalid token - signature expired")
+    except JWTError as ex:
+        raise generate_unauthorized_exception(f"Invalid token - JWT decode error: {type(ex)}")
 
     user = await get_user_data_by_username(username)
     if user is None:

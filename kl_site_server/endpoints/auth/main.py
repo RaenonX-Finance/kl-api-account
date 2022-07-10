@@ -65,10 +65,10 @@ async def sign_up_user(user: UserDataModel = Depends(signup_user)) -> UserDataMo
 @auth_router.post(
     "/generate-signup-key",
     description="Generate an account signup key.",
-    response_model=str,
+    response_model=SignupKeyModel,
     status_code=status.HTTP_201_CREATED
 )
 async def generate_account_creation_key(
     signup_key: SignupKeyModel = Depends(generate_account_creation_key_db)
-) -> str:
-    return signup_key.signup_key
+) -> SignupKeyModel:
+    return signup_key

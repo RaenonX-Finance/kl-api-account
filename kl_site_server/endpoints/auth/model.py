@@ -22,6 +22,7 @@ from .type import Permission
 
 class UserDataModel(BaseModel):
     """User data model. This does not and should not contain account secret, such as password."""
+
     id: PyObjectId | None = Field(default_factory=PyObjectId, alias="_id")
     username: str = Field(..., description="User name.")
     email: EmailStr | None = Field(None, description="User email.")
@@ -45,6 +46,7 @@ class DbUserModel(UserDataModel):
 
     This model is used in the database.
     """
+
     hashed_password: str = Field(..., description="Hashed account password.")
     signup_key: str | None = Field(
         ...,
@@ -58,6 +60,7 @@ class ActionModel(BaseModel):
 
 class OAuthToken(BaseModel):
     """OAuth2 access token and its type."""
+
     access_token: str
     token_type: Literal["bearer"]
 

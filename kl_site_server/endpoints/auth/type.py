@@ -9,9 +9,9 @@ class JwtDataDict(TypedDict):
 
 Permission = Literal[
     "chart:view",
-    "manager:add",
-    "manager:remove",
+    "permission:add",
+    "permission:remove",
     "account:new",
     "account:block",
-    "account:delete",
+    "account:view",
 ]

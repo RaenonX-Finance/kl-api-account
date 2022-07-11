@@ -15,6 +15,8 @@ class PxDataCol:
     DATE = "date"
     DATE_MARKET = "market_date"
 
+    EPOCH_SEC_TIME = "epoch_sec_time"
+
     # Common indicators
 
     @staticmethod

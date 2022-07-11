@@ -12,6 +12,7 @@ _AGGREGATE_DICT: dict[str, Callable | str | list[Callable | str] | dict[str, Cal
     PxDataCol.VOLUME: "sum",
     PxDataCol.DATE: "first",
     PxDataCol.DATE_MARKET: "first",
+    PxDataCol.EPOCH_SEC_TIME: "first",
     PxDataCol.EPOCH_SEC: "first",  # To keep `PxDataCol.EPOCH_SEC` accessible from the indexer
     PxDataCol.STRENGTH: "last",
 }

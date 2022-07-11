@@ -1,5 +1,7 @@
+import time
 from dataclasses import dataclass
-from typing import Generator
+from datetime import datetime
+from typing import Generator, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -51,33 +53,60 @@ _KEY_TS_MAP: dict[str, KeyTimestamps] = {
     "FITX": _TS_FUT_TW_MAIN,
 }
 
+SrLevelDataPair: TypeAlias = [dict[str, float], dict[str, float]]
+
+
+def _sr_levels_get_recent_n_only(
+    grouped_dict: dict[datetime, SrLevelDataPair],
+    count: int
+) -> list[tuple[datetime, SrLevelDataPair]]:
+    ret: list[tuple[datetime, SrLevelDataPair]] = []
+
+    data_count = 0
+
+    for timestamp_date in sorted(grouped_dict.keys()):
+        data_pair = grouped_dict[timestamp_date]
+
+        if len(data_pair) != 2:
+            continue  # Pair incomplete - skip
+
+        data_count += 1
+
+        ret.append((timestamp_date, data_pair))
+
+        if data_count >= count:
+            # Get recent <count> data at max
+            break
+
+    return ret
+
 
 def _sr_levels_range_of_pair(
     df_selected: DataFrame, *,
-    sort_grouped_levels: bool,
     group_basis: str,
 ) -> Generator[list[float], None, None]:
-    values_dict = df_selected.groupby(group_basis)[PxDataCol.OPEN].apply(list).to_dict()
+    columns = [PxDataCol.OPEN, PxDataCol.HIGH, PxDataCol.LOW]
 
-    for level_pair in values_dict.values():
-        if len(level_pair) != 2:
-            continue  # Pair incomplete - skip
+    sr_level_data = _sr_levels_get_recent_n_only(
+        df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict(),
+        5
+    )
 
-        higher = max(level_pair)
-        lower = min(level_pair)
+    flattened_data = [data for _, pair in sr_level_data for data in pair]
+
+    range_high = max(flattened_data, key=lambda item: item[PxDataCol.HIGH])[PxDataCol.HIGH]
+    range_low = min(flattened_data, key=lambda item: item[PxDataCol.LOW])[PxDataCol.LOW]
+
+    for timestamp_date, data_pair in sr_level_data:
+        higher = max(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]
+        lower = min(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]
 
         diff = higher - lower
 
-        levels_group = []
+        if diff < SR_LEVEL_MIN_DIFF:
+            yield []
 
-        if diff >= SR_LEVEL_MIN_DIFF:
-            levels_group.extend([lower - diff * diff_mult for diff_mult in range(8)])
-            levels_group.extend([higher + diff * diff_mult for diff_mult in range(8)])
-
-        if sort_grouped_levels:
-            yield sorted(levels_group)
-        else:
-            yield levels_group
+        yield list(np.arange(range_low, range_high, diff))
 
 
 def sr_levels_range_of_pair(df_1k: DataFrame, symbol: str) -> list[list[float]]:
@@ -87,13 +116,8 @@ def sr_levels_range_of_pair(df_1k: DataFrame, symbol: str) -> list[list[float]]:
         raise ValueError(f"Symbol `{symbol}` does not have key time picking logic")
 
     levels: list[list[float]] = []
-    sr_level_groups = _sr_levels_range_of_pair(
-        df_selected,
-        sort_grouped_levels=True,
-        group_basis=PxDataCol.AUTO_SR_GROUP_BASIS,
-    )
 
-    for levels_group in sr_level_groups:
+    for levels_group in _sr_levels_range_of_pair(df_selected, group_basis=PxDataCol.AUTO_SR_GROUP_BASIS):
         levels.append(levels_group)
 
     return levels
@@ -106,13 +130,8 @@ def sr_levels_range_of_pair_merged(df_1k: DataFrame, symbol: str) -> list[float]
     df_selected = _calc_key_time(df_1k, _TS_FUT_TW_BASIC)
 
     levels: list[float] = []
-    sr_level_groups = _sr_levels_range_of_pair(
-        df_selected,
-        sort_grouped_levels=False,
-        group_basis=PxDataCol.DATE_MARKET,
-    )
 
-    for levels_group in sr_level_groups:
+    for levels_group in _sr_levels_range_of_pair(df_selected, group_basis=PxDataCol.DATE_MARKET):
         levels.extend(levels_group)
 
     return sorted(levels)

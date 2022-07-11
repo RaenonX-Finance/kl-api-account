@@ -9,22 +9,23 @@ from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
 
 from kl_site_common.const import SR_LEVEL_MIN_DIFF
+from kl_site_common.utils import get_epoch_sec_time
 from kl_site_server.enums import PxDataCol
 
 
 @dataclass(kw_only=True)
 class KeyTimestamps:
-    open: str
-    close: str
+    open: int
+    close: int
 
 
-def _get_bool_series_at_time(df: DataFrame, close_ts: str) -> Series:
-    return df[PxDataCol.DATE].dt.time == pd.to_datetime(close_ts).time()
+def _get_bool_series_at_time(df: DataFrame, epoch_sec_time: int) -> Series:
+    return df[PxDataCol.EPOCH_SEC_TIME] == epoch_sec_time
 
 
-def _calc_key_time_add_group_basis(df: DataFrame, ts: str) -> DataFrame:
+def _calc_key_time_add_group_basis(df: DataFrame, epoch_sec_time: int) -> DataFrame:
     df[PxDataCol.AUTO_SR_GROUP_BASIS] = np.where(
-        _get_bool_series_at_time(df, ts),
+        _get_bool_series_at_time(df, epoch_sec_time),
         df[PxDataCol.DATE_MARKET] + BDay(1),
         df[PxDataCol.DATE_MARKET] + BDay(0),
     )
@@ -33,19 +34,19 @@ def _calc_key_time_add_group_basis(df: DataFrame, ts: str) -> DataFrame:
 
 
 def _calc_key_time(df_1k: DataFrame, key_timestamps: KeyTimestamps) -> DataFrame:
-    open_ts, close_ts = key_timestamps.open, key_timestamps.close
+    open_epoch, close_epoch = key_timestamps.open, key_timestamps.close
 
-    day_open = _get_bool_series_at_time(df_1k, open_ts)
-    day_close = _get_bool_series_at_time(df_1k, close_ts)
+    day_open = _get_bool_series_at_time(df_1k, open_epoch)
+    day_close = _get_bool_series_at_time(df_1k, close_epoch)
 
-    return _calc_key_time_add_group_basis(df_1k[day_open | day_close].copy(), close_ts)
+    return _calc_key_time_add_group_basis(df_1k[day_open | day_close].copy(), close_epoch)
 
 
-_TS_FUT_US: KeyTimestamps = KeyTimestamps(open="13:30", close="20:00")
+_TS_FUT_US: KeyTimestamps = KeyTimestamps(open=get_epoch_sec_time(13, 30), close=get_epoch_sec_time(20, 0))
 
-_TS_FUT_TW_MAIN: KeyTimestamps = KeyTimestamps(open="00:45", close="05:30")
+_TS_FUT_TW_MAIN: KeyTimestamps = KeyTimestamps(open=get_epoch_sec_time(0, 45), close=get_epoch_sec_time(5, 30))
 
-_TS_FUT_TW_BASIC: KeyTimestamps = KeyTimestamps(open="07:00", close="05:30")
+_TS_FUT_TW_BASIC: KeyTimestamps = KeyTimestamps(open=get_epoch_sec_time(7, 0), close=get_epoch_sec_time(5, 30))
 
 _KEY_TS_MAP: dict[str, KeyTimestamps] = {
     "NQ": _TS_FUT_US,
@@ -86,6 +87,9 @@ def _sr_levels_range_of_pair(
     group_basis: str,
 ) -> Generator[list[float], None, None]:
     columns = [PxDataCol.OPEN, PxDataCol.HIGH, PxDataCol.LOW]
+
+    today = pd.Timestamp.today(tz="UTC")
+    df_selected = df_selected[today - BDay(6):today]
 
     sr_level_data = _sr_levels_get_recent_n_only(
         df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict(),

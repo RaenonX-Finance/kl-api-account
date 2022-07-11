@@ -1,10 +1,11 @@
 from pandas import DataFrame
 
-from .fx import support_resistance_range_of_2_close
+from .fx import sr_levels_range_of_pair, sr_levels_range_of_pair_merged
 from .model import SRLevelsData
 
 
 def calc_support_resistance_levels(df_1k: DataFrame, symbol: str) -> SRLevelsData:
-    groups = support_resistance_range_of_2_close(df_1k, symbol)
-
-    return SRLevelsData(groups=groups)
+    return SRLevelsData(
+        groups=sr_levels_range_of_pair(df_1k, symbol),
+        basic=sr_levels_range_of_pair_merged(df_1k, symbol)
+    )

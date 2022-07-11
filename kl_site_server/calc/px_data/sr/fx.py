@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Generator
 
 import numpy as np
 import pandas as pd
@@ -42,6 +43,8 @@ _TS_FUT_US: KeyTimestamps = KeyTimestamps(open="13:30", close="20:00")
 
 _TS_FUT_TW_MAIN: KeyTimestamps = KeyTimestamps(open="00:45", close="05:30")
 
+_TS_FUT_TW_BASIC: KeyTimestamps = KeyTimestamps(open="07:00", close="05:30")
+
 _KEY_TS_MAP: dict[str, KeyTimestamps] = {
     "NQ": _TS_FUT_US,
     "YM": _TS_FUT_US,
@@ -49,14 +52,12 @@ _KEY_TS_MAP: dict[str, KeyTimestamps] = {
 }
 
 
-def support_resistance_range_of_2_close(df_1k: DataFrame, symbol: str) -> list[list[float]]:
-    if key_timestamp := _KEY_TS_MAP.get(symbol):
-        df_selected = _calc_key_time(df_1k, key_timestamp)
-    else:
-        raise ValueError(f"Symbol `{symbol}` does not have key time picking logic")
-
-    values_dict = df_selected.groupby(PxDataCol.AUTO_SR_GROUP_BASIS)[PxDataCol.OPEN].apply(list).to_dict()
-    levels: list[list[float]] = []
+def _sr_levels_range_of_pair(
+    df_selected: DataFrame, *,
+    sort_grouped_levels: bool,
+    group_basis: str,
+) -> Generator[list[float], None, None]:
+    values_dict = df_selected.groupby(group_basis)[PxDataCol.OPEN].apply(list).to_dict()
 
     for level_pair in values_dict.values():
         if len(level_pair) != 2:
@@ -73,6 +74,45 @@ def support_resistance_range_of_2_close(df_1k: DataFrame, symbol: str) -> list[l
             levels_group.extend([lower - diff * diff_mult for diff_mult in range(8)])
             levels_group.extend([higher + diff * diff_mult for diff_mult in range(8)])
 
-        levels.append(sorted(levels_group))
+        if sort_grouped_levels:
+            yield sorted(levels_group)
+        else:
+            yield levels_group
+
+
+def sr_levels_range_of_pair(df_1k: DataFrame, symbol: str) -> list[list[float]]:
+    if key_timestamp := _KEY_TS_MAP.get(symbol):
+        df_selected = _calc_key_time(df_1k, key_timestamp)
+    else:
+        raise ValueError(f"Symbol `{symbol}` does not have key time picking logic")
+
+    levels: list[list[float]] = []
+    sr_level_groups = _sr_levels_range_of_pair(
+        df_selected,
+        sort_grouped_levels=True,
+        group_basis=PxDataCol.AUTO_SR_GROUP_BASIS,
+    )
+
+    for levels_group in sr_level_groups:
+        levels.append(levels_group)
 
     return levels
+
+
+def sr_levels_range_of_pair_merged(df_1k: DataFrame, symbol: str) -> list[float]:
+    if symbol != "FITX":
+        return []
+
+    df_selected = _calc_key_time(df_1k, _TS_FUT_TW_BASIC)
+
+    levels: list[float] = []
+    sr_level_groups = _sr_levels_range_of_pair(
+        df_selected,
+        sort_grouped_levels=False,
+        group_basis=PxDataCol.DATE_MARKET,
+    )
+
+    for levels_group in sr_level_groups:
+        levels.extend(levels_group)
+
+    return sorted(levels)

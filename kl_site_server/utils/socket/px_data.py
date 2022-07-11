@@ -1,11 +1,7 @@
-import json
-import time
-import zlib
 from typing import Iterable, TYPE_CHECKING, TypeAlias, TypedDict
 
 from kl_site_common.const import (
-    EmaPeriodPair, EMA_PERIOD_PAIRS_STRONG_SR, EMA_PERIOD_PAIR_NET,
-    INDICATOR_EMA_PERIODS,
+    EMA_PERIOD_PAIRS_STRONG_SR, EMA_PERIOD_PAIR_NET, EmaPeriodPair, INDICATOR_EMA_PERIODS,
 )
 from kl_site_server.enums import PxDataCol
 from .px_data_market import PxDataMarketSingle, _from_realtime_data_single
@@ -29,6 +25,7 @@ class PxDataBar(TypedDict):
 
 class PxDataSupportResistance(TypedDict):
     groups: list[list[float]]
+    basic: list[float]
 
 
 class PxDataContract(TypedDict):
@@ -98,7 +95,8 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
 
 def _from_px_data_support_resistance(px_data: "PxData") -> PxDataSupportResistance:
     return {
-        "groups": px_data.sr_levels_data.groups
+        "groups": px_data.sr_levels_data.groups,
+        "basic": px_data.sr_levels_data.basic
     }
 
 

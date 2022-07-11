@@ -89,7 +89,7 @@ def _sr_levels_range_of_pair(
     columns = [PxDataCol.OPEN, PxDataCol.HIGH, PxDataCol.LOW]
 
     today = pd.Timestamp.today(tz="UTC")
-    df_selected = df_selected[today - BDay(6):today]
+    df_selected = df_selected[today - BDay(6):today]  # 6 because the most recent pair could be incomplete
 
     sr_level_data = _sr_levels_get_recent_n_only(
         df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict(),
@@ -109,8 +109,11 @@ def _sr_levels_range_of_pair(
 
         if diff < SR_LEVEL_MIN_DIFF:
             yield []
-
-        yield list(np.arange(range_low, range_high, diff))
+        else:
+            yield list(np.concatenate([
+                np.arange(lower, range_low, -diff),
+                np.arange(higher, range_high, diff),
+            ]))
 
 
 def sr_levels_range_of_pair(df_1k: DataFrame, symbol: str) -> list[list[float]]:

@@ -98,8 +98,8 @@ def _sr_levels_range_of_pair(
 
     flattened_data = [data for _, pair in sr_level_data for data in pair]
 
-    range_high = max(flattened_data, key=lambda item: item[PxDataCol.HIGH])[PxDataCol.HIGH]
-    range_low = min(flattened_data, key=lambda item: item[PxDataCol.LOW])[PxDataCol.LOW]
+    range_high = max(flattened_data, key=lambda item: item[PxDataCol.HIGH])[PxDataCol.HIGH] * 1.02  # +2%
+    range_low = min(flattened_data, key=lambda item: item[PxDataCol.LOW])[PxDataCol.LOW] * 0.98  # -2%
 
     for timestamp_date, data_pair in sr_level_data:
         higher = max(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]

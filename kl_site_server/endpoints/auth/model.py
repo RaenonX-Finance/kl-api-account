@@ -100,8 +100,8 @@ class SignupKeyModel(BaseModel):
 class UserSignupModel:
     """Data model to sign up a user."""
 
-    username: str = Form(...)
-    password: str = Form(...)
+    username: str = Form(..., min_length=6)
+    password: str = Form(..., min_length=8)
     signup_key: str | None = Form(None, description="Key used to sign up this account.")
 
     def to_db_user_model(self, *, expiry: datetime | None, admin: bool = False) -> DbUserModel:

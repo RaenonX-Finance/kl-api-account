@@ -3,7 +3,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import DATA_PX_UPDATE_MARKET_SEC, DATA_PX_UPDATE_OFFSET_SEC, DATA_PX_UPDATE_SEC
+from kl_site_common.const import (
+    DATA_PX_UPDATE_BATCH_SEC, DATA_PX_UPDATE_CALC_SEC, DATA_PX_UPDATE_MARKET_SEC, DATA_PX_UPDATE_SEC,
+)
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
@@ -33,7 +35,10 @@ class PxDataCacheEntry:
         self.data.pop(min(self.data.keys()))
 
     def update_all(self, bars: Iterable[BarDataDict]):
-        self.data = {bar[PxDataCol.EPOCH_SEC]: bar for bar in bars}
+        # `update_all` might be used for partial update,
+        # therefore using this instead of creating the whole dict then overwrites it
+        for bar in bars:
+            self.data[bar[PxDataCol.EPOCH_SEC]] = bar
 
     def update_latest_market(self, data: RealtimeData) -> None:
         """
@@ -102,8 +107,9 @@ class PxDataCacheEntry:
 class PxDataCache:
     data: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
-    last_market_update: float | None = field(init=False, default=None)
-    last_complete_update: float | None = field(init=False, default=None)
+    last_market_sent: float | None = field(init=False, default=None)
+    last_complete_sent: float | None = field(init=False, default=None)
+    last_complete_update_of_symbol: dict[str, float] = field(init=False, default_factory=dict)
 
     allow_force_send_once_complete: bool = field(init=False, default=False)
 
@@ -143,7 +149,12 @@ class PxDataCache:
         )
         self.data[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_list)
 
-        self._mark_force_send_once(data.handshake.symbol_complete, "Complete data updated")
+        self.last_complete_update_of_symbol[symbol_complete] = time.time()
+        if (
+                time.time() - min(self.last_complete_update_of_symbol.values()) < DATA_PX_UPDATE_BATCH_SEC
+                and set(self.data.keys()) == set(self.last_complete_update_of_symbol.keys())
+        ):
+            self._mark_force_send_once(symbol_complete, "Complete data updated")
 
     def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
         self.data[data.symbol_complete].update_latest_market(data)
@@ -157,8 +168,8 @@ class PxDataCache:
     def is_no_market_data_update(self, symbol_complete: str) -> bool:
         # > 3 secs no incoming market data
         return (
-                self.last_market_update is not None
-                and time.time() - self.last_market_update > 3
+                self.last_market_sent is not None
+                and time.time() - self.last_market_sent > 3
                 and self.is_px_data_ready(symbol_complete)
         )
 
@@ -166,11 +177,11 @@ class PxDataCache:
         if not self.is_px_data_ready(symbol_complete):
             return False
 
-        if self.last_market_update is None:
+        if self.last_market_sent is None:
             # First market data transmission
             return True
 
-        return time.time() - self.last_market_update > DATA_PX_UPDATE_MARKET_SEC
+        return time.time() - self.last_market_sent > DATA_PX_UPDATE_MARKET_SEC
 
     def is_send_complete_data_ok(self, symbol_complete: str) -> bool:
         if self.allow_force_send_once_complete:
@@ -180,21 +191,21 @@ class PxDataCache:
         if not self.is_px_data_ready(symbol_complete):
             return False
 
-        if self.last_complete_update is None:
+        if self.last_complete_sent is None:
             # First market data transmission
             return True
 
-        return time.time() - self.last_complete_update > DATA_PX_UPDATE_SEC
+        return time.time() - self.last_complete_sent > DATA_PX_UPDATE_SEC
 
     def rec_buffer_market_data(self, data: RealtimeData):
         self.buffer_market_data[data.security] = data
 
     def mark_market_data_sent(self) -> None:
-        self.last_market_update = time.time()
+        self.last_market_sent = time.time()
         self.buffer_market_data = {}
 
     def mark_complete_data_sent(self) -> None:
-        self.last_complete_update = time.time() - DATA_PX_UPDATE_OFFSET_SEC
+        self.last_complete_sent = time.time() - DATA_PX_UPDATE_CALC_SEC
 
     def complete_px_data_to_send(self, symbol_complete: str) -> list[PxData]:
         px_data_list = []

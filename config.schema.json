@@ -80,9 +80,8 @@
           "description": "Data streaming related settings.",
           "required": [
             "timeout-sec",
-            "px-update-sec",
-            "px-update-offset-sec",
-            "px-update-market-sec"
+            "px-update",
+            "px-history-refetch"
           ],
           "additionalProperties": false,
           "properties": {
@@ -91,20 +90,59 @@
               "description": "Data stream timeout in seconds. An error will be raised if no new data received after the given seconds.",
               "exclusiveMinimum": 0
             },
-            "px-update-sec": {
-              "type": "number",
-              "description": "Complete price data update frequency. This should be greater than market data update frequency since this sends more data and takes more time for calculation.",
-              "exclusiveMinimum": 0
+            "px-update": {
+              "type": "object",
+              "description": "Px data updating related settings.",
+              "required": [
+                "complete-interval-sec",
+                "complete-calc-sec",
+                "complete-batch-sec",
+                "market-interval-sec"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "complete-interval-sec": {
+                  "type": "number",
+                  "description": "Complete price data update frequency. This should be greater than market data update frequency since this sends more data and takes more time for calculation.",
+                  "exclusiveMinimum": 0
+                },
+                "complete-calc-sec": {
+                  "type": "number",
+                  "description": "Estimate complete px data calculation duration in seconds. This will be used to offset the additional time-gate on complete Px data sending. Check https://github.com/RaenonX-Finance/kl-site-back/issues/42 for more details.",
+                  "exclusiveMinimum": 0
+                },
+                "complete-batch-sec": {
+                  "type": "number",
+                  "description": "Complete px data force-send timeframe in seconds. If all complete Px data is updated within this timeframe, complete Px data will force-send once.",
+                  "exclusiveMinimum": 0
+                },
+                "market-interval-sec": {
+                  "type": "number",
+                  "description": "Market price data update frequency. This should be less than complete price data update frequency since this sends less data and takes almost no calculation.",
+                  "exclusiveMinimum": 0
+                }
+              }
             },
-            "px-update-offset-sec": {
-              "type": "number",
-              "description": "Time offset in seconds to apply on complete price data time-gating. This can be filled with the estimate calculating duration of a full complete px data, therefore offsetting the additional time-gate delay caused by the aforementioned calculation. Check https://github.com/RaenonX-Finance/kl-site-back/issues/42 for more details.",
-              "exclusiveMinimum": 0
-            },
-            "px-update-market-sec": {
-              "type": "number",
-              "description": "Market price data update frequency. This should be less than complete price data update frequency since this sends less data and takes almost no calculation.",
-              "exclusiveMinimum": 0
+            "px-history-refetch": {
+              "type": "object",
+              "description": "Px data refetching related settings.",
+              "required": [
+                "interval-sec",
+                "backward-min"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "interval-sec": {
+                  "type": "number",
+                  "description": "Px data refetching frequency in seconds.",
+                  "exclusiveMinimum": 0
+                },
+                "backward-min": {
+                  "type": "integer",
+                  "description": "Data duration to fetch in minute counting backward. A value of 2 means each refetch grabs the data up to 2 mins before.",
+                  "exclusiveMinimum": 0
+                }
+              }
             }
           }
         },

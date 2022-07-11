@@ -1,6 +1,9 @@
+import threading
 import time
+from datetime import datetime, timedelta
 from typing import Iterable
 
+from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_MIN, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_warning
 from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_market
 from kl_site_server.model import (
@@ -16,6 +19,8 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
+
+        threading.Thread(target=self._history_data_refetcher).start()
 
     def request_px_data(self, params: TouchancePxRequestParams) -> None:
         params.reset_request_timeout()
@@ -45,9 +50,9 @@ class TouchanceDataClient(TouchanceApiClient):
             in px_cache_entry.to_px_data(self._px_data_cache.period_mins[px_cache_entry.symbol_complete])
         )
 
-    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> None:
+    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
         if not self._px_data_cache.is_send_complete_data_ok(symbol_complete):
-            return
+            return False
 
         _start = time.time()
 
@@ -59,6 +64,7 @@ class TouchanceDataClient(TouchanceApiClient):
         )
 
         self._px_data_cache.mark_complete_data_sent()
+        return True
 
     def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
         if not self._px_data_cache.is_send_market_data_ok(symbol_complete):
@@ -71,6 +77,14 @@ class TouchanceDataClient(TouchanceApiClient):
         )
 
         self._px_data_cache.mark_market_data_sent()
+
+    def _history_data_refetcher(self):
+        while True:
+            for params in self._px_request_params.values():
+                start = datetime.utcnow() - timedelta(minutes=DATA_PX_REFETCH_BACKWARD_MIN)
+                end = datetime.utcnow() + timedelta(minutes=2)
+                self.get_history(params.symbol_obj, "1K", start, end)
+            time.sleep(DATA_PX_REFETCH_INTERVAL_SEC)
 
     def on_received_history_data(self, data: HistoryData) -> None:
         _start = time.time()
@@ -88,7 +102,7 @@ class TouchanceDataClient(TouchanceApiClient):
             params = self._px_request_params[data.symbol_complete]
 
             if params.should_re_request:
-                print_warning(f"[TC Client] Re-requesting Px data of {data.symbol_complete}")
+                print_warning(f"[TC Client] Re-requesting Px data of {data.security}")
                 self.request_px_data(params)
 
             return

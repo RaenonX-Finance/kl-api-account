@@ -71,10 +71,10 @@ class QuoteAPI(TCoreZMQ):
     ) -> SubscribePxHistoryMessage:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         print_log(
-            f"[TC Quote] Subscribing historical data of "
-            f"[yellow]{symbol.symbol_complete}[/yellow] at [yellow]{interval}[/yellow]"
+            f"[TC Quote] Getting historical data of "
+            f"[yellow]{symbol.symbol}[/yellow] at [yellow]{interval}[/yellow] "
+            f"starting from {start} to {end}"
         )
-        print_log(f"[TC Quote] Historical data starts from {start} to {end}")
 
         self.register_symbol_info(symbol)
 

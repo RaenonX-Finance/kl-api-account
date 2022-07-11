@@ -80,11 +80,14 @@ class TouchanceDataClient(TouchanceApiClient):
 
     def _history_data_refetcher(self):
         while True:
+            time.sleep(DATA_PX_REFETCH_INTERVAL_SEC)
+            if not self._px_data_cache.is_all_px_data_ready():
+                continue
+
             for params in self._px_request_params.values():
                 start = datetime.utcnow() - timedelta(minutes=DATA_PX_REFETCH_BACKWARD_MIN)
                 end = datetime.utcnow() + timedelta(minutes=2)
                 self.get_history(params.symbol_obj, "1K", start, end)
-            time.sleep(DATA_PX_REFETCH_INTERVAL_SEC)
 
     def on_received_history_data(self, data: HistoryData) -> None:
         _start = time.time()

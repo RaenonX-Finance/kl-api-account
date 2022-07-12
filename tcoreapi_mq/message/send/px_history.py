@@ -15,14 +15,22 @@ class SubscribePxHistoryRequest(RequestBase):
     end_time: datetime
 
     def to_message_json(self) -> dict:
+        start_str = self.start_time.strftime("%Y%m%d%H")
+        end_str = self.end_time.strftime("%Y%m%d%H")
+
+        if start_str == end_str:
+            raise ValueError(
+                "Per Touchance customer service's response, `start_time` and `end_time` must be different."
+            )
+
         return {
             "Request": "SUBQUOTE",
             "SessionKey": self.session_key,
             "Param": {
                 "Symbol": self.symbol.symbol_complete,
                 "SubDataType": self.interval,
-                "StartTime": self.start_time.strftime("%Y%m%d%H"),
-                "EndTime": self.end_time.strftime("%Y%m%d%H")
+                "StartTime": start_str,
+                "EndTime": end_str
             }
         }
 

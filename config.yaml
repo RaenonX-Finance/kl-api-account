@@ -17,7 +17,7 @@ data:
       market-interval-sec: 0.15
     px-history-refetch:
       interval-sec: 10
-      backward-min: 2
+      backward-hour: 1
   source:
     - type: Futures
       exchange: CME

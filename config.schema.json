@@ -128,7 +128,7 @@
               "description": "Px data refetching related settings.",
               "required": [
                 "interval-sec",
-                "backward-min"
+                "backward-hour"
               ],
               "additionalProperties": false,
               "properties": {
@@ -137,9 +137,9 @@
                   "description": "Px data refetching frequency in seconds.",
                   "exclusiveMinimum": 0
                 },
-                "backward-min": {
+                "backward-hour": {
                   "type": "integer",
-                  "description": "Data duration to fetch in minute counting backward. A value of 2 means each refetch grabs the data up to 2 mins before.",
+                  "description": "Data duration to fetch in hour counting backward. A value of 2 means each refetch grabs the data up to 2 hours before.",
                   "exclusiveMinimum": 0
                 }
               }

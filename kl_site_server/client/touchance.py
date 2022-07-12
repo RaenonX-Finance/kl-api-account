@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 from typing import Iterable
 
-from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_MIN, DATA_PX_REFETCH_INTERVAL_SEC
+from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_warning
 from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_market
 from kl_site_server.model import (
@@ -85,7 +85,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 continue
 
             for params in self._px_request_params.values():
-                start = datetime.utcnow() - timedelta(minutes=DATA_PX_REFETCH_BACKWARD_MIN)
+                start = datetime.utcnow() - timedelta(hours=DATA_PX_REFETCH_BACKWARD_HOUR)
                 end = datetime.utcnow() + timedelta(minutes=2)
                 self.get_history(params.symbol_obj, "1K", start, end)
 

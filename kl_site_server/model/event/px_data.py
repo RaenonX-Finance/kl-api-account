@@ -15,7 +15,7 @@ class OnPxDataUpdatedEvent:
 
     def __str__(self):
         data_details = " / ".join((
-            f"{px_data.pool.symbol} @ {px_data.current_close:.2f} - "
+            f"[yellow]{px_data.pool.symbol}[/yellow] @ {px_data.current_close:.2f} - "
             f"{px_data.latest_time.strftime('%m-%d %H:%M')} ({px_data.period_min}) - "
             f"#{px_data.data_count}"
         ) for px_data in self.px_data_list)
@@ -28,4 +28,4 @@ class OnMarketDataReceivedEvent:
     data: dict[str, RealtimeData]  # Security / Data
 
     def __str__(self):
-        return " / ".join(f"{data.security} @ {data.last_px:.2f}" for data in self.data.values())
+        return " / ".join(f"[yellow]{data.security}[/yellow] @ {data.last_px:.2f}" for data in self.data.values())

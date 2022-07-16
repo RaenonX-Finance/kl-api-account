@@ -9,7 +9,7 @@ from ..const import auth_db_signup_key
 from ..model import SignupKeyModel, UserDataModel
 
 
-async def generate_account_creation_key(
+def generate_account_creation_key(
     _: UserDataModel = Depends(get_admin_user_by_oauth2_token),
     expiry: datetime = Form(...),
 ) -> SignupKeyModel:

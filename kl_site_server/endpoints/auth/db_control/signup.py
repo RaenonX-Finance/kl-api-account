@@ -8,7 +8,7 @@ from ..exceptions import generate_bad_request_exception
 from ..model import SignupKeyModel, UserDataModel, UserSignupModel
 
 
-async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSignupModel:
+def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSignupModel:
     if auth_db_users.count_documents({}) == 0:
         # No user exists - user to signup is the admin
         auth_db_users.insert_one(user.to_db_user_model(admin=True, expiry=None).dict())
@@ -33,5 +33,5 @@ async def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSi
     return user
 
 
-async def signup_user(user: UserSignupModel = Depends(signup_user_ensure_unique)) -> UserDataModel:
-    return await get_user_data_by_username(user.username)
+def signup_user(user: UserSignupModel = Depends(signup_user_ensure_unique)) -> UserDataModel:
+    return get_user_data_by_username(user.username)

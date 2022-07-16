@@ -11,7 +11,7 @@ from ..model import DbUserModel, RefreshAccessTokenModel, UserDataModel
 from ..secret import create_access_token, decode_access_token, is_password_match
 
 
-async def get_user_by_username(
+def get_user_by_username(
     username: str
 ) -> DbUserModel | None:
     find_one_result = auth_db_users.find_one({"username": username})
@@ -22,7 +22,7 @@ async def get_user_by_username(
     return DbUserModel(**find_one_result)
 
 
-async def get_user_data_by_username(
+def get_user_data_by_username(
     username: str
 ) -> UserDataModel | None:
     find_one_result = auth_db_users.find_one({"username": username})
@@ -37,7 +37,7 @@ async def get_user_data_by_username(
     return UserDataModel(**find_one_result)
 
 
-async def get_user_data_by_oauth2_token(
+def get_user_data_by_oauth2_token(
     token: str = Depends(auth_oauth2_scheme)
 ) -> UserDataModel:
     try:
@@ -51,14 +51,14 @@ async def get_user_data_by_oauth2_token(
     except JWTError as ex:
         raise generate_unauthorized_exception(f"Invalid token - JWT decode error: {type(ex)}")
 
-    user = await get_user_data_by_username(username)
+    user = get_user_data_by_username(username)
     if user is None:
         raise generate_unauthorized_exception("Invalid token - user not exists")
 
     return user
 
 
-async def get_active_user_by_oauth2_token(
+def get_active_user_by_oauth2_token(
     current_user: UserDataModel = Depends(get_user_data_by_oauth2_token)
 ) -> UserDataModel:
     if current_user.blocked:
@@ -67,7 +67,7 @@ async def get_active_user_by_oauth2_token(
     return current_user
 
 
-async def get_admin_user_by_oauth2_token(
+def get_admin_user_by_oauth2_token(
     current_user: UserDataModel = Depends(get_active_user_by_oauth2_token)
 ) -> UserDataModel:
     if not current_user.admin:
@@ -76,10 +76,10 @@ async def get_admin_user_by_oauth2_token(
     return current_user
 
 
-async def authenticate_user_by_credentials(
+def authenticate_user_by_credentials(
     form: OAuth2PasswordRequestForm = Depends()
 ) -> DbUserModel:
-    user = await get_user_by_username(form.username)
+    user = get_user_by_username(form.username)
 
     if not user:
         raise generate_unauthorized_exception("User not exists")
@@ -90,7 +90,7 @@ async def authenticate_user_by_credentials(
     return user
 
 
-async def generate_access_token_on_doc(
+def generate_access_token_on_doc(
     user: DbUserModel = Depends(authenticate_user_by_credentials)
 ) -> str:
     return create_access_token(
@@ -99,7 +99,7 @@ async def generate_access_token_on_doc(
     )
 
 
-async def authenticate_user_with_callback(
+def authenticate_user_with_callback(
     form: OAuth2PasswordRequestForm = Depends(),
     redirect_uri: str = Body(...),
 ) -> DbUserModel:
@@ -109,10 +109,10 @@ async def authenticate_user_with_callback(
     if FASTAPI_AUTH_CALLBACK != redirect_uri:
         raise generate_bad_request_exception("Callback URI mismatch")
 
-    return await authenticate_user_by_credentials(form)
+    return authenticate_user_by_credentials(form)
 
 
-async def generate_access_token(
+def generate_access_token(
     user: DbUserModel = Depends(authenticate_user_with_callback)
 ) -> str:
     return create_access_token(
@@ -121,7 +121,7 @@ async def generate_access_token(
     )
 
 
-async def refresh_access_token(
+def refresh_access_token(
     body: RefreshAccessTokenModel = Depends(),
     user_data: UserDataModel = Depends(get_user_data_by_oauth2_token)
 ) -> str:

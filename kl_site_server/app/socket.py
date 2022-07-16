@@ -11,7 +11,7 @@ def register_handlers(client: TouchanceDataClient):
     async def on_request_init_data(session_id: str, access_token: str):
         print_socket_event(SocketEvent.INIT, session_id=session_id)
 
-        config = await get_user_config_by_token(access_token)
+        config = get_user_config_by_token(access_token)
         await fast_api_socket.emit(
             SocketEvent.INIT,
             to_socket_message_init_data(config)

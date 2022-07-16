@@ -7,7 +7,7 @@ from ..const import auth_crypto_ctx, auth_db_validation
 from ..model import UserDataModel, ValidationSecretsModel
 
 
-async def generate_validation_secrets(
+def generate_validation_secrets(
     _: UserDataModel = Depends(get_admin_user_by_oauth2_token)
 ) -> ValidationSecretsModel:
     model = ValidationSecretsModel(

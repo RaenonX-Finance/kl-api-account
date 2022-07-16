@@ -36,9 +36,9 @@ def get_user_config(
     return config_model
 
 
-async def get_user_config_by_token(token: str) -> UserConfigModel:
-    user_data = await get_user_data_by_oauth2_token(token)
-    user_data = await get_active_user_by_oauth2_token(user_data)
+def get_user_config_by_token(token: str) -> UserConfigModel:
+    user_data = get_user_data_by_oauth2_token(token)
+    user_data = get_active_user_by_oauth2_token(user_data)
 
     return get_user_config(user_data)
 

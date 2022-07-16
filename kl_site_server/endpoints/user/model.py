@@ -50,15 +50,18 @@ class UserConfigModel(BaseModel):
     Data model containing user config.
 
     This model is used in the database.
+
+    ``None`` values mean to use the default config for the frontend,
+    and the corresponding config has not been backed up yet.
     """
     account_id: PyObjectId = Field(..., description="Account ID (ObjectID) who has this config.")
-    slot_map: dict = Field(
+    slot_map: dict | None = Field(
         ...,
         description="Slot mapping to Px data identifier. "
                     "Px data identifier should be in the format of `<Security>@<PeriodMin>`."
     )
-    layout_config: dict = Field(..., description="Layout config of slots.")
-    layout_type: LayoutType = Field(..., description="Layout type.")
+    layout_config: dict | None = Field(..., description="Layout config of slots.")
+    layout_type: LayoutType | None = Field(..., description="Layout type.")
 
     class Config:
         allow_population_by_field_name = True

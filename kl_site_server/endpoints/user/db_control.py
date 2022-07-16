@@ -11,14 +11,9 @@ from ..auth import (
 def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:
     model = UserConfigModel(
         account_id=account_id,
-        slot_map={
-            "FITX@1": "A",
-            "NQ@1": "B",
-            "YM@1": "C",
-            "FITX@5": "D",
-        },
-        layout_config={},
-        layout_type="4-2x2",
+        slot_map=None,
+        layout_config=None,
+        layout_type=None,
     )
     user_db_config.insert_one(model.dict())
 

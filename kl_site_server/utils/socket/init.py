@@ -1,7 +1,8 @@
-import json
 from typing import TypeAlias, TypedDict
 
 from kl_site_common.const import SR_CUSTOM_LEVELS
+from kl_site_server.endpoints import UserConfigModel
+from .utils import dump_and_compress
 
 
 class CustomSrLevel(TypedDict):
@@ -13,6 +14,7 @@ CustomSrLevelDict: TypeAlias = dict[str, list[CustomSrLevel]]
 
 class InitData(TypedDict):
     customSrLevelDict: CustomSrLevelDict
+    config: UserConfigModel
 
 
 def _to_custom_sr_level_dict() -> CustomSrLevelDict:
@@ -27,9 +29,10 @@ def _to_custom_sr_level_dict() -> CustomSrLevelDict:
     }
 
 
-def to_socket_message_init_data() -> str:
+def to_socket_message_init_data(config: UserConfigModel) -> bytes:
     data: InitData = {
         "customSrLevelDict": _to_custom_sr_level_dict(),
+        "config": config,
     }
 
-    return json.dumps(data)
+    return dump_and_compress(data)

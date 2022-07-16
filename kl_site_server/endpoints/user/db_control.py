@@ -3,7 +3,9 @@ from fastapi import Depends
 from kl_site_common.db import PyObjectId
 from .const import user_db_config
 from .model import UpdateConfigModel, UserConfigModel
-from ..auth import UserDataModel, get_active_user_by_oauth2_token
+from ..auth import (
+    UserDataModel, get_active_user_by_oauth2_token, get_user_data_by_oauth2_token,
+)
 
 
 def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:
@@ -34,7 +36,14 @@ def get_user_config(
     return config_model
 
 
-async def update_slot_map(
+async def get_user_config_by_token(token: str) -> UserConfigModel:
+    user_data = await get_user_data_by_oauth2_token(token)
+    user_data = await get_active_user_by_oauth2_token(user_data)
+
+    return get_user_config(user_data)
+
+
+def update_slot_map(
     config_og: UserConfigModel = Depends(get_user_config),
     body: UpdateConfigModel = Depends()
 ) -> dict:
@@ -46,7 +55,7 @@ async def update_slot_map(
     return config_model.slot_map
 
 
-async def update_layout_config(
+def update_layout_config(
     config_og: UserConfigModel = Depends(get_user_config),
     body: UpdateConfigModel = Depends()
 ) -> dict:

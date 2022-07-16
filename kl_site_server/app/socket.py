@@ -1,18 +1,20 @@
 from kl_site_common.utils import print_socket_event
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.const import fast_api_socket
+from kl_site_server.endpoints import get_user_config_by_token
 from kl_site_server.enums import SocketEvent
 from kl_site_server.utils import to_socket_message_init_data, to_socket_message_px_data_list
 
 
 def register_handlers(client: TouchanceDataClient):
     @fast_api_socket.on(SocketEvent.INIT)
-    async def on_request_init_data(session_id: str, *_):
+    async def on_request_init_data(session_id: str, access_token: str):
         print_socket_event(SocketEvent.INIT, session_id=session_id)
 
+        config = await get_user_config_by_token(access_token)
         await fast_api_socket.emit(
             SocketEvent.INIT,
-            to_socket_message_init_data()
+            to_socket_message_init_data(config)
         )
 
     @fast_api_socket.on(SocketEvent.PX_INIT)

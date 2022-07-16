@@ -1,21 +1,11 @@
 from fastapi import APIRouter, Depends
 
 from .db_control import (
-    get_user_config as get_user_config_db, update_layout_config as update_layout_config_db,
+    update_layout_config as update_layout_config_db,
     update_slot_map as update_slot_map_db,
 )
-from .model import UserConfigModel
 
 user_router = APIRouter(prefix="/user")
-
-
-@user_router.get(
-    "/config/get",
-    description="Get the current user config.",
-    response_model=UserConfigModel,
-)
-async def get_user_config(config: UserConfigModel = Depends(get_user_config_db)) -> UserConfigModel:
-    return config
 
 
 @user_router.post(

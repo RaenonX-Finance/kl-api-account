@@ -3,6 +3,7 @@ from datetime import datetime
 from rich.console import Console, Text
 
 from kl_site_common.const import LOG_SUPPRESS_WARNINGS, LOG_TO_DIR, console, console_error
+from kl_site_common.env import DEVELOPMENT_MODE
 from .log import LogLevels, log_message_to_file
 
 
@@ -13,11 +14,16 @@ def _get_current_timestamp() -> str:
 def print_console(rich_console: Console, level: LogLevels, message: str, *, timestamp_color: str):
     if LOG_TO_DIR:
         log_message_to_file(level, Text.from_markup(message).plain)
-    else:
-        rich_console.print(
-            f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}]: {message}",
-            soft_wrap=True,
-        )  # Disable soft wrapping
+
+        if not DEVELOPMENT_MODE:
+            return
+
+    message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}]: {message}"
+
+    if DEVELOPMENT_MODE:
+        message = f"[bold][yellow]-DEV-[/yellow][/bold] {message}"
+
+    rich_console.print(message, soft_wrap=True)  # Disable soft wrapping
 
 
 def print_log(message: str):

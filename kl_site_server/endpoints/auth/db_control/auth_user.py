@@ -4,7 +4,7 @@ from fastapi import Body, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import ExpiredSignatureError, JWTError
 
-from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FAST_API_AUTH_TOKEN_EXPIRY_MINS
+from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FASTAPI_AUTH_TOKEN_EXPIRY_MINS
 from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
 from ..exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
 from ..model import DbUserModel, RefreshAccessTokenModel, UserDataModel
@@ -95,7 +95,7 @@ def generate_access_token_on_doc(
 ) -> str:
     return create_access_token(
         username=user.username,
-        expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
+        expiry_delta=timedelta(minutes=FASTAPI_AUTH_TOKEN_EXPIRY_MINS)
     )
 
 
@@ -117,7 +117,7 @@ def generate_access_token(
 ) -> str:
     return create_access_token(
         username=user.username,
-        expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
+        expiry_delta=timedelta(minutes=FASTAPI_AUTH_TOKEN_EXPIRY_MINS)
     )
 
 
@@ -130,5 +130,5 @@ def refresh_access_token(
 
     return create_access_token(
         username=user_data.username,
-        expiry_delta=timedelta(minutes=FAST_API_AUTH_TOKEN_EXPIRY_MINS)
+        expiry_delta=timedelta(minutes=FASTAPI_AUTH_TOKEN_EXPIRY_MINS)
     )

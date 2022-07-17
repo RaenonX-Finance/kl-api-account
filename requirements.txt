@@ -12,7 +12,7 @@ rich
 # Config file
 pyyaml
 jsonschema
-python-dotenv
+environs
 
 # Server
 fastapi[all]

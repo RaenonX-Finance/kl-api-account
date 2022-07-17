@@ -122,7 +122,7 @@ def generate_access_token(
 
 
 def refresh_access_token(
-    body: RefreshAccessTokenModel = Depends(),
+    body: RefreshAccessTokenModel = Body(...),
     user_data: UserDataModel = Depends(get_user_data_by_oauth2_token)
 ) -> str:
     if not auth_db_validation.find_one({"client_id": body.client_id, "client_secret": body.client_secret}):

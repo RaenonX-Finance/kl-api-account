@@ -1,17 +1,7 @@
-"""
-Use ``pydantic`` models for database or response model.
-
-Use ``dataclass`` with ``fastapi.Form()`` for form data and intermediate data models.
-
-> Content type of ``POST`` request should use ``dataclass`` or normal class
-> to correctly parse the data sent via ``Content-Type`` of ``application/x-www-form-urlencoded``.
-"""
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Literal
 
 from bson import ObjectId
-from fastapi import Form
 from pydantic import BaseModel, EmailStr, Field
 
 from kl_site_common.db import PyObjectId
@@ -62,11 +52,10 @@ class OAuthToken(BaseModel):
     token_type: Literal["bearer"]
 
 
-@dataclass
-class RefreshAccessTokenModel:
+class RefreshAccessTokenModel(BaseModel):
     """Data model containing the data needed for refreshing the access token."""
-    client_id: str = Form(..., description="OAuth client ID.")
-    client_secret: str = Form(..., description="OAuth client secret.")
+    client_id: str = Field(..., description="OAuth client ID.")
+    client_secret: str = Field(..., description="OAuth client secret.")
 
 
 class ValidationSecretsModel(BaseModel):
@@ -75,14 +64,8 @@ class ValidationSecretsModel(BaseModel):
     client_secret: str
 
 
-class SignupKeyModel(BaseModel):
-    """
-    Data model containing the account signup key.
-
-    This model is used in the database.
-    """
-    signup_key: str = Field(..., description="Account signup key.")
-    expiry: datetime = Field(..., description="Signup key expiry. The signup key will be deleted after this time.")
+class SignupKeyGenerationModel(BaseModel):
+    """Data model used when generating an account."""
     account_expiry: datetime = Field(
         ...,
         description="Account expiry. "
@@ -90,12 +73,21 @@ class SignupKeyModel(BaseModel):
     )
 
 
-@dataclass
-class UserSignupModel:
+class SignupKeyModel(SignupKeyGenerationModel):
+    """
+    Data model containing the account signup key.
+
+    This model is used in the database.
+    """
+    signup_key: str = Field(..., description="Account signup key.")
+    expiry: datetime = Field(..., description="Signup key expiry. The signup key will be deleted after this time.")
+
+
+class UserSignupModel(BaseModel):
     """Data model to sign up a user."""
-    username: str = Form(..., min_length=6)
-    password: str = Form(..., min_length=8)
-    signup_key: str | None = Form(None, description="Key used to sign up this account.")
+    username: str = Field(..., min_length=6)
+    password: str = Field(..., min_length=8)
+    signup_key: str | None = Field(None, description="Key used to sign up this account.")
 
     def to_db_user_model(self, *, expiry: datetime | None, admin: bool = False) -> DbUserModel:
         if not admin and not self.signup_key:

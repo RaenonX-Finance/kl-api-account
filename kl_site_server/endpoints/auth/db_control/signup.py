@@ -1,5 +1,5 @@
 import pymongo.errors
-from fastapi import Depends
+from fastapi import Body, Depends
 
 from kl_site_common.db import start_mongo_transaction
 from .auth_user import get_user_data_by_username
@@ -8,7 +8,7 @@ from ..exceptions import generate_bad_request_exception
 from ..model import SignupKeyModel, UserDataModel, UserSignupModel
 
 
-def signup_user_ensure_unique(user: UserSignupModel = Depends()) -> UserSignupModel:
+def signup_user_ensure_unique(user: UserSignupModel = Body(...)) -> UserSignupModel:
     if auth_db_users.count_documents({}) == 0:
         # No user exists - user to signup is the admin
         auth_db_users.insert_one(user.to_db_user_model(admin=True, expiry=None).dict())

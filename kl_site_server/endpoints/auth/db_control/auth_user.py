@@ -4,7 +4,7 @@ from fastapi import Body, Depends
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import ExpiredSignatureError, JWTError
 
-from kl_site_common.env import FASTAPI_AUTH_CALLBACK, FASTAPI_AUTH_TOKEN_EXPIRY_MINS
+from kl_site_common.env import DEVELOPMENT_MODE, FASTAPI_AUTH_CALLBACK, FASTAPI_AUTH_TOKEN_EXPIRY_MINS
 from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
 from ..exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
 from ..model import DbUserModel, RefreshAccessTokenModel, UserDataModel
@@ -93,6 +93,9 @@ def authenticate_user_by_credentials(
 def generate_access_token_on_doc(
     user: DbUserModel = Depends(authenticate_user_by_credentials)
 ) -> str:
+    if not DEVELOPMENT_MODE:
+        raise generate_unauthorized_exception("Not operating in development mode. This is disabled.")
+
     return create_access_token(
         username=user.username,
         expiry_delta=timedelta(minutes=FASTAPI_AUTH_TOKEN_EXPIRY_MINS)

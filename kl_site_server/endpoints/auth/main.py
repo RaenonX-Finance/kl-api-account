@@ -39,7 +39,9 @@ async def get_access_token_by_auto_refresh(access_token: str = Depends(refresh_a
 
 @auth_router.post(
     "/token-doc",
-    description="Get an access token using account credentials. Should be used on the interactive document only.",
+    description="Get an access token using account credentials. "
+                "Should be used on the interactive document only. "
+                "Disabled if `DEV` in the environment variables is not truthy.",
     response_model=OAuthToken
 )
 async def get_access_token_by_credentials_on_doc(

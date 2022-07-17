@@ -1,16 +1,6 @@
-"""
-Use ``pydantic`` models for database or response model.
-
-Use ``dataclass`` with ``fastapi.Form()`` for form data and intermediate data models.
-
-> Content type of ``POST`` request should use ``dataclass`` or normal class
-> to correctly parse the data sent via ``Content-Type`` of ``application/x-www-form-urlencoded``.
-"""
-from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import Literal, TypeAlias, Union
 
 from bson import ObjectId
-from fastapi import Form
 from pydantic import BaseModel, Field
 
 from kl_site_common.db import PyObjectId
@@ -38,11 +28,29 @@ LayoutType: TypeAlias = Literal[
     "4-B2"
 ]
 
+ConfigKeyStringData: TypeAlias = Literal[
+    "layout_type",
+]
 
-@dataclass
-class UpdateConfigModel:
-    """Config update data model."""
-    data: dict = Form(..., description="Config object. The placement of the object depends on the called EP.")
+ConfigKeyDictData: TypeAlias = Literal[
+    "slot_map",
+    "layout_config",
+]
+
+
+class UpdateConfigModelStringData(BaseModel):
+    """Config update data model with data being :class:`str`."""
+    key: ConfigKeyStringData = Field(..., description="Key of the config to update.")
+    data: str = Field(..., description="Updated config dict.")
+
+
+class UpdateConfigModelDictData(BaseModel):
+    """Config update data model with data being :class:`dict`."""
+    key: ConfigKeyDictData = Field(..., description="Key of the config to update.")
+    data: dict = Field(..., description="Updated config dict.")
+
+
+UpdateConfigModel: TypeAlias = Union[UpdateConfigModelStringData, UpdateConfigModelDictData]
 
 
 class UserConfigModel(BaseModel):

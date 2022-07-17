@@ -1,11 +1,11 @@
-from fastapi import Depends
+from typing import Any
+
+from fastapi import Body, Depends
 
 from kl_site_common.db import PyObjectId
 from .const import user_db_config
 from .model import UpdateConfigModel, UserConfigModel
-from ..auth import (
-    UserDataModel, get_active_user_by_oauth2_token, get_user_data_by_oauth2_token,
-)
+from ..auth import UserDataModel, get_active_user_by_oauth2_token, get_user_data_by_oauth2_token
 
 
 def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:
@@ -26,9 +26,9 @@ def get_user_config(
     config_model = user_db_config.find_one({"account_id": user.id})
 
     if not config_model:
-        config_model = create_new_user_config(user.id)
+        return create_new_user_config(user.id)
 
-    return config_model
+    return UserConfigModel(**config_model)
 
 
 def get_user_config_by_token(token: str) -> UserConfigModel:
@@ -38,25 +38,13 @@ def get_user_config_by_token(token: str) -> UserConfigModel:
     return get_user_config(user_data)
 
 
-def update_slot_map(
+def update_config(
     config_og: UserConfigModel = Depends(get_user_config),
-    body: UpdateConfigModel = Depends()
-) -> dict:
+    body: UpdateConfigModel = Body(..., discriminator="key")
+) -> Any:
     config_model = user_db_config.find_one_and_update(
         {"account_id": config_og.account_id},
-        {"$set": {"slot_map": body.data}}
+        {"$set": {body.key: body.data}}
     )
 
-    return config_model.slot_map
-
-
-def update_layout_config(
-    config_og: UserConfigModel = Depends(get_user_config),
-    body: UpdateConfigModel = Depends()
-) -> dict:
-    config_model = user_db_config.find_one_and_update(
-        {"account_id": config_og.account_id},
-        {"$set": {"layout_config": body.data}}
-    )
-
-    return config_model.layout_config
+    return config_model[body.key]

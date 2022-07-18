@@ -1,7 +1,7 @@
 from datetime import datetime
 
 from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
-from kl_site_common.utils import print_log
+from kl_site_common.utils import print_log, print_warning
 from .core import TCoreZMQ
 from .message import (
     CompletePxHistoryMessage, CompletePxHistoryRequest, GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval,
@@ -70,7 +70,7 @@ class QuoteAPI(TCoreZMQ):
         interval: HistoryInterval,
         start: datetime,
         end: datetime,
-    ) -> SubscribePxHistoryMessage:
+    ) -> SubscribePxHistoryMessage | None:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         print_log(
             f"[TC Quote] Requesting history data of "
@@ -79,14 +79,18 @@ class QuoteAPI(TCoreZMQ):
         )
 
         with self.lock:
-            req = SubscribePxHistoryRequest(
-                session_key=self.session_key,
-                symbol=symbol,
-                interval=interval,
-                start_time=start,
-                end_time=end
-            )
-            self.socket.send_string(req.to_message())
+            try:
+                req = SubscribePxHistoryRequest(
+                    session_key=self.session_key,
+                    symbol=symbol,
+                    interval=interval,
+                    start_time=start,
+                    end_time=end
+                )
+                self.socket.send_string(req.to_message())
+            except ValueError:
+                print_warning(f"[TC Quote] Start time = end time, omitting request ({start} ~ {end})")
+                return None
 
             return SubscribePxHistoryMessage(message=self.socket.get_message())
 

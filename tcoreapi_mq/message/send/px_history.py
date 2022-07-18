@@ -20,7 +20,8 @@ class SubscribePxHistoryRequest(RequestBase):
 
         if start_str == end_str:
             raise ValueError(
-                "Per Touchance customer service's response, `start_time` and `end_time` must be different."
+                "Per Touchance customer service's response, `start_time` and `end_time` must be different. "
+                f"(Current: {start_str})"
             )
 
         return {

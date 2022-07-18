@@ -174,19 +174,23 @@ class PxDataCache:
         )
         if data.is_1k:
             if symbol_complete not in self.data_1k:
-                raise ValueError(
-                    f"Requested to update complete data of {symbol_complete} @ 1K, "
-                    f"but the data dict is not initialized with the corresponding symbol ({list(self.data_1k.keys())})"
+                print_warning(
+                    f"Failed to update complete data of {symbol_complete} @ 1K - "
+                    f"data dict not initialized ({list(self.data_1k.keys())})",
+                    force=True
                 )
+                return
 
             self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 60) for bar in data.data_iter)
             all_data_ready = set(self.data_1k.keys()) == set(self.last_complete_update_of_symbol.keys())
         elif data.is_dk:
             if symbol_complete not in self.data_dk:
-                raise ValueError(
-                    f"Requested to update complete data of {symbol_complete} @ DK, "
-                    f"but the data dict is not initialized with the corresponding symbol ({list(self.data_1k.keys())})"
+                print_warning(
+                    f"Failed to update complete data of {symbol_complete} @ DK - "
+                    f"data dict not initialized ({list(self.data_1k.keys())})",
+                    force=True
                 )
+                return
 
             self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 86400) for bar in data.data_iter)
             all_data_ready = set(self.data_dk.keys()) == set(self.last_complete_update_of_symbol.keys())

@@ -1,10 +1,11 @@
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import Iterator, TYPE_CHECKING
 
 from ._base import SubscriptionDataBase
 
 if TYPE_CHECKING:
-    from tcoreapi_mq.message import DataType, PxHistoryDataEntry
+    from kl_site_server.db import DbHistoryDataResult
+    from tcoreapi_mq.message import DataType, PxHistoryDataEntry, PxHistoryDataMongoModel
 
 
 class HistoryDataHandshake(SubscriptionDataBase):
@@ -35,13 +36,43 @@ class HistoryDataHandshake(SubscriptionDataBase):
 
 @dataclass(kw_only=True)
 class HistoryData:
-    data_list: list["PxHistoryDataEntry"]
-    handshake: HistoryDataHandshake
+    data_iter: Iterator["PxHistoryDataEntry"]
+    data_len: int | None
+    data_type: "DataType"
+    symbol_complete: str
+
+    @staticmethod
+    def from_socket_message(
+        history_data: list["PxHistoryDataEntry"],
+        handshake: HistoryDataHandshake
+    ) -> "HistoryData":
+        return HistoryData(
+            data_iter=history_data,
+            data_len=len(history_data),
+            data_type=handshake.data_type,
+            symbol_complete=handshake.symbol_complete,
+        )
+
+    @staticmethod
+    def from_db_fetch(
+        symbol_complete: str,
+        data_type: "DataType",
+        result: "DbHistoryDataResult"
+    ) -> "HistoryData":
+        return HistoryData(
+            data_iter=result.data,
+            data_len=None,
+            data_type=data_type,
+            symbol_complete=symbol_complete,
+        )
+
+    def to_db_entries(self) -> Iterator["PxHistoryDataMongoModel"]:
+        return iter(data.to_mongo_doc() for data in self.data_iter)
 
     @property
     def is_1k(self) -> bool:
-        return self.handshake.data_type == "1K"
+        return self.data_type == "1K"
 
     @property
     def is_dk(self) -> bool:
-        return self.handshake.data_type == "DK"
+        return self.data_type == "DK"

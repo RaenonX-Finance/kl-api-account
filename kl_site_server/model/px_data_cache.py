@@ -166,20 +166,21 @@ class PxDataCache:
         self.allow_force_send_once_complete = True
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
-        symbol_complete = data.handshake.symbol_complete
+        symbol_complete = data.symbol_complete
 
         print_log(
-            f"[Server] Updating {len(data.data_list)} Px data bars to [yellow]{symbol_complete}[/yellow]"
+            f"[Server] Updating {data.data_len or '[purple](unknown)[/purple]'} Px data bars "
+            f"to [yellow]{symbol_complete}[/yellow]"
         )
         if data.is_1k and symbol_complete in self.data_1k:
-            self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 60) for bar in data.data_list)
+            self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 60) for bar in data.data_iter)
             all_data_ready = set(self.data_1k.keys()) == set(self.last_complete_update_of_symbol.keys())
         elif data.is_dk and symbol_complete in self.data_dk:
-            self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 86400) for bar in data.data_list)
+            self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 86400) for bar in data.data_iter)
             all_data_ready = set(self.data_dk.keys()) == set(self.last_complete_update_of_symbol.keys())
         else:
             raise ValueError(
-                f"No data update as the history data is not either 1K or DK - {data.handshake.data_type}"
+                f"No data update as the history data is not either 1K or DK - {symbol_complete} @ {data.data_type}"
             )
 
         self.last_complete_update_of_symbol[symbol_complete] = time.time()

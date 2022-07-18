@@ -1,6 +1,26 @@
+"""
+Sample history data entry:
+{
+  'Date': '20220715',
+  'Time': '92100',
+  'UpTick': '4',
+  'UpVolume': '4',
+  'DownTick': '16',
+  'DownVolume': '27',
+  'UnchVolume': '66561',
+  'Open': '14485',
+  'High': '14485',
+  'Low': '14482',
+  'Close': '14482',
+  'Volume': '31',
+  'OI': '0',
+  'QryIndex': '10701'
+}
+"""
 import json
 from dataclasses import InitVar, dataclass, field
 from datetime import datetime, timedelta, timezone
+from typing import TypedDict
 
 from ..send import HistoryInterval
 
@@ -27,40 +47,81 @@ class SubscribePxHistoryMessage:
         self.success = body["Success"] == "OK"
 
 
+class PxHistoryDataMongoModel(TypedDict):
+    ts: datetime  # Timestamp
+    o: float  # Open
+    h: float  # High
+    l: float  # Low
+    c: float  # Close
+    v: int  # Volume
+    s: str  # Symbol (complete)
+    i: HistoryInterval  # Interval
+
+
 @dataclass(kw_only=True)
 class PxHistoryDataEntry:
-    body: InitVar[dict[str, str]]
-    interval: InitVar[HistoryInterval]
+    timestamp: datetime
 
-    timestamp: datetime = field(init=False)
+    open: float
+    high: float
+    low: float
+    close: float
+    volume: int
+
+    symbol_complete: str
+    interval: HistoryInterval
+
     epoch_sec: float = field(init=False)
 
-    open: float = field(init=False)
-    high: float = field(init=False)
-    low: float = field(init=False)
-    close: float = field(init=False)
-    volume: int = field(init=False)
-
-    query_idx: int = field(init=False)
-
-    def __post_init__(self, body: dict[str, str], interval: HistoryInterval):
-        self.timestamp = datetime.strptime(
-            f"{body['Date']} {body['Time']:>06}", "%Y%m%d %H%M%S"
-        ).replace(tzinfo=timezone.utc) - interval_to_timedelta_offset(interval)
+    def __post_init__(self):
         self.epoch_sec = self.timestamp.timestamp()
-
-        self.open = float(body["Open"])
-        self.high = float(body["High"])
-        self.low = float(body["Low"])
-        self.close = float(body["Close"])
-        self.volume = int(body["Volume"])
-
-        self.query_idx = int(body["QryIndex"])
 
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:
         # Note that `0` here is `str` not numertic type
         return body["Date"] != "0" and body["Time"] != "0"
+
+    @staticmethod
+    def from_touchance(
+        body: dict[str, str], symbol_complete: str, interval: HistoryInterval
+    ) -> "PxHistoryDataEntry":
+        ts = datetime.strptime(f"{body['Date']} {body['Time']:>06}", "%Y%m%d %H%M%S").replace(tzinfo=timezone.utc)
+
+        return PxHistoryDataEntry(
+            timestamp=ts - interval_to_timedelta_offset(interval),
+            open=float(body["Open"]),
+            high=float(body["High"]),
+            low=float(body["Low"]),
+            close=float(body["Close"]),
+            volume=int(body["Volume"]),
+            symbol_complete=symbol_complete,
+            interval=interval,
+        )
+
+    @staticmethod
+    def from_mongo_doc(doc: PxHistoryDataMongoModel) -> "PxHistoryDataEntry":
+        return PxHistoryDataEntry(
+            timestamp=doc["ts"],
+            open=doc["o"],
+            high=doc["h"],
+            low=doc["l"],
+            close=doc["c"],
+            volume=doc["v"],
+            symbol_complete=doc["s"],
+            interval=doc["i"],
+        )
+
+    def to_mongo_doc(self) -> PxHistoryDataMongoModel:
+        return {
+            "ts": self.timestamp,
+            "o": self.open,
+            "h": self.high,
+            "l": self.low,
+            "c": self.close,
+            "v": self.volume,
+            "s": self.symbol_complete,
+            "i": self.interval,
+        }
 
 
 @dataclass(kw_only=True)
@@ -71,6 +132,7 @@ class GetPxHistoryMessage:
 
     interval: HistoryInterval = field(init=False)
     data: list[PxHistoryDataEntry] = field(init=False)
+    last_query_idx: int | None = field(init=False)
 
     def __post_init__(self, message: str):
         symbol_complete, data = message.split(":", 1)
@@ -81,10 +143,11 @@ class GetPxHistoryMessage:
 
         self.interval = body["DataType"]
         self.data = [
-            PxHistoryDataEntry(body=data, interval=self.interval)
+            PxHistoryDataEntry.from_touchance(data, self.symbol_complete, self.interval)
             for data in body["HisData"]
             if PxHistoryDataEntry.is_valid(data)
         ]
+        self.last_query_idx = body["HisData"][-1]["QryIndex"] if body["HisData"] else None
 
 
 @dataclass(kw_only=True)

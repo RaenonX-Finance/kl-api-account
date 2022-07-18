@@ -70,16 +70,16 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     history_data_of_event = []
 
                     while True:
-                        history_data_list = self.get_paged_history(
+                        history_data_paged = self.get_paged_history(
                             handshake.symbol_complete, handshake.data_type,
                             handshake.start_time_str, handshake.end_time_str, query_idx
-                        ).data
+                        )
 
-                        if not history_data_list:
+                        if not history_data_paged.data:
                             break
 
-                        history_data_of_event.extend(history_data_list)
-                        query_idx = history_data_list[-1].query_idx
+                        history_data_of_event.extend(history_data_paged.data)
+                        query_idx = history_data_paged.last_query_idx
 
                     self.complete_get_history(
                         handshake.symbol_complete, handshake.data_type,
@@ -87,8 +87,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     )
 
                     if history_data_of_event:
-                        self.on_received_history_data(HistoryData(
-                            data_list=history_data_of_event, handshake=handshake
+                        self.on_received_history_data(HistoryData.from_socket_message(
+                            history_data_of_event,
+                            handshake
                         ))
                     else:
                         print_error(

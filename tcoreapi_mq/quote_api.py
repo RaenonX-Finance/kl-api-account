@@ -65,9 +65,11 @@ class QuoteAPI(TCoreZMQ):
             return UnsubscribeRealtimeMessage(message=self.socket.get_message())
 
     def get_history(
-            self,
-            symbol: SymbolBaseType, interval: HistoryInterval,
-            start: datetime, end: datetime,
+        self,
+        symbol: SymbolBaseType,
+        interval: HistoryInterval,
+        start: datetime,
+        end: datetime,
     ) -> SubscribePxHistoryMessage:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         print_log(
@@ -75,8 +77,6 @@ class QuoteAPI(TCoreZMQ):
             f"[yellow]{symbol.symbol}[/yellow] at [yellow]{interval}[/yellow] "
             f"starting from {start} to {end}"
         )
-
-        self.register_symbol_info(symbol)
 
         with self.lock:
             req = SubscribePxHistoryRequest(
@@ -91,8 +91,8 @@ class QuoteAPI(TCoreZMQ):
             return SubscribePxHistoryMessage(message=self.socket.get_message())
 
     def get_paged_history(
-            self, symbol_complete: str, interval: HistoryInterval,
-            start: str, end: str, query_idx: int = 0
+        self, symbol_complete: str, interval: HistoryInterval,
+        start: str, end: str, query_idx: int = 0
     ) -> GetPxHistoryMessage:
         """
         Usually this is called after receiving the subscription data after calling ``subscribe_history()``.

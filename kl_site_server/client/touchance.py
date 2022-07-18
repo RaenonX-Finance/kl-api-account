@@ -6,11 +6,14 @@ from typing import Iterable
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_warning
 from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_market
+from kl_site_server.db import get_history_data_from_db, store_history_to_db
 from kl_site_server.model import (
-    OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent, PxData, PxDataCache, TouchancePxRequestParams,
+    OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent,
+    PxData, PxDataCache, TouchancePxRequestParams,
 )
 from tcoreapi_mq.client import TouchanceApiClient
-from tcoreapi_mq.message import HistoryData, RealtimeData, SystemTimeData
+from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
+from tcoreapi_mq.model import SymbolBaseType
 
 
 class TouchanceDataClient(TouchanceApiClient):
@@ -31,20 +34,42 @@ class TouchanceDataClient(TouchanceApiClient):
 
         hist_start, hist_end = params.history_range
 
-        if params.period_mins:
-            self.get_history(params.symbol_obj, "1K", hist_start, hist_end)
-
-        if params.period_days:
-            self.get_history(params.symbol_obj, "DK", hist_start, hist_end)
-
-        self.subscribe_realtime(params.symbol_obj)
-
+        self.register_symbol_info(params.symbol_obj)
         self._px_data_cache.init_entry(
             params.symbol_obj,
             self.get_instrument_info_by_symbol(params.symbol_obj).tick,
             params.period_mins,
             params.period_days
         )
+
+        if params.period_mins:
+            self.get_history_including_db(params.symbol_obj, "1K", hist_start, hist_end)
+
+        if params.period_days:
+            self.get_history_including_db(params.symbol_obj, "DK", hist_start, hist_end)
+
+        self.subscribe_realtime(params.symbol_obj)
+
+    def get_history_including_db(
+        self,
+        symbol: SymbolBaseType,
+        interval: HistoryInterval,
+        start: datetime,
+        end: datetime
+    ):
+        symbol_complete = symbol.symbol_complete
+
+        result = get_history_data_from_db(symbol_complete, interval, start, end)
+
+        self._px_data_cache.update_complete_data_of_symbol(HistoryData.from_db_fetch(
+            symbol_complete, interval, result
+        ))
+
+        if not result.earliest and not result.latest:
+            self.get_history(symbol, interval, start, end)
+        else:
+            self.get_history(symbol, interval, start, result.earliest)
+            self.get_history(symbol, interval, result.latest, end)
 
     def get_all_px_data(self) -> Iterable[PxData]:
         if not self._px_data_cache.is_all_px_data_ready():
@@ -98,19 +123,20 @@ class TouchanceDataClient(TouchanceApiClient):
                 end = datetime.utcnow() + timedelta(minutes=2)
 
                 if params.period_mins:
-                    self.get_history(params.symbol_obj, "1K", start, end)
+                    self.get_history_including_db(params.symbol_obj, "1K", start, end)
 
                 if params.period_days:
-                    self.get_history(params.symbol_obj, "DK", start, end)
+                    self.get_history_including_db(params.symbol_obj, "DK", start, end)
 
     def on_received_history_data(self, data: HistoryData) -> None:
         _start = time.time()
 
+        threading.Thread(target=store_history_to_db, args=(data,)).start()
         self._px_data_cache.update_complete_data_of_symbol(data)
 
         proc_sec_update = time.time() - _start
 
-        self.send_complete_px_data(data.handshake.symbol_complete, proc_sec_update)
+        self.send_complete_px_data(data.symbol_complete, proc_sec_update)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         self._px_data_cache.update_latest_market_data_of_symbol(data)

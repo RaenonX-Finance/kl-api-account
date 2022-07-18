@@ -76,3 +76,10 @@ class HistoryData:
     @property
     def is_dk(self) -> bool:
         return self.data_type == "DK"
+
+    @property
+    def data_len_as_str(self) -> str:
+        if self.data_len is None:
+            return "(?)"
+
+        return str(self.data_len)

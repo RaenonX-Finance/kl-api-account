@@ -169,8 +169,8 @@ class PxDataCache:
         symbol_complete = data.symbol_complete
 
         print_log(
-            f"[Server] Updating {data.data_len or '[purple](unknown)[/purple]'} Px data bars "
-            f"to [yellow]{symbol_complete}[/yellow]"
+            f"[Server] Updating [purple]{data.data_len_as_str}[/purple] Px data bars "
+            f"to [yellow]{symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
         )
         if data.is_1k and symbol_complete in self.data_1k:
             self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 60) for bar in data.data_iter)

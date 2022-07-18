@@ -289,10 +289,13 @@ class PxDataCache:
         return px_data_list
 
     def is_px_data_ready(self, symbol_complete: str) -> bool:
-        if symbol_complete in self.data_1k and not self.data_1k[symbol_complete].is_ready:
-            return False
+        if symbol_complete in self.data_1k:
+            return self.data_1k[symbol_complete].is_ready
 
-        return symbol_complete in self.data_dk and not self.data_dk[symbol_complete].is_ready
+        if symbol_complete in self.data_dk:
+            return self.data_dk[symbol_complete].is_ready
+
+        return False
 
     def is_all_px_data_ready(self) -> bool:
         symbols = set(self.data_1k.keys()) | set(self.data_dk.keys())

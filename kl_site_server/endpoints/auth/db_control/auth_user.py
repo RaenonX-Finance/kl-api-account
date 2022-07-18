@@ -46,10 +46,10 @@ def get_user_data_by_oauth2_token(
 
         if username is None:
             raise generate_unauthorized_exception("Invalid token - no user name")
-    except ExpiredSignatureError:
-        raise generate_unauthorized_exception("Invalid token - signature expired")
+    except ExpiredSignatureError as ex:
+        raise generate_unauthorized_exception("Invalid token - signature expired") from ex
     except JWTError as ex:
-        raise generate_unauthorized_exception(f"Invalid token - JWT decode error: {type(ex)}")
+        raise generate_unauthorized_exception("Invalid token - JWT decode error") from ex
 
     user = get_user_data_by_username(username)
     if user is None:

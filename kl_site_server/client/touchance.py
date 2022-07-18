@@ -131,7 +131,7 @@ class TouchanceDataClient(TouchanceApiClient):
     def on_received_history_data(self, data: HistoryData) -> None:
         _start = time.time()
 
-        threading.Thread(target=store_history_to_db, args=(data,)).start()
+        store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
         proc_sec_update = time.time() - _start

@@ -1,3 +1,4 @@
+import threading
 from datetime import datetime
 
 from rich.console import Console, Text
@@ -18,7 +19,8 @@ def print_console(rich_console: Console, level: LogLevels, message: str, *, time
         if not DEVELOPMENT_MODE:
             return
 
-    message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}]: {message}"
+    message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] [{threading.get_ident():>5}]: " \
+              f"{message}"
 
     if DEVELOPMENT_MODE:
         message = f"[bold][yellow]-DEV-[/yellow][/bold] {message}"

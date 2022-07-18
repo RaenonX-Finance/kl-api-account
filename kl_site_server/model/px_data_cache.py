@@ -71,7 +71,7 @@ class PxDataCacheEntry:
         epoch_latest = max(self.data.keys()) if self.data else 0
         epoch_current = int(time.time() // self.interval_sec * self.interval_sec)
 
-        if epoch_current > epoch_latest:
+        if epoch_current > epoch_latest or epoch_current not in self.data:
             # Current epoch is greater than the latest epoch - create new
             new_bar: BarDataDict = {
                 PxDataCol.OPEN: current,
@@ -172,10 +172,22 @@ class PxDataCache:
             f"[Server] Updating [purple]{data.data_len_as_str}[/purple] Px data bars "
             f"to [yellow]{symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
         )
-        if data.is_1k and symbol_complete in self.data_1k:
+        if data.is_1k:
+            if symbol_complete not in self.data_1k:
+                raise ValueError(
+                    f"Requested to update complete data of {symbol_complete} @ 1K, "
+                    f"but the data dict is not initialized with the corresponding symbol ({list(self.data_1k.keys())})"
+                )
+
             self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 60) for bar in data.data_iter)
             all_data_ready = set(self.data_1k.keys()) == set(self.last_complete_update_of_symbol.keys())
-        elif data.is_dk and symbol_complete in self.data_dk:
+        elif data.is_dk:
+            if symbol_complete not in self.data_dk:
+                raise ValueError(
+                    f"Requested to update complete data of {symbol_complete} @ DK, "
+                    f"but the data dict is not initialized with the corresponding symbol ({list(self.data_1k.keys())})"
+                )
+
             self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 86400) for bar in data.data_iter)
             all_data_ready = set(self.data_dk.keys()) == set(self.last_complete_update_of_symbol.keys())
         else:
@@ -254,10 +266,15 @@ class PxDataCache:
     def complete_px_data_to_send(self, symbol_complete: str) -> list[PxData]:
         px_data_list = []
 
-        for symbol_complete_data, px_cache_entry in self.data_1k.items():
+        # TODO: Implementation should change after sending specific data to users
+        # > Fixing the symbols so `dict size change` error won't pop up if received any history data of new symbol
+        symbols_in_data = list(self.data_1k.keys())
+
+        for symbol in symbols_in_data:
+            px_cache_entry = self.data_1k[symbol]
             if not px_cache_entry.is_ready:
                 print_warning(
-                    f"[Server] Complete data of [yellow]{symbol_complete_data}[/yellow] not ready, "
+                    f"[Server] Complete data of [yellow]{symbol}[/yellow] not ready, "
                     f"skipped processing"
                 )
                 continue

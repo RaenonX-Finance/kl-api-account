@@ -71,6 +71,7 @@
       "required": [
         "stream",
         "source",
+        "period",
         "sr-level"
       ],
       "additionalProperties": false,
@@ -155,9 +156,10 @@
             "description": "An entity of product spec to report.",
             "required": [
               "type",
+              "expiry",
               "exchange",
               "symbol",
-              "expiry"
+              "name"
             ],
             "additionalProperties": false,
             "properties": {
@@ -183,6 +185,75 @@
               "symbol": {
                 "type": "string",
                 "description": "Product symbol."
+              },
+              "name": {
+                "type": "string",
+                "description": "Display name of the product."
+              }
+            }
+          }
+        },
+        "period": {
+          "type": "object",
+          "description": "Data period related settings.",
+          "required": [
+            "min",
+            "day"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "min": {
+              "type": "array",
+              "description": "Data periods based on 1K. The resulting data are aggregated from 1 minute candlestick.",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "description": "An entity of a data period.",
+                "required": [
+                  "min",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "min": {
+                    "type": "integer",
+                    "description": "Period in minutes.",
+                    "exclusiveMinimum": 0
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the period entity."
+                  }
+                }
+              }
+            },
+            "day": {
+              "type": "array",
+              "description": "Data periods based on DK. The resulting data are aggregated from daily candlestick.",
+              "uniqueItems": true,
+              "items": {
+                "type": "object",
+                "description": "An entity of a data period.",
+                "required": [
+                  "day",
+                  "name"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "day": {
+                    "type": "integer",
+                    "description": "Period in days.",
+                    "enum": [
+                      1,
+                      7,
+                      30
+                    ]
+                  },
+                  "name": {
+                    "type": "string",
+                    "description": "Name of the period entity."
+                  }
+                }
               }
             }
           }

@@ -14,13 +14,16 @@ class OnPxDataUpdatedEvent:
     proc_sec: float
 
     def __str__(self):
-        data_details = " / ".join((
-            f"[yellow]{px_data.pool.symbol}[/yellow] @ {px_data.current_close:.2f} - "
+        data_details = "\n".join((
+            f"       [yellow]{px_data.pool.symbol}[/yellow] @ {px_data.current_close:.2f} - "
             f"{px_data.latest_time.strftime('%m-%d %H:%M')} ({px_data.period_min}) - "
             f"#{px_data.data_count}"
         ) for px_data in self.px_data_list)
 
-        return f"{self.proc_sec:.3f} s - {data_details}"
+        if not data_details:
+            return f"Total proc sec: {self.proc_sec:.3f} s - No data"
+
+        return f"Total proc sec: {self.proc_sec:.3f} s\n{data_details}"
 
 
 @dataclass(kw_only=True)

@@ -37,3 +37,11 @@ class HistoryDataHandshake(SubscriptionDataBase):
 class HistoryData:
     data_list: list["PxHistoryDataEntry"]
     handshake: HistoryDataHandshake
+
+    @property
+    def is_1k(self) -> bool:
+        return self.handshake.data_type == "1K"
+
+    @property
+    def is_dk(self) -> bool:
+        return self.handshake.data_type == "DK"

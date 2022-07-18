@@ -23,18 +23,27 @@ class TouchanceDataClient(TouchanceApiClient):
         threading.Thread(target=self._history_data_refetcher).start()
 
     def request_px_data(self, params: TouchancePxRequestParams) -> None:
+        if not params.period_mins and not params.period_days:
+            raise ValueError("Both `period_mins` or `period_days` in `params` cannot be 0 length at the same time")
+
         params.reset_request_timeout()
         self._px_request_params[params.symbol_obj.symbol_complete] = params
 
         hist_start, hist_end = params.history_range
 
-        self.get_history(params.symbol_obj, "1K", hist_start, hist_end)
+        if params.period_mins:
+            self.get_history(params.symbol_obj, "1K", hist_start, hist_end)
+
+        if params.period_days:
+            self.get_history(params.symbol_obj, "DK", hist_start, hist_end)
+
         self.subscribe_realtime(params.symbol_obj)
 
         self._px_data_cache.init_entry(
             params.symbol_obj,
             self.get_instrument_info_by_symbol(params.symbol_obj).tick,
-            params.period_mins
+            params.period_mins,
+            params.period_days
         )
 
     def get_all_px_data(self) -> Iterable[PxData]:
@@ -87,7 +96,12 @@ class TouchanceDataClient(TouchanceApiClient):
             for params in self._px_request_params.values():
                 start = datetime.utcnow() - timedelta(hours=DATA_PX_REFETCH_BACKWARD_HOUR)
                 end = datetime.utcnow() + timedelta(minutes=2)
-                self.get_history(params.symbol_obj, "1K", start, end)
+
+                if params.period_mins:
+                    self.get_history(params.symbol_obj, "1K", start, end)
+
+                if params.period_days:
+                    self.get_history(params.symbol_obj, "DK", start, end)
 
     def on_received_history_data(self, data: HistoryData) -> None:
         _start = time.time()
@@ -121,5 +135,4 @@ class TouchanceDataClient(TouchanceApiClient):
         pass
 
     def on_error(self, message: str) -> None:
-        e = OnErrorEvent(message=message)
-        execute_async_function(on_error, e)
+        execute_async_function(on_error, OnErrorEvent(message=message))

@@ -46,7 +46,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     data = RealtimeData(message)
 
                     if not data.is_valid:
-                        print_warning("[Client] Received invalid (no trade) realtime data")
+                        print_warning(f"[Client] Received invalid (no trade) realtime data from {data.security}")
                         return
 
                     if not self.is_subscribing_realtime(data.symbol_complete):
@@ -91,9 +91,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                             data_list=history_data_of_event, handshake=handshake
                         ))
                     else:
-                        print_warning(
+                        print_error(
                             f"[Client] No history data available for "
-                            f"[bold]{handshake.symbol_complete}[/bold] ({handshake.data_type})"
+                            f"[bold]{handshake.symbol_complete}[/bold] ({handshake.data_type})",
                         )
                 case "PING" | "UNSUBQUOTE":
                     pass

@@ -60,6 +60,11 @@ DATA_PX_REFETCH_BACKWARD_HOUR = _CONFIG_DATA_PX_REFETCH["backward-hour"]
 
 DATA_SOURCES = _CONFIG_DATA["source"]
 
+_DATA_PERIOD = _CONFIG_DATA["period"]
+
+DATA_PERIOD_MINS = _DATA_PERIOD["min"]
+DATA_PERIOD_DAYS = _DATA_PERIOD["day"]
+
 # region Data / SR levels
 
 _CONFIG_DATA_SR = _CONFIG_DATA["sr-level"]

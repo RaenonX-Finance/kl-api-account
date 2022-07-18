@@ -25,11 +25,11 @@ def get_config() -> MutableMapping:
         return _config
 
     # Load default config
-    with open("config.yaml", "r") as config_file:
+    with open("config.yaml", "r", encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
 
     # Load overriding config
-    with open("config-override.yaml", "r") as config_file:
+    with open("config-override.yaml", "r", encoding="utf-8") as config_file:
         config = merge_dict(config, yaml.safe_load(config_file))
 
     # Validate config

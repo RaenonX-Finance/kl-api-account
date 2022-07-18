@@ -23,14 +23,48 @@ data:
       exchange: CME
       symbol: NQ
       expiry: HOT
+      name: 小那指
     - type: Futures
       exchange: CBOT
       symbol: YM
       expiry: HOT
+      name: 小道瓊
     - type: Futures
       exchange: TWF
       symbol: FITX
       expiry: HOT
+      name: 台指期
+  period:
+    min:
+      - min: 1
+        name: '1'
+      - min: 3
+        name: '3'
+      - min: 5
+        name: '5'
+      - min: 10
+        name: '10'
+      - min: 15
+        name: '15'
+      - min: 30
+        name: '30'
+      - min: 60
+        name: '60'
+      - min: 120
+        name: '2 H'
+      - min: 240
+        name: '4 H'
+      - min: 360
+        name: '6 H'
+      - min: 720
+        name: '12 H'
+    day:
+      - day: 1
+        name: 日
+      - day: 7
+        name: 周
+      - day: 30
+        name: 月
   sr-level:
     custom: {}
 

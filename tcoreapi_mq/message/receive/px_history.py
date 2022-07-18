@@ -57,6 +57,11 @@ class PxHistoryDataEntry:
 
         self.query_idx = int(body["QryIndex"])
 
+    @staticmethod
+    def is_valid(body: dict[str, str]) -> bool:
+        # Note that `0` here is `str` not numertic type
+        return body["Date"] != "0" and body["Time"] != "0"
+
 
 @dataclass(kw_only=True)
 class GetPxHistoryMessage:
@@ -75,7 +80,11 @@ class GetPxHistoryMessage:
         body = json.loads(data)
 
         self.interval = body["DataType"]
-        self.data = [PxHistoryDataEntry(body=data, interval=self.interval) for data in body["HisData"]]
+        self.data = [
+            PxHistoryDataEntry(body=data, interval=self.interval)
+            for data in body["HisData"]
+            if PxHistoryDataEntry.is_valid(data)
+        ]
 
 
 @dataclass(kw_only=True)

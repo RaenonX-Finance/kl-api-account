@@ -38,7 +38,7 @@ def print_warning(message: str, *, force: bool = False):
 
 
 def print_error(message: str):
-    print_console(console_error, "INFO", message, timestamp_color="red")
+    print_console(console_error, "ERROR", message, timestamp_color="red")
 
 
 def print_socket_event(event: str, *, session_id: str, additional: str = ""):

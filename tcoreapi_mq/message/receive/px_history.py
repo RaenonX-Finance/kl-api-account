@@ -131,7 +131,7 @@ class GetPxHistoryMessage:
     symbol_complete: str = field(init=False)
 
     interval: HistoryInterval = field(init=False)
-    data: list[PxHistoryDataEntry] = field(init=False)
+    data: dict[datetime, PxHistoryDataEntry] = field(init=False)
     last_query_idx: int | None = field(init=False)
 
     def __post_init__(self, message: str):
@@ -142,12 +142,15 @@ class GetPxHistoryMessage:
         body = json.loads(data)
 
         self.interval = body["DataType"]
-        self.data = [
-            PxHistoryDataEntry.from_touchance(data, self.symbol_complete, self.interval)
-            for data in body["HisData"]
-            if PxHistoryDataEntry.is_valid(data)
-        ]
         self.last_query_idx = body["HisData"][-1]["QryIndex"] if body["HisData"] else None
+
+        self.data = {}
+        for data in body["HisData"]:
+            if not PxHistoryDataEntry.is_valid(data):
+                continue
+
+            entry = PxHistoryDataEntry.from_touchance(data, self.symbol_complete, self.interval)
+            self.data[entry.timestamp] = entry
 
 
 @dataclass(kw_only=True)

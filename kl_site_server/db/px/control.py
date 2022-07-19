@@ -2,6 +2,7 @@ from datetime import datetime
 
 import pymongo
 
+from kl_site_common.db import start_mongo_txn
 from kl_site_common.utils import print_log
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry
 from .const import px_data_col
@@ -45,10 +46,9 @@ def store_history_to_db(data: HistoryData):
         f"at [yellow]{data.data_type}[/yellow]"
     )
 
-    # Exhaust the iterator to ensure deterministic filter for `delete_many` and `insert_many`
-    entries = list(data.to_db_entries())
-
-    px_data_col.delete_many({
-        "$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in entries]
-    })
-    px_data_col.insert_many(entries)
+    with start_mongo_txn() as session:
+        px_data_col.delete_many(
+            {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in data.to_db_entries()]},
+            session=session
+        )
+        px_data_col.insert_many(data.to_db_entries(), session=session)

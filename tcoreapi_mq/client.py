@@ -1,9 +1,10 @@
 import threading
 from abc import ABC, abstractmethod
+from datetime import datetime
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_error, print_warning
-from .message import CommonData, HistoryData, HistoryDataHandshake, RealtimeData, SystemTimeData
+from .message import CommonData, HistoryData, HistoryDataHandshake, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from .quote_api import QuoteAPI
 from .utils import create_subscription_receiver_socket
 
@@ -67,7 +68,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         return
 
                     query_idx = 0
-                    history_data_of_event = []
+                    # Use `dict` to ensure no duplicates
+                    # > Paged history may contain duplicated data, say last of page 0 and first of page 1
+                    history_data_of_event: dict[datetime, PxHistoryDataEntry] = {}
 
                     while True:
                         history_data_paged = self.get_paged_history(
@@ -78,7 +81,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         if not history_data_paged.data:
                             break
 
-                        history_data_of_event.extend(history_data_paged.data)
+                        history_data_of_event.update(history_data_paged.data)
                         query_idx = history_data_paged.last_query_idx
 
                     self.complete_get_history(
@@ -88,7 +91,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
 
                     if history_data_of_event:
                         self.on_received_history_data(HistoryData.from_socket_message(
-                            history_data_of_event,
+                            list(history_data_of_event.values()),
                             handshake
                         ))
                     else:

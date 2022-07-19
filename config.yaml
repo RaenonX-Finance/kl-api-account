@@ -10,8 +10,6 @@ log:
 data:
   stream:
     timeout-sec: 300
-    px-update:
-      complete-batch-sec: 5
     px-history-refetch:
       interval-sec: 10
       backward-hour: 1

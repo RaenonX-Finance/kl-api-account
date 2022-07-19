@@ -81,7 +81,6 @@
           "description": "Data streaming related settings.",
           "required": [
             "timeout-sec",
-            "px-update",
             "px-history-refetch"
           ],
           "additionalProperties": false,
@@ -90,21 +89,6 @@
               "type": "number",
               "description": "Data stream timeout in seconds. An error will be raised if no new data received after the given seconds.",
               "exclusiveMinimum": 0
-            },
-            "px-update": {
-              "type": "object",
-              "description": "Px data updating related settings.",
-              "required": [
-                "complete-batch-sec"
-              ],
-              "additionalProperties": false,
-              "properties": {
-                "complete-batch-sec": {
-                  "type": "number",
-                  "description": "Complete px data force-send timeframe in seconds. If all complete Px data is updated within this timeframe, complete Px data will force-send once.",
-                  "exclusiveMinimum": 0
-                }
-              }
             },
             "px-history-refetch": {
               "type": "object",

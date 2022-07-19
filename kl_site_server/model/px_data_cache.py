@@ -3,7 +3,6 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import DATA_PX_UPDATE_BATCH_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
@@ -44,7 +43,7 @@ class PxDataCacheEntry:
         for bar in bars:
             self.data[bar[PxDataCol.EPOCH_SEC]] = bar
 
-    def update_latest_market(self, data: RealtimeData) -> None:
+    def update_latest_market(self, data: RealtimeData):
         """
         Updates the latest market data. Does NOT update the underlying cached data.
 
@@ -59,9 +58,9 @@ class PxDataCacheEntry:
 
         self.latest_market = data
 
-    def update_latest(self, current: float) -> str | None:
+    def update_latest(self, current: float):
         """
-        Updates the latest price, then return the reason of force-send, if allowed.
+        Updates the latest price.
 
         This should be called after the `is_ready` check.
         """
@@ -81,7 +80,7 @@ class PxDataCacheEntry:
             }
             self.data[epoch_current] = new_bar
             self.remove_oldest()
-            return "New bar"
+            return
 
         bar_current = self.data[epoch_current]
         self.data[epoch_current] = bar_current | {
@@ -89,13 +88,6 @@ class PxDataCacheEntry:
             PxDataCol.LOW: min(bar_current[PxDataCol.LOW], current),
             PxDataCol.CLOSE: current,
         }
-
-        if current > bar_current[PxDataCol.HIGH]:
-            return "Breaking high"
-        if current < bar_current[PxDataCol.LOW]:
-            return "Breaking low"
-
-        return None
 
     def to_px_data(self, period_mins: list[int]) -> list[PxData]:
         pool = PxDataPool(
@@ -114,8 +106,6 @@ class PxDataCache:
     data_dk: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
     last_complete_update_of_symbol: dict[str, float] = field(init=False, default_factory=dict)
-
-    allow_force_send_once_complete: bool = field(init=False, default=False)
 
     period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
     period_days: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
@@ -150,15 +140,6 @@ class PxDataCache:
             )
             self.period_days[symbol_complete] = period_days
 
-    def _mark_force_send_once(self, symbol_complete: str, reason: str) -> None:
-        # Not marking market data to force send
-        # because the latest market data will also be updated in the completed one
-        print_log(
-            f"[Server] Mark [yellow]force send Px[/yellow] allowed once "
-            f"for [yellow]{symbol_complete}[/yellow] ({reason})"
-        )
-        self.allow_force_send_once_complete = True
-
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.symbol_complete
 
@@ -176,7 +157,6 @@ class PxDataCache:
                 return
 
             self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 60) for bar in data.data_iter)
-            all_data_ready = set(self.data_1k.keys()) == set(self.last_complete_update_of_symbol.keys())
         elif data.is_dk:
             if symbol_complete not in self.data_dk:
                 print_warning(
@@ -187,18 +167,12 @@ class PxDataCache:
                 return
 
             self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar, 86400) for bar in data.data_iter)
-            all_data_ready = set(self.data_dk.keys()) == set(self.last_complete_update_of_symbol.keys())
         else:
             raise ValueError(
                 f"No data update as the history data is not either 1K or DK - {symbol_complete} @ {data.data_type}"
             )
 
         self.last_complete_update_of_symbol[symbol_complete] = time.time()
-        if (
-                time.time() - min(self.last_complete_update_of_symbol.values()) < DATA_PX_UPDATE_BATCH_SEC
-                and all_data_ready
-        ):
-            self._mark_force_send_once(symbol_complete, "Complete data updated")
 
     def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
         if data_1k := self.data_1k.get(data.symbol_complete):
@@ -209,15 +183,10 @@ class PxDataCache:
     def update_market_data_of_symbol(self, data: RealtimeData) -> None:
         symbol_complete = data.symbol_complete
 
-        reason = None
-
         if data_1k := self.data_1k.get(symbol_complete):
-            reason = data_1k.update_latest(data.last_px) or reason
+            data_1k.update_latest(data.last_px)
         if data_dk := self.data_dk.get(symbol_complete):
-            reason = data_dk.update_latest(data.last_px) or reason
-
-        if reason:
-            self._mark_force_send_once(data.symbol_complete, reason)
+            data_dk.update_latest(data.last_px)
 
     def is_px_data_ready(self, symbol_complete: str) -> bool:
         if symbol_complete in self.data_1k:

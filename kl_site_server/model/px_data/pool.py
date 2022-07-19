@@ -17,6 +17,7 @@ class PxDataPool:
         symbol: str,
         bars: list["BarDataDict"],
         min_tick: float,
+        decimals: int,
         latest_market: RealtimeData,
     ):
         if not bars:
@@ -28,6 +29,7 @@ class PxDataPool:
         self.symbol: str = symbol
         self.symbol_name: str = SYMBOL_NAMES[symbol]
         self.min_tick: float = min_tick
+        self.decimals: int = decimals
         self.latest_market: RealtimeData | None = latest_market
 
         self.dataframe: DataFrame = DataFrame(bars)

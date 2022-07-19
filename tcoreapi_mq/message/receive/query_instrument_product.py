@@ -110,8 +110,9 @@ Sample message of query instrument for product:
     }
 }
 """
-from typing import TYPE_CHECKING
+import math
 from dataclasses import InitVar, dataclass, field
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from tcoreapi_mq.model import SymbolBaseType
@@ -125,7 +126,9 @@ class QueryInstrumentProduct:
 
     symbol: str = field(init=False)
     tick: float = field(init=False)
+    decimals: int = field(init=False)
 
     def __post_init__(self, body: dict[str, str]):
         self.symbol = body["Symbol"]
         self.tick = float(body["TickSize"])
+        self.decimals = int(math.log10(int(body["TicksPerPoint"])))

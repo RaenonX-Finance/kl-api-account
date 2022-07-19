@@ -16,6 +16,7 @@ class PxDataCacheEntry:
     symbol: str
     symbol_complete: str
     min_tick: float
+    decimals: int
     data: dict[int, BarDataDict]  # Epoch sec / bar data
     interval_sec: int
 
@@ -94,6 +95,7 @@ class PxDataCacheEntry:
             symbol=self.symbol,
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
+            decimals=self.decimals,
             latest_market=self.latest_market,
         )
 
@@ -113,7 +115,7 @@ class PxDataCache:
     security_to_symbol_complete: dict[str, str] = field(init=False, default_factory=dict)
 
     def init_entry(
-        self, symbol_obj: SymbolBaseType, min_tick: float,
+        self, *, symbol_obj: SymbolBaseType, min_tick: float, decimals: int,
         period_mins: list[int], period_days: list[int],
     ) -> None:
         symbol_complete = symbol_obj.symbol_complete
@@ -125,6 +127,7 @@ class PxDataCache:
                 symbol=symbol_obj.symbol,
                 symbol_complete=symbol_complete,
                 min_tick=min_tick,
+                decimals=decimals,
                 data={},
                 interval_sec=60,
             )
@@ -135,6 +138,7 @@ class PxDataCache:
                 symbol=symbol_obj.symbol,
                 symbol_complete=symbol_complete,
                 min_tick=min_tick,
+                decimals=decimals,
                 data={},
                 interval_sec=86400,
             )

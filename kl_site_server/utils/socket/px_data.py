@@ -30,6 +30,7 @@ class PxDataSupportResistance(TypedDict):
 
 class PxDataContract(TypedDict):
     minTick: float
+    decimals: int
     symbol: str
     name: str
 
@@ -102,9 +103,10 @@ def _from_px_data_support_resistance(px_data: "PxData") -> PxDataSupportResistan
 
 def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
     return {
+        "minTick": px_data.pool.min_tick,
+        "decimals": px_data.pool.decimals,
         "symbol": px_data.pool.symbol,
         "name": px_data.pool.symbol_name,
-        "minTick": px_data.pool.min_tick,
     }
 
 

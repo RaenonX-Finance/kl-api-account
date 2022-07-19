@@ -34,11 +34,14 @@ class TouchanceDataClient(TouchanceApiClient):
         hist_start, hist_end = params.history_range
 
         self.register_symbol_info(params.symbol_obj)
+        instrument_info = self.get_instrument_info_by_symbol(params.symbol_obj)
+
         self._px_data_cache.init_entry(
-            params.symbol_obj,
-            self.get_instrument_info_by_symbol(params.symbol_obj).tick,
-            params.period_mins,
-            params.period_days
+            symbol_obj=params.symbol_obj,
+            min_tick=instrument_info.tick,
+            decimals=instrument_info.decimals,
+            period_mins=params.period_mins,
+            period_days=params.period_days
         )
 
         if params.period_mins:

@@ -4,7 +4,7 @@ from kl_site_common.const import (
     EMA_PERIOD_PAIRS_STRONG_SR, EMA_PERIOD_PAIR_NET, EmaPeriodPair, INDICATOR_EMA_PERIODS,
 )
 from kl_site_server.enums import PxDataCol
-from .px_data_market import PxDataMarketSingle, _from_realtime_data_single
+from .px_data_market import PxDataMarket, _from_realtime_data
 from .utils import df_rows_to_list_of_data, dump_and_compress
 
 if TYPE_CHECKING:
@@ -52,11 +52,11 @@ class PxDataDict(TypedDict):
     contract: PxDataContract
     data: list[PxDataBar]
     supportResistance: PxDataSupportResistance
-    latestMarket: PxDataMarketSingle
+    latestMarket: PxDataMarket
     indicator: PxDataIndicatorConfig
 
 
-def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarketSingle:
+def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarket:
     current = px_data.get_current()
 
     open_val = current[PxDataCol.OPEN]
@@ -131,7 +131,7 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         # Sending initial data also calls this method
         # In this case, `latest_market` will be `None` since no market data has received yet
         "latestMarket": (
-            _from_realtime_data_single(px_data.pool.latest_market)
+            _from_realtime_data(px_data.pool.latest_market)
             if px_data.pool.latest_market
             else _from_px_data_last_bar_to_latest_market(px_data)
         ),

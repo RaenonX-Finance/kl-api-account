@@ -1,10 +1,10 @@
 import json
-from typing import TypeAlias, TypedDict
+from typing import TypedDict
 
 from tcoreapi_mq.message import RealtimeData
 
 
-class PxDataMarketSingle(TypedDict):
+class PxDataMarket(TypedDict):
     symbol: str
     open: float
     high: float
@@ -14,10 +14,7 @@ class PxDataMarketSingle(TypedDict):
     changePct: float
 
 
-PxDataMarket: TypeAlias = dict[str, PxDataMarketSingle]
-
-
-def _from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
+def _from_realtime_data(data: RealtimeData) -> PxDataMarket:
     return {
         "symbol": data.security,
         "open": data.open,
@@ -30,4 +27,6 @@ def _from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
 
 
 def to_socket_message_px_data_market(data: RealtimeData) -> str:
-    return json.dumps(_from_realtime_data_single(data))
+    output: PxDataMarket = _from_realtime_data(data)
+
+    return json.dumps(output)

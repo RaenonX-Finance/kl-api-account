@@ -1,15 +1,12 @@
-class PxSocketEvent:
+class GeneralSocketEvent:
     INIT = "init"
-
     PX_INIT = "pxInit"
-
     ERROR = "error"
     SIGN_IN = "signIn"
-
     PING = "ping"
 
 
-class MarketPxSocketEvent:
+class PxSocketEvent:
     UPDATED = "updated"
     REQUEST = "request"
     SUBSCRIBE = "subscribe"

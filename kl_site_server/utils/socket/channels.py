@@ -1,3 +1,3 @@
 from typing import Literal, TypeAlias
 
-SocketNamespace: TypeAlias = Literal["/", "/px-market"]
+SocketNamespace: TypeAlias = Literal["/", "/px"]

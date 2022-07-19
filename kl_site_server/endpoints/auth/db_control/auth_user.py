@@ -58,7 +58,7 @@ def get_user_data_by_oauth2_token(
     return user
 
 
-def get_active_user_by_oauth2_token(
+def get_active_user_by_user_data(
     current_user: UserDataModel = Depends(get_user_data_by_oauth2_token)
 ) -> UserDataModel:
     if current_user.blocked:
@@ -67,8 +67,13 @@ def get_active_user_by_oauth2_token(
     return current_user
 
 
+def get_active_user_by_oauth2_token(token: str) -> UserDataModel:
+    user_data = get_user_data_by_oauth2_token(token)
+    return get_active_user_by_user_data(user_data)
+
+
 def get_admin_user_by_oauth2_token(
-    current_user: UserDataModel = Depends(get_active_user_by_oauth2_token)
+    current_user: UserDataModel = Depends(get_active_user_by_user_data)
 ) -> UserDataModel:
     if not current_user.admin:
         raise generate_unauthorized_exception("Insufficient permission")

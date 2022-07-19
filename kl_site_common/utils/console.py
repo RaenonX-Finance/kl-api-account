@@ -1,11 +1,15 @@
-import threading
 from datetime import datetime
+import threading
+from typing import TYPE_CHECKING
 
 from rich.console import Console, Text
 
 from kl_site_common.const import LOG_SUPPRESS_WARNINGS, LOG_TO_DIR, console, console_error
 from kl_site_common.env import DEVELOPMENT_MODE
 from .log import LogLevels, log_message_to_file
+
+if TYPE_CHECKING:
+    from kl_site_server.utils import SocketNamespace
 
 
 def _get_current_timestamp() -> str:
@@ -43,8 +47,8 @@ def print_error(message: str):
     print_console(console_error, "ERROR", message, timestamp_color="red")
 
 
-def print_socket_event(event: str, *, session_id: str, additional: str = ""):
-    message = f"[Socket] Received `[purple]{event}[/purple]`"
+def print_socket_event(event: str, *, session_id: str, additional: str = "", namespace: "SocketNamespace" = "/"):
+    message = f"[Socket] Received `[purple]{event}[/purple] @ [blue]{namespace}[/blue]`"
 
     if session_id:
         message += f" - SID: [yellow]{session_id}[/yellow]"

@@ -5,7 +5,7 @@ from fastapi import Body, Depends
 from kl_site_common.db import PyObjectId
 from .const import user_db_config
 from .model import UpdateConfigModel, UserConfigModel
-from ..auth import UserDataModel, get_active_user_by_oauth2_token, get_user_data_by_oauth2_token
+from ..auth import UserDataModel, get_active_user_by_user_data, get_active_user_by_oauth2_token
 
 
 def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:
@@ -21,7 +21,7 @@ def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:
 
 
 def get_user_config(
-    user: UserDataModel = Depends(get_active_user_by_oauth2_token),
+    user: UserDataModel = Depends(get_active_user_by_user_data),
 ) -> UserConfigModel:
     config_model = user_db_config.find_one({"account_id": user.id})
 
@@ -32,8 +32,7 @@ def get_user_config(
 
 
 def get_user_config_by_token(token: str) -> UserConfigModel:
-    user_data = get_user_data_by_oauth2_token(token)
-    user_data = get_active_user_by_oauth2_token(user_data)
+    user_data = get_active_user_by_oauth2_token(token)
 
     return get_user_config(user_data)
 

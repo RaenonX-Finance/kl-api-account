@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, status
 
 from .db_control import (
     generate_access_token, generate_access_token_on_doc, generate_validation_secrets,
-    get_active_user_by_oauth2_token, refresh_access_token, signup_user,
+    get_active_user_by_user_data, refresh_access_token, signup_user,
     generate_account_creation_key as generate_account_creation_key_db,
 )
 from .model import OAuthToken, UserDataModel, ValidationSecretsModel, SignupKeyModel
@@ -15,7 +15,7 @@ auth_router = APIRouter(prefix="/auth")
     description="Get the user data using the access token.",
     response_model=UserDataModel,
 )
-async def get_user_data(current_user: UserDataModel = Depends(get_active_user_by_oauth2_token)) -> UserDataModel:
+async def get_user_data(current_user: UserDataModel = Depends(get_active_user_by_user_data)) -> UserDataModel:
     return current_user
 
 

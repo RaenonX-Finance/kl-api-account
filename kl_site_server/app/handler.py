@@ -1,6 +1,6 @@
 from kl_site_common.utils import print_log
 from kl_site_server.const import fast_api_socket
-from kl_site_server.enums import SocketEvent
+from kl_site_server.enums import MarketPxSocketEvent, PxSocketEvent
 from kl_site_server.model import OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent
 from kl_site_server.utils import (
     socket_send_to_all, socket_send_to_room, to_socket_message_error, to_socket_message_px_data_list,
@@ -11,7 +11,7 @@ from kl_site_server.utils import (
 async def on_px_data_updated(e: OnPxDataUpdatedEvent):
     print_log(f"[Server] Px Updated / HST ({e})")
     await fast_api_socket.emit(
-        SocketEvent.PX_UPDATED,
+        PxSocketEvent.PX_UPDATED,
         to_socket_message_px_data_list(e.px_data_list)
     )
 
@@ -19,7 +19,7 @@ async def on_px_data_updated(e: OnPxDataUpdatedEvent):
 async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     print_log(f"[Server] Px Updated / MKT ({e})")
     await socket_send_to_room(
-        SocketEvent.PX_UPDATED_MARKET,
+        MarketPxSocketEvent.UPDATED,
         to_socket_message_px_data_market(e.data),
         namespace="/px-market",
         room=e.security,
@@ -27,4 +27,4 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
 
 
 async def on_error(e: OnErrorEvent):
-    await socket_send_to_all(SocketEvent.ERROR, to_socket_message_error(e))
+    await socket_send_to_all(PxSocketEvent.ERROR, to_socket_message_error(e))

@@ -1,3 +1,4 @@
+from dataclasses import dataclass
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -8,7 +9,24 @@ from kl_site_server.calc import aggregate_df, calc_model
 from kl_site_server.enums import PxDataCol
 
 if TYPE_CHECKING:
+    from kl_site_server.endpoints import UserConfigModel
     from kl_site_server.model import PxDataPool
+
+
+@dataclass(kw_only=True, frozen=True)
+class PxDataConfig:
+    security: str
+    period_min: int
+
+    @staticmethod
+    def from_config(config: "UserConfigModel") -> set["PxDataConfig"]:
+        ret = set()
+
+        for px_data_config in config.slot_map.values():
+            security, period_min = px_data_config.split("@", 1)
+            ret.add(PxDataConfig(security=security, period_min=int(period_min)))
+
+        return ret
 
 
 class PxData:

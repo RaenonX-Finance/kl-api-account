@@ -11,7 +11,7 @@ from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
 from tcoreapi_mq.model import SymbolBaseType
 from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi
-from .px_data import PxData, PxDataPool
+from .px_data import PxData, PxDataConfig, PxDataPool
 
 
 @dataclass(kw_only=True)
@@ -125,10 +125,7 @@ class PxDataCache:
     period_days: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
 
     buffer_market_data: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
-
-    @property
-    def px_cache_entries(self) -> Iterable[PxDataCacheEntry]:
-        return list(self.data_1k.values()) + list(self.data_dk.values())
+    security_to_symbol_complete: dict[str, str] = field(init=False, default_factory=dict)
 
     def init_entry(
         self, symbol_obj: SymbolBaseType, min_tick: float,
@@ -136,10 +133,12 @@ class PxDataCache:
     ) -> None:
         symbol_complete = symbol_obj.symbol_complete
 
+        self.security_to_symbol_complete[symbol_obj.symbol] = symbol_complete
+
         if period_mins:
             self.data_1k[symbol_complete] = PxDataCacheEntry(
                 symbol=symbol_obj.symbol,
-                symbol_complete=symbol_obj.symbol_complete,
+                symbol_complete=symbol_complete,
                 min_tick=min_tick,
                 data={},
                 interval_sec=60,
@@ -149,7 +148,7 @@ class PxDataCache:
         if period_days:
             self.data_dk[symbol_complete] = PxDataCacheEntry(
                 symbol=symbol_obj.symbol,
-                symbol_complete=symbol_obj.symbol_complete,
+                symbol_complete=symbol_complete,
                 min_tick=min_tick,
                 data={},
                 interval_sec=86400,
@@ -301,3 +300,32 @@ class PxDataCache:
         symbols = set(self.data_1k.keys()) | set(self.data_dk.keys())
 
         return all(self.is_px_data_ready(symbol_complete) for symbol_complete in symbols)
+
+    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
+        lookup_1k = defaultdict(list)
+        lookup_dk = defaultdict(list)
+
+        for px_data_config in px_data_configs:
+            security = px_data_config.security
+            period_min = px_data_config.period_min
+
+            if not (symbol_complete := self.security_to_symbol_complete.get(security)):
+                print_warning(
+                    f"Attempt to get the uninitialized Px data of [yellow]{security}[/yellow] @ {period_min}"
+                )
+                continue
+
+            if period_min >= 1440:
+                lookup_dk[symbol_complete].append(period_min)
+            else:
+                lookup_1k[symbol_complete].append(period_min)
+
+        px_data_list = []
+
+        for symbol_complete, period_mins in lookup_1k.items():
+            px_data_list.extend(self.data_1k[symbol_complete].to_px_data(period_mins))
+
+        for symbol_complete, period_mins in lookup_dk.items():
+            px_data_list.extend(self.data_dk[symbol_complete].to_px_data(period_mins))
+
+        return px_data_list

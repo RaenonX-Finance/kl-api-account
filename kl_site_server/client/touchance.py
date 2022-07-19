@@ -1,7 +1,6 @@
 import threading
 import time
 from datetime import datetime, timedelta
-from typing import Iterable
 
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_warning
@@ -9,7 +8,7 @@ from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_
 from kl_site_server.db import get_history_data_from_db, store_history_to_db
 from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent,
-    PxData, PxDataCache, TouchancePxRequestParams,
+    PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams,
 )
 from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
@@ -71,18 +70,8 @@ class TouchanceDataClient(TouchanceApiClient):
             self.get_history(symbol, interval, start, result.earliest)
             self.get_history(symbol, interval, result.latest, end)
 
-    def get_all_px_data(self) -> Iterable[PxData]:
-        if not self._px_data_cache.is_all_px_data_ready():
-            print_warning("[TC Client] `get_all_px_data()` called while not all of the Px data are ready")
-
-        return iter(
-            px_data
-            for px_cache_entry
-            in self._px_data_cache.px_cache_entries
-            if px_cache_entry.is_ready
-            for px_data
-            in px_cache_entry.to_px_data(self._px_data_cache.period_mins[px_cache_entry.symbol_complete])
-        )
+    def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
+        return self._px_data_cache.get_px_data(px_data_configs)
 
     def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
         if not self._px_data_cache.is_send_complete_data_ok(symbol_complete):

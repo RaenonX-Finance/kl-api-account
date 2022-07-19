@@ -5,6 +5,8 @@ from pydantic import BaseModel, Field
 
 from kl_site_common.db import PyObjectId
 
+PxSlotName: TypeAlias = Literal["A", "B", "C", "D"]
+
 LayoutType: TypeAlias = Literal[
     "1-1x1",
     "2-2x1",
@@ -63,7 +65,7 @@ class UserConfigModel(BaseModel):
     and the corresponding config has not been backed up yet.
     """
     account_id: PyObjectId = Field(..., description="Account ID (ObjectID) who has this config.")
-    slot_map: dict | None = Field(
+    slot_map: dict[PxSlotName, str] | None = Field(
         ...,
         description="Slot mapping to Px data identifier. "
                     "Px data identifier should be in the format of `<Security>@<PeriodMin>`."

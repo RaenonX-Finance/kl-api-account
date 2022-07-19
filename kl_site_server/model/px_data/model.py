@@ -19,10 +19,10 @@ class PxDataConfig:
     period_min: int
 
     @staticmethod
-    def from_unique_identifiers(identifier: Iterable[str]) -> set["PxDataConfig"]:
+    def from_unique_identifiers(identifiers: Iterable[str]) -> set["PxDataConfig"]:
         ret = set()
 
-        for identifier in identifier:
+        for identifier in identifiers:
             security, period_min = identifier.split("@", 1)
             ret.add(PxDataConfig(security=security, period_min=int(period_min)))
 
@@ -31,6 +31,12 @@ class PxDataConfig:
     @classmethod
     def from_config(cls, config: "UserConfigModel") -> set["PxDataConfig"]:
         return cls.from_unique_identifiers(config.slot_map.values())
+
+    def __str__(self):
+        return f"{self.security}@{self.period_min}"
+
+    def __repr__(self):
+        return str(self)
 
 
 class PxData:

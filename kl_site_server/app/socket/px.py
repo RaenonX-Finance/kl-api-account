@@ -23,7 +23,8 @@ def register_handlers_px(client: TouchanceDataClient):
 
         print_socket_event(
             PxSocketEvent.SUBSCRIBE,
-            session_id=session_id, namespace=namespace, additional=subscription_message.security,
+            session_id=session_id, namespace=namespace,
+            additional=f"[yellow]{subscription_message.security}[/yellow]",
         )
 
         try:
@@ -38,7 +39,8 @@ def register_handlers_px(client: TouchanceDataClient):
 
         print_socket_event(
             PxSocketEvent.UNSUBSCRIBE,
-            session_id=session_id, namespace=namespace, additional=subscription_message.security,
+            session_id=session_id, namespace=namespace,
+            additional=f"[yellow]{subscription_message.security}[/yellow]",
         )
 
         socket_leave_room(session_id, subscription_message.security, namespace)

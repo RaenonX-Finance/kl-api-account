@@ -79,7 +79,7 @@ class PxHistoryDataEntry:
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:
         # Note that `0` here is `str` not numertic type
-        return body["Date"] != "0" and body["Time"] != "0"
+        return body["Date"] != "0"
 
     @staticmethod
     def from_touchance(

@@ -32,16 +32,15 @@ def register_handlers_general(client: TouchanceDataClient):
             await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
 
     @fast_api_socket.on(GeneralSocketEvent.PX_INIT, namespace=namespace)
-    async def on_request_px_data_init(session_id: str, message: str):
+    async def on_request_px_data_init(session_id: str, init_message: PxInitMessage):
         _start = time.time()
-        init_message = PxInitMessage.from_message(message)
         px_data_config = set()
 
         try:
-            config = get_user_config_by_token(init_message.token)
+            config = get_user_config_by_token(init_message["token"])
             px_data_config = (
-                PxDataConfig.from_unique_identifiers(init_message.identifiers)
-                if init_message.identifiers
+                PxDataConfig.from_unique_identifiers(init_message["identifiers"])
+                if init_message["identifiers"]
                 else PxDataConfig.from_config(config)
             )
 

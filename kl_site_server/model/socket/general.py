@@ -1,12 +1,6 @@
-import json
-from dataclasses import dataclass
+from typing import TypedDict
 
 
-@dataclass
-class PxInitMessage:
+class PxInitMessage(TypedDict):
     token: str | None
     identifiers: list[str]
-
-    @staticmethod
-    def from_message(message: str) -> "PxInitMessage":
-        return PxInitMessage(**json.loads(message))

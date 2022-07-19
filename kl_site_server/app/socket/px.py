@@ -1,10 +1,12 @@
+import time
+
 from fastapi import HTTPException
 
 from kl_site_common.utils import print_socket_event
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.const import fast_api_socket
 from kl_site_server.endpoints import get_active_user_by_oauth2_token
-from kl_site_server.enums import PxSocketEvent, GeneralSocketEvent
+from kl_site_server.enums import GeneralSocketEvent, PxSocketEvent
 from kl_site_server.model import MarketPxSubscriptionMessage, PxDataConfig, RequestPxMessage
 from kl_site_server.utils import (
     SocketNamespace, socket_join_room, socket_leave_room, socket_send_to_session,
@@ -43,23 +45,27 @@ def register_handlers_px(client: TouchanceDataClient):
 
     @fast_api_socket.on(PxSocketEvent.REQUEST, namespace=namespace)
     async def on_history_px_request(session_id: str, message: str):
+        _start = time.time()
         request_message = RequestPxMessage.from_message(message)
-
-        print_socket_event(
-            PxSocketEvent.REQUEST,
-            session_id=session_id, namespace=namespace, additional=f"[yellow]{request_message.identifier}[/yellow]",
-        )
 
         try:
             get_active_user_by_oauth2_token(request_message.token)
 
+            px_data_list_message = to_socket_message_px_data_list(client.get_px_data(
+                PxDataConfig.from_unique_identifiers([request_message.identifier])
+            ))
+
             await socket_send_to_session(
                 PxSocketEvent.REQUEST,
-                to_socket_message_px_data_list(client.get_px_data(
-                    PxDataConfig.from_unique_identifiers([request_message.identifier])
-                )),
+                px_data_list_message,
                 session_id,
                 namespace=namespace
             )
         except HTTPException as ex:
             await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
+        finally:
+            print_socket_event(
+                PxSocketEvent.REQUEST,
+                session_id=session_id, namespace=namespace,
+                additional=f"{time.time() - _start:.3f} s / [yellow]{request_message.identifier}[/yellow]",
+            )

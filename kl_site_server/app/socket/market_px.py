@@ -58,7 +58,8 @@ def register_handlers_market_px(client: TouchanceDataClient):
                 to_socket_message_px_data_list(client.get_px_data(
                     PxDataConfig.from_unique_identifiers([request_message.identifier])
                 )),
-                session_id
+                session_id,
+                namespace=namespace
             )
         except HTTPException as ex:
             await socket_send_to_session(PxSocketEvent.SIGN_IN, ex.detail, session_id)

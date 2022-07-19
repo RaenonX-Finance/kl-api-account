@@ -2,11 +2,21 @@ from kl_site_server.const import fast_api_socket
 from .channels import SocketNamespace
 
 
-async def socket_send_to_session(event: str, data: str | bytes, session_id: str):
-    await fast_api_socket.emit(event, data, to=session_id)
+async def socket_send_to_session(
+    event: str,
+    data: str | bytes,
+    session_id: str, *,
+    namespace: SocketNamespace = "/"
+):
+    await fast_api_socket.emit(event, data, to=session_id, namespace=namespace)
 
 
-async def socket_send_to_room(event: str, data: str | bytes, *, namespace: SocketNamespace = "/", room: str):
+async def socket_send_to_room(
+    event: str,
+    data: str | bytes, *,
+    namespace: SocketNamespace = "/",
+    room: str
+):
     await fast_api_socket.emit(event, data, namespace=namespace, room=room)
 
 

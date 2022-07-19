@@ -8,7 +8,7 @@ from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
 
 from kl_site_common.const import SR_LEVEL_MIN_DIFF
-from kl_site_common.utils import get_epoch_sec_time
+from kl_site_common.utils import get_epoch_sec_time, print_warning
 from kl_site_server.enums import PxDataCol
 
 
@@ -89,11 +89,16 @@ def _sr_levels_range_of_pair(
 
     today = pd.Timestamp.today(tz="UTC")
     df_selected = df_selected[today - BDay(6):today]  # 6 because the most recent pair could be incomplete
+    grouped_dict = df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict()
 
-    sr_level_data = _sr_levels_get_recent_n_only(
-        df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict(),
-        5
-    )
+    sr_level_data = _sr_levels_get_recent_n_only(grouped_dict, 5)
+
+    if not sr_level_data:
+        print_warning(
+            f"Attempt to calculate SR data while the data pair is misformatted: {grouped_dict}",
+            force=True
+        )
+        return
 
     flattened_data = [data for _, pair in sr_level_data for data in pair]
 

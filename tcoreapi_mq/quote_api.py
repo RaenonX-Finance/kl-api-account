@@ -119,7 +119,7 @@ class QuoteAPI(TCoreZMQ):
     def complete_get_history(self, symbol_complete: str, interval: HistoryInterval, start: str, end: str):
         print_log(
             f"[TC Quote] History data fetching completed for [yellow]{symbol_complete}[/yellow] "
-            f"at [yellow]{interval}[/yellow]"
+            f"at [yellow]{interval}[/yellow] starting from {start} to {end}"
         )
         with self.lock:
             req = CompletePxHistoryRequest(

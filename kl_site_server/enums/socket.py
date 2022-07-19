@@ -2,7 +2,6 @@ class PxSocketEvent:
     INIT = "init"
 
     PX_INIT = "pxInit"
-    PX_UPDATED = "pxUpdated"
 
     ERROR = "error"
     SIGN_IN = "signIn"
@@ -12,5 +11,6 @@ class PxSocketEvent:
 
 class MarketPxSocketEvent:
     UPDATED = "updated"
+    REQUEST = "request"
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"

@@ -4,10 +4,10 @@ from datetime import datetime, timedelta
 
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_warning
-from kl_site_server.app import on_error, on_px_data_updated, on_px_data_updated_market
+from kl_site_server.app import on_error, on_px_data_updated_market
 from kl_site_server.db import get_history_data_from_db, store_history_to_db
 from kl_site_server.model import (
-    OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent,
+    OnErrorEvent, OnMarketDataReceivedEvent,
     PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams,
 )
 from tcoreapi_mq.client import TouchanceApiClient
@@ -73,22 +73,6 @@ class TouchanceDataClient(TouchanceApiClient):
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
         return self._px_data_cache.get_px_data(px_data_configs)
 
-    def send_complete_px_data(self, symbol_complete: str, proc_sec_offset: float) -> bool:
-        if not self._px_data_cache.is_send_complete_data_ok(symbol_complete):
-            return False
-
-        _start = time.time()
-
-        px_data_list = self._px_data_cache.complete_px_data_to_send(symbol_complete)
-
-        execute_async_function(
-            on_px_data_updated,
-            OnPxDataUpdatedEvent(px_data_list=px_data_list, proc_sec=time.time() - _start + proc_sec_offset),
-        )
-
-        self._px_data_cache.mark_complete_data_sent()
-        return True
-
     def _history_data_refetcher(self):
         while True:
             time.sleep(DATA_PX_REFETCH_INTERVAL_SEC)
@@ -106,14 +90,8 @@ class TouchanceDataClient(TouchanceApiClient):
                     self.get_history_including_db(params.symbol_obj, "DK", start, end)
 
     def on_received_history_data(self, data: HistoryData) -> None:
-        _start = time.time()
-
         store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)
-
-        proc_sec_update = time.time() - _start
-
-        self.send_complete_px_data(data.symbol_complete, proc_sec_update)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         self._px_data_cache.update_latest_market_data_of_symbol(data)
@@ -132,7 +110,6 @@ class TouchanceDataClient(TouchanceApiClient):
         # `send_market_px_data()` must place before `send_complete_px_data()`
         # because the latter takes time to calc
         execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(data=data))
-        self.send_complete_px_data(data.symbol_complete, 0)
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         pass

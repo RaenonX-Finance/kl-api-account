@@ -3,7 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import DATA_PX_UPDATE_BATCH_SEC, DATA_PX_UPDATE_CALC_SEC, DATA_PX_UPDATE_SEC
+from kl_site_common.const import DATA_PX_UPDATE_BATCH_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
@@ -113,7 +113,6 @@ class PxDataCache:
     data_1k: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
     data_dk: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
-    last_complete_sent: float | None = field(init=False, default=None)
     last_complete_update_of_symbol: dict[str, float] = field(init=False, default_factory=dict)
 
     allow_force_send_once_complete: bool = field(init=False, default=False)
@@ -219,44 +218,6 @@ class PxDataCache:
 
         if reason:
             self._mark_force_send_once(data.symbol_complete, reason)
-
-    def is_send_complete_data_ok(self, symbol_complete: str) -> bool:
-        if self.allow_force_send_once_complete:
-            self.allow_force_send_once_complete = False
-            return True
-
-        if not self.is_px_data_ready(symbol_complete):
-            return False
-
-        if self.last_complete_sent is None:
-            # First market data transmission
-            return True
-
-        return time.time() - self.last_complete_sent > DATA_PX_UPDATE_SEC
-
-    def mark_complete_data_sent(self) -> None:
-        self.last_complete_sent = time.time() - DATA_PX_UPDATE_CALC_SEC
-
-    def complete_px_data_to_send(self, symbol_complete: str) -> list[PxData]:
-        px_data_list = []
-
-        # TODO: Implementation should change after sending specific data to users
-        # > Fixing the symbols so `dict size change` error won't pop up if received any history data of new symbol
-        symbols_in_data = list(self.data_1k.keys())
-
-        for symbol in symbols_in_data:
-            px_cache_entry = self.data_1k[symbol]
-            if not px_cache_entry.is_ready:
-                print_warning(
-                    f"[Server] Complete data of [yellow]{symbol}[/yellow] not ready, "
-                    f"skipped processing"
-                )
-                continue
-
-            for px_data in px_cache_entry.to_px_data(self.period_mins[symbol_complete]):
-                px_data_list.append(px_data)
-
-        return px_data_list
 
     def is_px_data_ready(self, symbol_complete: str) -> bool:
         if symbol_complete in self.data_1k:

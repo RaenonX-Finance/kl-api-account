@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime
-from typing import TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING
 
 from pandas import DataFrame, Series
 
@@ -19,14 +19,18 @@ class PxDataConfig:
     period_min: int
 
     @staticmethod
-    def from_config(config: "UserConfigModel") -> set["PxDataConfig"]:
+    def from_unique_identifiers(identifier: Iterable[str]) -> set["PxDataConfig"]:
         ret = set()
 
-        for px_data_config in config.slot_map.values():
-            security, period_min = px_data_config.split("@", 1)
+        for identifier in identifier:
+            security, period_min = identifier.split("@", 1)
             ret.add(PxDataConfig(security=security, period_min=int(period_min)))
 
         return ret
+
+    @classmethod
+    def from_config(cls, config: "UserConfigModel") -> set["PxDataConfig"]:
+        return cls.from_unique_identifiers(config.slot_map.values())
 
 
 class PxData:

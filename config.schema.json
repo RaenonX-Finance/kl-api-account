@@ -95,22 +95,10 @@
               "type": "object",
               "description": "Px data updating related settings.",
               "required": [
-                "complete-interval-sec",
-                "complete-calc-sec",
                 "complete-batch-sec"
               ],
               "additionalProperties": false,
               "properties": {
-                "complete-interval-sec": {
-                  "type": "number",
-                  "description": "Complete price data update frequency. This should be greater than market data update frequency since this sends more data and takes more time for calculation.",
-                  "exclusiveMinimum": 0
-                },
-                "complete-calc-sec": {
-                  "type": "number",
-                  "description": "Estimate complete px data calculation duration in seconds. This will be used to offset the additional time-gate on complete Px data sending. Check https://github.com/RaenonX-Finance/kl-site-back/issues/42 for more details.",
-                  "exclusiveMinimum": 0
-                },
                 "complete-batch-sec": {
                   "type": "number",
                   "description": "Complete px data force-send timeframe in seconds. If all complete Px data is updated within this timeframe, complete Px data will force-send once.",

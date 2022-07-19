@@ -5,4 +5,4 @@ from .px import register_handlers_px
 
 def register_handlers(client: TouchanceDataClient):
     register_handlers_px(client)
-    register_handlers_market_px()
+    register_handlers_market_px(client)

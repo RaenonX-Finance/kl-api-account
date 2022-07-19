@@ -22,7 +22,7 @@ def register_handlers(client: TouchanceDataClient):
                 session_id
             )
         except HTTPException as ex:
-            await fast_api_socket.emit(SocketEvent.SIGN_IN, ex.detail, to=session_id)
+            await socket_send_to_session(SocketEvent.SIGN_IN, ex.detail, session_id)
 
     @fast_api_socket.on(SocketEvent.PX_INIT)
     async def on_request_px_data_init(session_id: str, access_token: str):
@@ -36,7 +36,7 @@ def register_handlers(client: TouchanceDataClient):
                 session_id
             )
         except HTTPException as ex:
-            await fast_api_socket.emit(SocketEvent.SIGN_IN, ex.detail, to=session_id)
+            await socket_send_to_session(SocketEvent.SIGN_IN, ex.detail, session_id)
 
     @fast_api_socket.on(SocketEvent.PING)
     async def on_request_ping(session_id: str, *_):

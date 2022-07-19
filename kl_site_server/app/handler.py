@@ -3,7 +3,7 @@ from kl_site_server.const import fast_api_socket
 from kl_site_server.enums import SocketEvent
 from kl_site_server.model import OnErrorEvent, OnMarketDataReceivedEvent, OnPxDataUpdatedEvent
 from kl_site_server.utils import (
-    to_socket_message_error, to_socket_message_px_data_list,
+    socket_send_to_all, to_socket_message_error, to_socket_message_px_data_list,
     to_socket_message_px_data_market,
 )
 
@@ -25,4 +25,4 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
 
 
 async def on_error(e: OnErrorEvent):
-    await fast_api_socket.emit(SocketEvent.ERROR, to_socket_message_error(e))
+    await socket_send_to_all(SocketEvent.ERROR, to_socket_message_error(e))

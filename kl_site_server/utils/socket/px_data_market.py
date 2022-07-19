@@ -29,12 +29,5 @@ def _from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
     }
 
 
-def _from_realtime_data_dict(data: dict[str, RealtimeData]) -> PxDataMarket:
-    return {
-        security: _from_realtime_data_single(data_single)
-        for security, data_single in data.items()
-    }
-
-
-def to_socket_message_px_data_market(data: dict[str, RealtimeData]) -> str:
-    return json.dumps(_from_realtime_data_dict(data))
+def to_socket_message_px_data_market(data: RealtimeData) -> str:
+    return json.dumps(_from_realtime_data_single(data))

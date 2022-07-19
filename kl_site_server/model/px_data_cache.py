@@ -3,9 +3,7 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import (
-    DATA_PX_UPDATE_BATCH_SEC, DATA_PX_UPDATE_CALC_SEC, DATA_PX_UPDATE_MARKET_SEC, DATA_PX_UPDATE_SEC,
-)
+from kl_site_common.const import DATA_PX_UPDATE_BATCH_SEC, DATA_PX_UPDATE_CALC_SEC, DATA_PX_UPDATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
@@ -115,7 +113,6 @@ class PxDataCache:
     data_1k: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
     data_dk: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
-    last_market_sent: float | None = field(init=False, default=None)
     last_complete_sent: float | None = field(init=False, default=None)
     last_complete_update_of_symbol: dict[str, float] = field(init=False, default_factory=dict)
 
@@ -124,7 +121,6 @@ class PxDataCache:
     period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
     period_days: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
 
-    buffer_market_data: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
     security_to_symbol_complete: dict[str, str] = field(init=False, default_factory=dict)
 
     def init_entry(
@@ -224,24 +220,6 @@ class PxDataCache:
         if reason:
             self._mark_force_send_once(data.symbol_complete, reason)
 
-    def is_no_market_data_update(self, symbol_complete: str) -> bool:
-        # > 3 secs no incoming market data
-        return (
-                self.last_market_sent is not None
-                and time.time() - self.last_market_sent > 3
-                and self.is_px_data_ready(symbol_complete)
-        )
-
-    def is_send_market_data_ok(self, symbol_complete: str) -> bool:
-        if not self.is_px_data_ready(symbol_complete):
-            return False
-
-        if self.last_market_sent is None:
-            # First market data transmission
-            return True
-
-        return time.time() - self.last_market_sent > DATA_PX_UPDATE_MARKET_SEC
-
     def is_send_complete_data_ok(self, symbol_complete: str) -> bool:
         if self.allow_force_send_once_complete:
             self.allow_force_send_once_complete = False
@@ -255,13 +233,6 @@ class PxDataCache:
             return True
 
         return time.time() - self.last_complete_sent > DATA_PX_UPDATE_SEC
-
-    def rec_buffer_market_data(self, data: RealtimeData):
-        self.buffer_market_data[data.security] = data
-
-    def mark_market_data_sent(self) -> None:
-        self.last_market_sent = time.time()
-        self.buffer_market_data = {}
 
     def mark_complete_data_sent(self) -> None:
         self.last_complete_sent = time.time() - DATA_PX_UPDATE_CALC_SEC

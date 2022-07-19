@@ -89,18 +89,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_data_cache.mark_complete_data_sent()
         return True
 
-    def send_market_px_data(self, symbol_complete: str, data: RealtimeData) -> None:
-        if not self._px_data_cache.is_send_market_data_ok(symbol_complete):
-            self._px_data_cache.rec_buffer_market_data(data)
-            return
-
-        execute_async_function(
-            on_px_data_updated_market,
-            OnMarketDataReceivedEvent(data=self._px_data_cache.buffer_market_data | {data.security: data}),
-        )
-
-        self._px_data_cache.mark_market_data_sent()
-
     def _history_data_refetcher(self):
         while True:
             time.sleep(DATA_PX_REFETCH_INTERVAL_SEC)
@@ -143,7 +131,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         # `send_market_px_data()` must place before `send_complete_px_data()`
         # because the latter takes time to calc
-        self.send_market_px_data(data.symbol_complete, data)
+        execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(data=data))
         self.send_complete_px_data(data.symbol_complete, 0)
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:

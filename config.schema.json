@@ -97,8 +97,7 @@
               "required": [
                 "complete-interval-sec",
                 "complete-calc-sec",
-                "complete-batch-sec",
-                "market-interval-sec"
+                "complete-batch-sec"
               ],
               "additionalProperties": false,
               "properties": {
@@ -115,11 +114,6 @@
                 "complete-batch-sec": {
                   "type": "number",
                   "description": "Complete px data force-send timeframe in seconds. If all complete Px data is updated within this timeframe, complete Px data will force-send once.",
-                  "exclusiveMinimum": 0
-                },
-                "market-interval-sec": {
-                  "type": "number",
-                  "description": "Market price data update frequency. This should be less than complete price data update frequency since this sends less data and takes almost no calculation.",
                   "exclusiveMinimum": 0
                 }
               }

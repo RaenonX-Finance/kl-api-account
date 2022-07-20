@@ -2,9 +2,9 @@ from typing import TYPE_CHECKING
 
 from pandas import DataFrame
 
+from kl_site_common.const import DATA_SOURCES
 from kl_site_server.calc import calc_pool, calc_support_resistance_levels
 from tcoreapi_mq.message import RealtimeData
-from .const import SYMBOL_NAMES
 from .model import PxData
 
 if TYPE_CHECKING:
@@ -23,11 +23,13 @@ class PxDataPool:
         if not bars:
             raise ValueError(f"PxData should be initialized with data ({symbol} @ Pool)")
 
-        if symbol not in SYMBOL_NAMES:
-            raise ValueError(f"Symbol `{symbol}` doesn't have corresponding override name set")
+        try:
+            source_of_symbol = next(data_source for data_source in DATA_SOURCES if data_source["symbol"] == symbol)
+        except StopIteration as ex:
+            raise ValueError(f"Symbol `{symbol}` is not included in data source list") from ex
 
         self.symbol: str = symbol
-        self.symbol_name: str = SYMBOL_NAMES[symbol]
+        self.symbol_name: str = source_of_symbol["name"]
         self.min_tick: float = min_tick
         self.decimals: int = decimals
         self.latest_market: RealtimeData | None = latest_market

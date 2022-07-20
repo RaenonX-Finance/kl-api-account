@@ -1,15 +1,20 @@
 from dataclasses import dataclass
+from typing import TYPE_CHECKING
 
-from tcoreapi_mq.message import RealtimeData
+if TYPE_CHECKING:
+    from kl_site_server.model import MarketPxUpdateResult
 
 
 @dataclass(kw_only=True)
 class OnMarketDataReceivedEvent:
-    data: RealtimeData
+    result: "MarketPxUpdateResult"
 
     @property
-    def security(self):
-        return self.data.security
+    def securities(self) -> list[str]:
+        return list(self.result.data.keys())
 
     def __str__(self):
-        return f"[yellow]{self.security}[/yellow] @ {self.data.last_px:.2f}"
+        return " / ".join(
+            f"[yellow]{data.security}[/yellow] @ {data.last_px:.2f}"
+            for data in self.result.data.values()
+        )

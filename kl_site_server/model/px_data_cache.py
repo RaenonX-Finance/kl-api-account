@@ -3,12 +3,14 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
+from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import HistoryData, RealtimeData
 from tcoreapi_mq.model import SymbolBaseType
 from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi
 from .px_data import PxData, PxDataConfig, PxDataPool
+from .px_data_update import MarketPxUpdateResult
 
 
 @dataclass(kw_only=True)
@@ -59,9 +61,9 @@ class PxDataCacheEntry:
 
         self.latest_market = data
 
-    def update_latest(self, current: float):
+    def update_latest(self, current: float) -> str | None:
         """
-        Updates the latest price.
+        Updates the latest price, then return the reason of force-send, if allowed.
 
         This should be called after the `is_ready` check.
         """
@@ -81,7 +83,7 @@ class PxDataCacheEntry:
             }
             self.data[epoch_current] = new_bar
             self.remove_oldest()
-            return
+            return "New bar"
 
         bar_current = self.data[epoch_current]
         self.data[epoch_current] = bar_current | {
@@ -89,6 +91,13 @@ class PxDataCacheEntry:
             PxDataCol.LOW: min(bar_current[PxDataCol.LOW], current),
             PxDataCol.CLOSE: current,
         }
+
+        if current > bar_current[PxDataCol.HIGH]:
+            return "Breaking high"
+        if current < bar_current[PxDataCol.LOW]:
+            return "Breaking low"
+
+        return None
 
     def to_px_data(self, period_mins: list[int]) -> list[PxData]:
         pool = PxDataPool(
@@ -107,12 +116,14 @@ class PxDataCache:
     data_1k: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
     data_dk: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
-    last_complete_update_of_symbol: dict[str, float] = field(init=False, default_factory=dict)
+    last_market_send: float = field(init=False, default=0)
 
     period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
     period_days: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
 
     security_to_symbol_complete: dict[str, str] = field(init=False, default_factory=dict)
+
+    buffer_mkt_px: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
 
     def init_entry(
         self, *, symbol_obj: SymbolBaseType, min_tick: float, decimals: int,
@@ -176,21 +187,35 @@ class PxDataCache:
                 f"No data update as the history data is not either 1K or DK - {symbol_complete} @ {data.data_type}"
             )
 
-        self.last_complete_update_of_symbol[symbol_complete] = time.time()
-
     def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
         if data_1k := self.data_1k.get(data.symbol_complete):
             data_1k.update_latest_market(data)
         if data_dk := self.data_dk.get(data.symbol_complete):
             data_dk.update_latest_market(data)
 
-    def update_market_data_of_symbol(self, data: RealtimeData) -> None:
+    def update_market_data_of_symbol(self, data: RealtimeData) -> MarketPxUpdateResult:
         symbol_complete = data.symbol_complete
 
+        reason = None
         if data_1k := self.data_1k.get(symbol_complete):
-            data_1k.update_latest(data.last_px)
+            reason = data_1k.update_latest(data.last_px) or reason
         if data_dk := self.data_dk.get(symbol_complete):
-            data_dk.update_latest(data.last_px)
+            reason = data_dk.update_latest(data.last_px) or reason
+
+        now = time.time()
+        result = MarketPxUpdateResult(
+            allow_send=reason or now - self.last_market_send > MARKET_PX_TIME_GATE_SEC,
+            force_send_reason=reason,
+            data=self.buffer_mkt_px | {data.security: data},
+        )
+
+        if result.allow_send:
+            self.last_market_send = now
+            self.buffer_mkt_px = {}
+        else:
+            self.buffer_mkt_px[data.security] = data
+
+        return result
 
     def is_px_data_ready(self, symbol_complete: str) -> bool:
         if symbol_complete in self.data_1k:

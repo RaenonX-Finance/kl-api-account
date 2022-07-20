@@ -10,6 +10,8 @@ log:
 data:
   stream:
     timeout-sec: 300
+    px-update:
+      market-time-gate-sec: 0.1
     px-history-refetch:
       interval-sec: 10
       backward-hour: 1

@@ -3,4 +3,5 @@ from .event import *  # noqa
 from .params import *  # noqa
 from .px_data import *  # noqa
 from .px_data_cache import PxDataCache, PxDataCacheEntry
+from .px_data_update import MarketPxUpdateResult
 from .socket import *  # noqa

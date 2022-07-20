@@ -3,7 +3,7 @@ import time
 from datetime import datetime, timedelta
 
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
-from kl_site_common.utils import execute_async_function, print_warning
+from kl_site_common.utils import execute_async_function, print_log, print_warning
 from kl_site_server.app import on_error, on_px_data_updated_market
 from kl_site_server.db import get_history_data_from_db, store_history_to_db
 from kl_site_server.model import (
@@ -108,11 +108,18 @@ class TouchanceDataClient(TouchanceApiClient):
 
             return
 
-        self._px_data_cache.update_market_data_of_symbol(data)
+        update_result = self._px_data_cache.update_market_data_of_symbol(data)
 
-        # `send_market_px_data()` must place before `send_complete_px_data()`
-        # because the latter takes time to calc
-        execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(data=data))
+        if not update_result.allow_send:
+            return
+
+        if update_result.is_force_send:
+            print_log(
+                f"[TC Client] [yellow]Force-sending[/yellow] market Px - "
+                f"Reason: [blue]{update_result.force_send_reason}[/blue]"
+            )
+
+        execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         pass

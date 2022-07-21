@@ -15,7 +15,7 @@ async def socket_send_to_room(
     event: str,
     data: str | bytes, *,
     namespace: SocketNamespace = "/",
-    room: str
+    room: str | list[str]
 ):
     await fast_api_socket.emit(event, data, namespace=namespace, room=room)
 

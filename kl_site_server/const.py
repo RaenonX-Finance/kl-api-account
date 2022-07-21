@@ -1,3 +1,4 @@
+import socketio
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
@@ -12,7 +13,10 @@ fast_api = FastAPI(
     openapi_url="/openapi.json" if DEVELOPMENT_MODE else None,
 )
 # Set `cors_allowed_origins` to `None` and let `CORSMiddleware` handle CORS things
-fast_api_socket = SocketManager(app=fast_api, cors_allowed_origins=[])
+# > Calling ``SocketManager`` patches `fast_api` with attribute `sio`
+SocketManager(app=fast_api, cors_allowed_origins=[])
+fast_api_socket: socketio.AsyncServer = fast_api.sio
+
 
 fast_api.add_middleware(
     CORSMiddleware,

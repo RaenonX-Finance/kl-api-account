@@ -10,11 +10,15 @@ class OnMarketDataReceivedEvent:
     result: "MarketPxUpdateResult"
 
     @property
+    def data(self):
+        return self.result.data
+
+    @property
     def securities(self) -> list[str]:
-        return list(self.result.data.keys())
+        return list(self.data.keys())
 
     def __str__(self):
         return " / ".join(
             f"[yellow]{data.security}[/yellow] @ {data.last_px:.2f}"
-            for data in self.result.data.values()
+            for data in self.data.values()
         )

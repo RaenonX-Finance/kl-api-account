@@ -2,10 +2,10 @@ import time
 
 from fastapi import HTTPException
 
-from kl_site_common.utils import print_socket_event
+from kl_site_common.utils import print_error, print_socket_event
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.const import fast_api_socket
-from kl_site_server.endpoints import get_active_user_by_oauth2_token, get_user_config_by_token
+from kl_site_server.endpoints import get_active_user_by_oauth2_token
 from kl_site_server.enums import GeneralSocketEvent, PxSocketEvent
 from kl_site_server.model import MarketPxSubscriptionMessage, PxDataConfig, PxInitMessage, RequestPxMessage
 from kl_site_server.utils import (
@@ -20,15 +20,16 @@ def register_handlers_px(client: TouchanceDataClient):
     @fast_api_socket.on(PxSocketEvent.PX_INIT, namespace=namespace)
     async def on_request_px_data_init(session_id: str, init_message: PxInitMessage):
         _start = time.time()
+
+        if not init_message["identifiers"]:
+            print_error("[Socket] `identifiers` cannot be empty for socket event `pxInit`")
+            return
+
         px_data_config = set()
 
         try:
-            config = get_user_config_by_token(init_message["token"])
-            px_data_config = (
-                PxDataConfig.from_unique_identifiers(init_message["identifiers"])
-                if init_message["identifiers"]
-                else PxDataConfig.from_config(config)
-            )
+            get_active_user_by_oauth2_token(init_message["token"])
+            px_data_config = PxDataConfig.from_unique_identifiers(init_message["identifiers"])
 
             await socket_send_to_session(
                 PxSocketEvent.PX_INIT,

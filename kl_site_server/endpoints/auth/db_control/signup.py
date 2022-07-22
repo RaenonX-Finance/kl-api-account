@@ -24,7 +24,7 @@ def signup_user_ensure_unique(user: UserSignupModel = Body(...)) -> UserSignupMo
 
         try:
             auth_db_users.insert_one(
-                user.to_db_user_model(admin=False, expiry=signup_key_entry.expiry).dict(),
+                user.to_db_user_model(admin=False, expiry=signup_key_entry.account_expiry).dict(),
                 session=session
             )
         except pymongo.errors.DuplicateKeyError as ex:

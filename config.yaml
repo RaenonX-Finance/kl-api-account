@@ -47,21 +47,9 @@ data:
         name: '30'
       - min: 60
         name: '60'
-      - min: 120
-        name: '2 H'
-      - min: 240
-        name: '4 H'
-      - min: 360
-        name: '6 H'
-      - min: 720
-        name: '12 H'
     day:
       - day: 1
         name: 日
-      - day: 7
-        name: 周
-      - day: 30
-        name: 月
   sr-level:
     custom: {}
 

@@ -37,6 +37,7 @@ ConfigKeyStringData: TypeAlias = Literal[
 ConfigKeyDictData: TypeAlias = Literal[
     "slot_map",
     "layout_config",
+    "shared_config",
 ]
 
 
@@ -66,12 +67,13 @@ class UserConfigModel(BaseModel):
     """
     account_id: PyObjectId = Field(..., description="Account ID (ObjectID) who has this config.")
     slot_map: dict[PxSlotName, str] | None = Field(
-        ...,
+        None,
         description="Slot mapping to Px data identifier. "
                     "Px data identifier should be in the format of `<Security>@<PeriodMin>`."
     )
-    layout_config: dict | None = Field(..., description="Layout config of slots.")
-    layout_type: LayoutType | None = Field(..., description="Layout type.")
+    layout_type: LayoutType | None = Field(None, description="Layout type.")
+    layout_config: dict | None = Field(None, description="Layout config of slots.")
+    shared_config: dict | None = Field(None, description="Shared config for Px cahrts.")
 
     class Config:
         allow_population_by_field_name = True

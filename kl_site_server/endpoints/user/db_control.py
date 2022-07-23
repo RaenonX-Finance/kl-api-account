@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import Body, Depends
+from pymongo import ReturnDocument
 
 from kl_site_common.db import PyObjectId
 from .const import user_db_config
@@ -12,8 +13,9 @@ def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:
     model = UserConfigModel(
         account_id=account_id,
         slot_map=None,
-        layout_config=None,
         layout_type=None,
+        layout_config=None,
+        shared_config=None,
     )
     user_db_config.insert_one(model.dict())
 
@@ -43,7 +45,8 @@ def update_config(
 ) -> Any:
     config_model = user_db_config.find_one_and_update(
         {"account_id": config_og.account_id},
-        {"$set": {body.key: body.data}}
+        {"$set": {body.key: body.data}},
+        return_document=ReturnDocument.AFTER
     )
 
     return config_model[body.key]

@@ -31,8 +31,6 @@ class TouchanceDataClient(TouchanceApiClient):
         params.reset_request_timeout()
         self._px_request_params[params.symbol_obj.symbol_complete] = params
 
-        hist_start, hist_end = params.history_range
-
         self.register_symbol_info(params.symbol_obj)
         instrument_info = self.get_instrument_info_by_symbol(params.symbol_obj)
 
@@ -45,10 +43,10 @@ class TouchanceDataClient(TouchanceApiClient):
         )
 
         if params.period_mins:
-            self.get_history_including_db(params.symbol_obj, "1K", hist_start, hist_end)
+            self.get_history_including_db(params.symbol_obj, "1K", *params.history_range_1k)
 
         if params.period_days:
-            self.get_history_including_db(params.symbol_obj, "DK", hist_start, hist_end)
+            self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
 
         self.subscribe_realtime(params.symbol_obj)
 

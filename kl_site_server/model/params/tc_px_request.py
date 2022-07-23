@@ -13,7 +13,8 @@ class TouchancePxRequestParams:
     symbol_obj: "SymbolBaseType"
     period_mins: list[int]
     period_days: list[int]
-    history_range: tuple[datetime, datetime]
+    history_range_1k: tuple[datetime, datetime]
+    history_range_dk: tuple[datetime, datetime]
 
     request_epoch_sec: float = field(init=False)
 

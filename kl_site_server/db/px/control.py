@@ -42,8 +42,8 @@ def get_history_data_from_db(
 
 def store_history_to_db(data: HistoryData):
     print_log(
-        f"[DB-Px] Storing history data of [yellow]{data.symbol_complete}[/yellow] "
-        f"at [yellow]{data.data_type}[/yellow]"
+        f"[DB-Px] Storing [purple]{data.data_len_as_str}[/purple] history data of "
+        f"[yellow]{data.symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
     )
 
     with start_mongo_txn() as session:

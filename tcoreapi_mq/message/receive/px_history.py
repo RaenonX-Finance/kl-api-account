@@ -19,20 +19,11 @@ Sample history data entry:
 """
 import json
 from dataclasses import InitVar, dataclass, field
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timezone
 from typing import TypedDict
 
+from .calc import calc_interval_to_timedelta_offset, calc_market_date
 from ..send import HistoryInterval
-
-
-def interval_to_timedelta_offset(interval: HistoryInterval) -> timedelta:
-    match interval:
-        case "1K":
-            return timedelta(minutes=1)
-        case "DK":
-            return timedelta(days=1)
-        case _:
-            raise ValueError(f"Unable to get `timedelta` from interval `{interval}`")
 
 
 @dataclass(kw_only=True)
@@ -56,6 +47,9 @@ class PxHistoryDataMongoModel(TypedDict):
     v: int  # Volume
     s: str  # Symbol (complete)
     i: HistoryInterval  # Interval
+    e: float  # Epoch sec
+    et: float  # Epoch sec - time only
+    m: datetime
 
 
 @dataclass(kw_only=True)
@@ -71,10 +65,9 @@ class PxHistoryDataEntry:
     symbol_complete: str
     interval: HistoryInterval
 
-    epoch_sec: float = field(init=False)
-
-    def __post_init__(self):
-        self.epoch_sec = self.timestamp.timestamp()
+    epoch_sec: float
+    epoch_sec_time: float
+    market_date: datetime
 
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:
@@ -86,9 +79,13 @@ class PxHistoryDataEntry:
         body: dict[str, str], symbol_complete: str, interval: HistoryInterval
     ) -> "PxHistoryDataEntry":
         ts = datetime.strptime(f"{body['Date']} {body['Time']:>06}", "%Y%m%d %H%M%S").replace(tzinfo=timezone.utc)
+        ts -= calc_interval_to_timedelta_offset(interval)
+
+        epoch_sec = ts.timestamp()
+        epoch_sec_time = epoch_sec % 86400
 
         return PxHistoryDataEntry(
-            timestamp=ts - interval_to_timedelta_offset(interval),
+            timestamp=ts,
             open=float(body["Open"]),
             high=float(body["High"]),
             low=float(body["Low"]),
@@ -96,6 +93,9 @@ class PxHistoryDataEntry:
             volume=int(body["Volume"]),
             symbol_complete=symbol_complete,
             interval=interval,
+            epoch_sec=epoch_sec,
+            epoch_sec_time=epoch_sec_time,
+            market_date=calc_market_date(ts, epoch_sec, symbol_complete),
         )
 
     @staticmethod
@@ -109,6 +109,9 @@ class PxHistoryDataEntry:
             volume=doc["v"],
             symbol_complete=doc["s"],
             interval=doc["i"],
+            epoch_sec=doc["e"],
+            epoch_sec_time=doc["et"],
+            market_date=doc["m"],
         )
 
     def to_mongo_doc(self) -> PxHistoryDataMongoModel:
@@ -121,6 +124,9 @@ class PxHistoryDataEntry:
             "v": self.volume,
             "s": self.symbol_complete,
             "i": self.interval,
+            "e": self.epoch_sec,
+            "et": self.epoch_sec_time,
+            "m": self.market_date,
         }
 
 

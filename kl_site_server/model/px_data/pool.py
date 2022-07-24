@@ -35,7 +35,7 @@ class PxDataPool:
         self.latest_market: RealtimeData | None = latest_market
 
         self.dataframe: DataFrame = DataFrame(bars)
-        self.dataframe = calc_pool(self.dataframe, self.symbol)
+        self.dataframe = calc_pool(self.dataframe)
 
         self.sr_levels_data = calc_support_resistance_levels(self.dataframe, self.symbol)
 

@@ -1,4 +1,5 @@
 import collections.abc
+import os.path
 from typing import MutableMapping
 
 import yaml
@@ -29,8 +30,9 @@ def get_config() -> MutableMapping:
         config = yaml.safe_load(config_file)
 
     # Load overriding config
-    with open("config-override.yaml", "r", encoding="utf-8") as config_file:
-        config = merge_dict(config, yaml.safe_load(config_file))
+    if os.path.exists("config-override.yaml"):
+        with open("config-override.yaml", "r", encoding="utf-8") as config_file:
+            config = merge_dict(config, yaml.safe_load(config_file))
 
     # Validate config
     with open("config.schema.json", "r") as config_schema:

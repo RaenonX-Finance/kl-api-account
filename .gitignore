@@ -7,8 +7,9 @@ sandbox*.py
 # Project file
 .idea/
 
-# Endpoint testing
+# Testing
 *.http
+.pytest_cache/
 
 # Compiled files
 __pycache__/

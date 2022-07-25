@@ -80,12 +80,18 @@
           "type": "object",
           "description": "Data streaming related settings.",
           "required": [
+            "segment-count",
             "timeout-sec",
             "px-update",
             "px-history-refetch"
           ],
           "additionalProperties": false,
           "properties": {
+            "segment-count": {
+              "type": "integer",
+              "description": "Count of data (candlestick) to send for each segment of the history data.",
+              "exclusiveMinimum": 0
+            },
             "timeout-sec": {
               "type": "number",
               "description": "Data stream timeout in seconds. An error will be raised if no new data received after the given seconds.",

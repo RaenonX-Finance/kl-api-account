@@ -1,5 +1,6 @@
 import time
 from collections import defaultdict
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
@@ -108,7 +109,11 @@ class PxDataCacheEntry:
             latest_market=self.latest_market,
         )
 
-        return [pool.to_px_data(period_min) for period_min in period_mins]
+        with ThreadPoolExecutor() as executor:
+            return [
+                future.result() for future
+                in as_completed(executor.submit(pool.to_px_data, period_min) for period_min in period_mins)
+            ]
 
 
 @dataclass(kw_only=True)
@@ -252,10 +257,16 @@ class PxDataCache:
 
         px_data_list = []
 
-        for symbol_complete, period_mins in lookup_1k.items():
-            px_data_list.extend(self.data_1k[symbol_complete].to_px_data(period_mins))
+        with ThreadPoolExecutor() as executor:
+            futures = [
+                executor.submit(self.data_1k[symbol_complete].to_px_data, period_mins)
+                for symbol_complete, period_mins in lookup_1k.items()
+            ] + [
+                executor.submit(self.data_dk[symbol_complete].to_px_data, period_mins)
+                for symbol_complete, period_mins in lookup_dk.items()
+            ]
 
-        for symbol_complete, period_mins in lookup_dk.items():
-            px_data_list.extend(self.data_dk[symbol_complete].to_px_data(period_mins))
+            for future in as_completed(futures):
+                px_data_list.extend(future.result())
 
         return px_data_list

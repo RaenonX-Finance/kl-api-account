@@ -39,7 +39,6 @@ class PxDataPool:
         self.dataframe: DataFrame = calc_pool(DataFrame(bars))
 
         self.strength: int = calc_strength(self.dataframe)
-
         self.sr_levels_data = calc_support_resistance_levels(self.dataframe, self.symbol)
 
     @property

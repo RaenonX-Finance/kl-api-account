@@ -17,11 +17,8 @@ def _calc_strength_single(df_1k: DataFrame, short_period: int, long_period: int)
     return 0
 
 
-def calc_strength(df_1k: DataFrame):
-    strength = sum(_calc_strength_single(df_1k, 5 * k_period, 10 * k_period) for k_period in [1, 3, 5])
-
-    strength_series = np.empty(len(df_1k) - 1)
-    strength_series.fill(np.nan)
-    strength_series = np.append(strength_series, [strength])
-
-    df_1k[PxDataCol.STRENGTH] = strength_series
+def calc_strength(df_1k: DataFrame) -> int:
+    return sum(
+        _calc_strength_single(df_1k, 5 * k_period, 10 * k_period)
+        for k_period in [1, 3, 5]
+    )

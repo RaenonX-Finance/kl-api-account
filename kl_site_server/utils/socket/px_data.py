@@ -52,6 +52,7 @@ class PxDataDict(TypedDict):
     periodSec: int
     contract: PxDataContract
     data: list[PxDataBar]
+    strength: int
     supportResistance: PxDataSupportResistance
     latestMarket: PxDataMarketSingle
     indicator: PxDataIndicatorConfig
@@ -82,7 +83,6 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         PxDataCol.LOW: "low",
         PxDataCol.CLOSE: "close",
         PxDataCol.DIFF: "diff",
-        PxDataCol.STRENGTH: "strength",
         PxDataCol.CANDLESTICK_DIR: "candlestick",
         PxDataCol.TIE_POINT: "tiePoint"
     }
@@ -130,6 +130,7 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         "contract": _from_px_data_contract(px_data),
         "data": _from_px_data_bars(px_data),
         "supportResistance": _from_px_data_support_resistance(px_data),
+        "strength": px_data.strength,
         # Sending initial data also calls this method
         # In this case, `latest_market` will be `None` since no market data has received yet
         "latestMarket": (

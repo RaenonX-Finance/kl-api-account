@@ -47,6 +47,7 @@ class PxData:
     ):
         self.pool: "PxDataPool" = pool
         self.period_min: int = period_min
+        self.strength: int = pool.strength
 
         self.dataframe: DataFrame = aggregate_df(pool.dataframe, period_min)
         self.dataframe = calc_model(self.dataframe, period_min)

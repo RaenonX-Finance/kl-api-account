@@ -1,3 +1,4 @@
+from .calc import calc_market_date
 from .error import ErrorMessage
 from .login import LoginMessage
 from .pong import PongMessage

@@ -2,12 +2,13 @@ import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from datetime import datetime
 from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
-from tcoreapi_mq.message import HistoryData, RealtimeData
+from tcoreapi_mq.message import HistoryData, RealtimeData, calc_market_date
 from tcoreapi_mq.model import SymbolBaseType
 from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi
 from .px_data import PxData, PxDataConfig, PxDataPool
@@ -80,6 +81,12 @@ class PxDataCacheEntry:
                 PxDataCol.LOW: current,
                 PxDataCol.CLOSE: current,
                 PxDataCol.EPOCH_SEC: epoch_current,
+                PxDataCol.EPOCH_SEC_TIME: epoch_current % 86400,
+                PxDataCol.DATE_MARKET: calc_market_date(
+                    datetime.fromtimestamp(epoch_current),
+                    epoch_current,
+                    self.symbol_complete
+                ),
                 PxDataCol.VOLUME: 0,
             }
             self.data[epoch_current] = new_bar

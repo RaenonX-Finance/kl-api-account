@@ -11,11 +11,11 @@ def calc_tie_point(df_1k: DataFrame, period_min: int) -> DataFrame:
 
         return df_1k
 
-    mkt_data_group = df_1k.groupby(PxDataCol.DATE_MARKET)
+    mkt_date_group = df_1k.groupby(PxDataCol.DATE_MARKET)
 
     df_1k[PxDataCol.TIE_POINT] = np.add(
-        mkt_data_group[PxDataCol.HIGH].transform(pd.Series.cummax),
-        mkt_data_group[PxDataCol.LOW].transform(pd.Series.cummin),
+        mkt_date_group[PxDataCol.HIGH].transform(pd.Series.cummax),
+        mkt_date_group[PxDataCol.LOW].transform(pd.Series.cummin),
     ) / 2
 
     return df_1k

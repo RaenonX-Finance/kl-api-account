@@ -82,7 +82,7 @@ def register_handlers_px(client: TouchanceDataClient):
             get_active_user_by_oauth2_token(request_message["token"])
 
             px_data_list_message = to_socket_message_px_data_list(client.get_px_data(
-                PxDataConfig.from_unique_identifiers(request_message["identifiers"])
+                PxDataConfig.from_request_px_message(request_message["requests"])
             ))
 
             await socket_send_to_session(
@@ -97,5 +97,5 @@ def register_handlers_px(client: TouchanceDataClient):
             print_socket_event(
                 PxSocketEvent.REQUEST,
                 session_id=session_id, namespace=namespace,
-                additional=f"{time.time() - _start:.3f} s / [yellow]{request_message['identifiers']}[/yellow]",
+                additional=f"{time.time() - _start:.3f} s / [yellow]{request_message['requests']}[/yellow]",
             )

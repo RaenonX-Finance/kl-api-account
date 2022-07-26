@@ -10,13 +10,26 @@ from kl_site_server.enums import PxDataCol
 
 if TYPE_CHECKING:
     from kl_site_server.endpoints import UserConfigModel
-    from kl_site_server.model import PxDataPool
+    from kl_site_server.model import PxDataPool, RequestPxMessageSingle
 
 
 @dataclass(kw_only=True, frozen=True)
 class PxDataConfig:
     security: str
     period_min: int
+    offset: int | None
+
+    @staticmethod
+    def from_request_px_message(requests: Iterable["RequestPxMessageSingle"]) -> set["PxDataConfig"]:
+        ret = set()
+
+        for request in requests:
+            identifier, offset = request["identifier"], request["offset"]
+
+            security, period_min = identifier.split("@", 1)
+            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=offset))
+
+        return ret
 
     @staticmethod
     def from_unique_identifiers(identifiers: Iterable[str]) -> set["PxDataConfig"]:
@@ -24,7 +37,7 @@ class PxDataConfig:
 
         for identifier in identifiers:
             security, period_min = identifier.split("@", 1)
-            ret.add(PxDataConfig(security=security, period_min=int(period_min)))
+            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=None))
 
         return ret
 

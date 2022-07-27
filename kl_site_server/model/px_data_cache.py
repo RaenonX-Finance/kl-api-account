@@ -107,7 +107,7 @@ class PxDataCacheEntry:
 
         return None
 
-    def to_px_data(self, period_mins: list[int]) -> list[PxData]:
+    def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
         pool = PxDataPool(
             symbol=self.symbol,
             bars=[self.data[key] for key in sorted(self.data.keys())],
@@ -119,7 +119,10 @@ class PxDataCacheEntry:
         with ThreadPoolExecutor() as executor:
             return [
                 future.result() for future
-                in as_completed(executor.submit(pool.to_px_data, period_min) for period_min in period_mins)
+                in as_completed(
+                    executor.submit(pool.to_px_data, px_data_config)
+                    for px_data_config in px_data_configs
+                )
             ]
 
 
@@ -250,27 +253,29 @@ class PxDataCache:
         for px_data_config in px_data_configs:
             security = px_data_config.security
             period_min = px_data_config.period_min
+            offset = px_data_config.offset
 
             if not (symbol_complete := self.security_to_symbol_complete.get(security)):
                 print_warning(
                     f"Attempt to get the uninitialized Px data of [yellow]{security}[/yellow] @ {period_min}"
+                    f"{f' (-{offset})' if offset else ''}"
                 )
                 continue
 
             if period_min >= 1440:
-                lookup_dk[symbol_complete].append(period_min)
+                lookup_dk[symbol_complete].append(px_data_config)
             else:
-                lookup_1k[symbol_complete].append(period_min)
+                lookup_1k[symbol_complete].append(px_data_config)
 
         px_data_list = []
 
         with ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.data_1k[symbol_complete].to_px_data, period_mins)
-                for symbol_complete, period_mins in lookup_1k.items()
+                executor.submit(self.data_1k[symbol_complete].to_px_data, px_configs)
+                for symbol_complete, px_configs in lookup_1k.items()
             ] + [
-                executor.submit(self.data_dk[symbol_complete].to_px_data, period_mins)
-                for symbol_complete, period_mins in lookup_dk.items()
+                executor.submit(self.data_dk[symbol_complete].to_px_data, px_configs)
+                for symbol_complete, px_configs in lookup_dk.items()
             ]
 
             for future in as_completed(futures):

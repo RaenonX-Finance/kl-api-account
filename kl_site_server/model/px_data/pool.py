@@ -7,7 +7,7 @@ from kl_site_common.const import DATA_SOURCES
 from kl_site_server.calc import calc_pool, calc_strength, calc_support_resistance_levels
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import RealtimeData
-from .model import PxData
+from .model import PxData, PxDataConfig
 
 if TYPE_CHECKING:
     from kl_site_server.model import BarDataDict
@@ -49,5 +49,5 @@ class PxDataPool:
     def latest_time(self) -> datetime:
         return self.dataframe[PxDataCol.DATE].max()
 
-    def to_px_data(self, period_min: int) -> PxData:
-        return PxData(pool=self, period_min=period_min)
+    def to_px_data(self, px_data_config: PxDataConfig) -> PxData:
+        return PxData(pool=self, px_data_config=px_data_config)

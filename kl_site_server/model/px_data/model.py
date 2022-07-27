@@ -19,6 +19,10 @@ class PxDataConfig:
     period_min: int
     offset: int | None
 
+    @property
+    def offset_num(self) -> int:
+        return self.offset or 0
+
     @staticmethod
     def from_request_px_message(requests: Iterable["RequestPxMessageSingle"]) -> set["PxDataConfig"]:
         ret = set()
@@ -56,14 +60,14 @@ class PxData:
     def __init__(
         self, *,
         pool: "PxDataPool",
-        period_min: int,
+        px_data_config: PxDataConfig,
     ):
         self.pool: "PxDataPool" = pool
-        self.period_min: int = period_min
+        self.period_min: int = px_data_config.period_min
         self.strength: int = pool.strength
 
-        self.dataframe: DataFrame = aggregate_df(pool.dataframe, period_min)
-        self.dataframe = calc_model(self.dataframe, period_min)
+        self.dataframe: DataFrame = aggregate_df(pool.dataframe, px_data_config.period_min)
+        self.dataframe = calc_model(self.dataframe, px_data_config)
 
         self.sr_levels_data = pool.sr_levels_data
 

@@ -65,6 +65,7 @@ class PxData:
         self.pool: "PxDataPool" = pool
         self.period_min: int = px_data_config.period_min
         self.strength: int = pool.strength
+        self.offset: int | None = px_data_config.offset
 
         self.dataframe: DataFrame = aggregate_df(pool.dataframe, px_data_config.period_min)
         self.dataframe = calc_model(self.dataframe, px_data_config)

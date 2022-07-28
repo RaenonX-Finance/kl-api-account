@@ -52,6 +52,7 @@ class PxDataDict(TypedDict):
     periodSec: int
     contract: PxDataContract
     data: list[PxDataBar]
+    offset: int | None
     strength: int
     supportResistance: PxDataSupportResistance
     latestMarket: PxDataMarketSingle
@@ -129,6 +130,7 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         "periodSec": px_data.period_min * 60,
         "contract": _from_px_data_contract(px_data),
         "data": _from_px_data_bars(px_data),
+        "offset": px_data.offset,
         "supportResistance": _from_px_data_support_resistance(px_data),
         "strength": px_data.strength,
         # Sending initial data also calls this method

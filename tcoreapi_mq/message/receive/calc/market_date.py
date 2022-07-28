@@ -11,7 +11,7 @@ def _calc_market_date_nq_ym(timestamp: datetime, epoch_sec_time: float) -> datet
 
 
 def _calc_market_date_fitx(timestamp: datetime, epoch_sec_time: float) -> datetime:
-    return timestamp.date() + BDay(0 if epoch_sec_time >= get_epoch_sec_time(0, 45) else 1)
+    return timestamp.date() + BDay(0 if epoch_sec_time >= get_epoch_sec_time(0, 45) else -1)
 
 
 _calc_function_map: dict[str, Callable[[datetime, float], datetime]] = {

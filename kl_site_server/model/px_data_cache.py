@@ -2,7 +2,7 @@ import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
@@ -83,7 +83,7 @@ class PxDataCacheEntry:
                 PxDataCol.EPOCH_SEC: epoch_current,
                 PxDataCol.EPOCH_SEC_TIME: epoch_current % 86400,
                 PxDataCol.DATE_MARKET: calc_market_date(
-                    datetime.fromtimestamp(epoch_current),
+                    datetime.fromtimestamp(epoch_current, tz=timezone.utc),
                     epoch_current,
                     self.symbol_complete
                 ),

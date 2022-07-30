@@ -5,7 +5,9 @@ TYPE_NAME_PX_SUB: str = "Px"
 PX_SUB_SECURITY_SEP: str = "/"
 
 
-def make_px_sub_room_name(securities: list[str]) -> str:
+def make_px_sub_room_name(identifiers: list[str]) -> str:
+    securities = set(identifier.split("@", 1)[0] for identifier in identifiers)
+
     return f"{TYPE_NAME_PX_SUB}{TYPE_PARAM_SEP}{PX_SUB_SECURITY_SEP.join(securities)}"
 
 

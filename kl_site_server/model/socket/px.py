@@ -3,7 +3,7 @@ from typing import TypedDict
 
 class MarketPxSubscriptionMessage(TypedDict):
     token: str | None
-    securities: list[str]
+    identifiers: list[str]
 
 
 class RequestPxMessageSingle(TypedDict):

@@ -6,8 +6,7 @@ from kl_site_server.enums import GeneralSocketEvent, PxSocketEvent
 from kl_site_server.model import OnErrorEvent, OnMarketDataReceivedEvent
 from kl_site_server.utils import (
     SocketNamespace, get_px_sub_securities_from_room_name, socket_send_to_all, socket_send_to_room,
-    to_socket_message_error,
-    to_socket_message_px_data_market,
+    to_socket_message_error, to_socket_message_px_data_market
 )
 
 
@@ -16,7 +15,7 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
-        print_log(f"[Server] Px Updated / MKT ({e} - [red]No active rooms[/red])")
+        print_log(f"[Server] Px MKT Updated ({e} - [red]No active rooms[/red])")
         return
 
     tasks = []
@@ -36,13 +35,13 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
         ))
 
     if not tasks:
-        print_log(f"[Server] Px Updated / MKT ({e} - [red]No active subs[/red])")
+        print_log(f"[Server] Px MKT Updated ({e} - [red]No active subs[/red])")
         return
 
     await asyncio.gather(*tasks)
 
     # `rooms` may contain rooms that are not handling market px update
-    print_log(f"[Server] Px Updated / MKT ({e} - {len(tasks)} subs)")
+    print_log(f"[Server] Px MKT Updated ({e} - {len(tasks)} subs)")
 
 
 async def on_error(e: OnErrorEvent):

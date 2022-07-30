@@ -17,7 +17,7 @@ from .px_data_update import MarketPxUpdateResult
 
 @dataclass(kw_only=True)
 class PxDataCacheEntry:
-    symbol: str
+    security: str
     symbol_complete: str
     min_tick: float
     decimals: int
@@ -32,7 +32,7 @@ class PxDataCacheEntry:
 
         if not is_ready:
             print_warning(
-                f"[Server] Px data cache entry of [bold]{self.symbol} ({self.interval_sec})[/bold] not ready"
+                f"[Server] Px data cache entry of [bold]{self.security} ({self.interval_sec})[/bold] not ready"
             )
 
         return is_ready
@@ -48,16 +48,18 @@ class PxDataCacheEntry:
         for bar in bars:
             self.data[bar[PxDataCol.EPOCH_SEC]] = bar
 
+        self.latest_epoch = max(self.data.keys())
+
     def update_latest_market(self, data: RealtimeData):
         """
         Updates the latest market data. Does NOT update the underlying cached data.
 
         This should be called before the `is_ready` check.
         """
-        if self.symbol != data.security:
+        if self.security != data.security:
             print_warning(
                 f"[Server] `update_latest_market()` called at the wrong place - "
-                f"symbol not match ({self.symbol} / {data.security})"
+                f"symbol not match ({self.security} / {data.security})"
             )
             return
 
@@ -107,7 +109,7 @@ class PxDataCacheEntry:
 
     def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
         pool = PxDataPool(
-            symbol=self.symbol,
+            symbol=self.security,
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
             decimals=self.decimals,
@@ -144,11 +146,11 @@ class PxDataCache:
     ) -> None:
         symbol_complete = symbol_obj.symbol_complete
 
-        self.security_to_symbol_complete[symbol_obj.symbol] = symbol_complete
+        self.security_to_symbol_complete[symbol_obj.security] = symbol_complete
 
         if period_mins:
             self.data_1k[symbol_complete] = PxDataCacheEntry(
-                symbol=symbol_obj.symbol,
+                security=symbol_obj.security,
                 symbol_complete=symbol_complete,
                 min_tick=min_tick,
                 decimals=decimals,
@@ -159,7 +161,7 @@ class PxDataCache:
 
         if period_days:
             self.data_dk[symbol_complete] = PxDataCacheEntry(
-                symbol=symbol_obj.symbol,
+                security=symbol_obj.security,
                 symbol_complete=symbol_complete,
                 min_tick=min_tick,
                 decimals=decimals,
@@ -285,14 +287,14 @@ class PxDataCache:
         if data.epoch_sec == 0:
             for cache_entry in self.data_dk.values():
                 print_log(
-                    f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]DK[/yellow] "
+                    f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] @ [yellow]DK[/yellow] "
                     f"at {data.timestamp}"
                 )
                 cache_entry.make_new_bar(data.epoch_sec)
 
         for cache_entry in self.data_1k.values():
             print_log(
-                f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]1K[/yellow] "
+                f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] @ [yellow]1K[/yellow] "
                 f"at {data.timestamp}"
             )
             cache_entry.make_new_bar(data.epoch_sec)

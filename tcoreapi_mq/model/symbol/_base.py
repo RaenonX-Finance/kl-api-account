@@ -3,7 +3,7 @@ from abc import ABC
 
 class SymbolBase(ABC):
     @property
-    def symbol(self) -> str:
+    def security(self) -> str:
         raise NotImplementedError()
 
     @property

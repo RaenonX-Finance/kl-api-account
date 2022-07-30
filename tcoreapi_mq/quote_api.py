@@ -74,7 +74,7 @@ class QuoteAPI(TCoreZMQ):
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         print_log(
             f"[TC Quote] Requesting history data of "
-            f"[yellow]{symbol.symbol}[/yellow] at [yellow]{interval}[/yellow] "
+            f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "
             f"starting from {start} to {end}"
         )
 

@@ -9,9 +9,9 @@ class FuturesSymbol(SymbolBase):
         self.expiry = expiry
 
     @property
-    def symbol(self) -> str:
+    def security(self) -> str:
         return self.symbol_
 
     @property
     def symbol_complete(self) -> str:
-        return f"TC.F.{self.exchange}.{self.symbol}.{self.expiry}"
+        return f"TC.F.{self.exchange}.{self.security}.{self.expiry}"

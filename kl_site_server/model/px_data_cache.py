@@ -8,7 +8,7 @@ from typing import DefaultDict, Iterable
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.enums import PxDataCol
-from tcoreapi_mq.message import HistoryData, RealtimeData, calc_market_date
+from tcoreapi_mq.message import HistoryData, RealtimeData, SystemTimeData, calc_market_date
 from tcoreapi_mq.model import SymbolBaseType
 from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi
 from .px_data import PxData, PxDataConfig, PxDataPool
@@ -69,32 +69,10 @@ class PxDataCacheEntry:
 
         This should be called after the `is_ready` check.
         """
-        # This may be called before the history data arrrives - therefore `self.data` might be empty
-        epoch_latest = max(self.data.keys()) if self.data else 0
-        epoch_current = int(time.time() // self.interval_sec * self.interval_sec)
+        bar_current_epoch = max(self.data.keys())
+        bar_current = self.data[bar_current_epoch]
 
-        if epoch_current > epoch_latest or epoch_current not in self.data:
-            # Current epoch is greater than the latest epoch - create new
-            new_bar: BarDataDict = {
-                PxDataCol.OPEN: current,
-                PxDataCol.HIGH: current,
-                PxDataCol.LOW: current,
-                PxDataCol.CLOSE: current,
-                PxDataCol.EPOCH_SEC: epoch_current,
-                PxDataCol.EPOCH_SEC_TIME: epoch_current % 86400,
-                PxDataCol.DATE_MARKET: calc_market_date(
-                    datetime.fromtimestamp(epoch_current, tz=timezone.utc),
-                    epoch_current,
-                    self.symbol_complete
-                ),
-                PxDataCol.VOLUME: 0,
-            }
-            self.data[epoch_current] = new_bar
-            self.remove_oldest()
-            return "New bar"
-
-        bar_current = self.data[epoch_current]
-        self.data[epoch_current] = bar_current | {
+        self.data[bar_current_epoch] = bar_current | {
             PxDataCol.HIGH: max(bar_current[PxDataCol.HIGH], current),
             PxDataCol.LOW: min(bar_current[PxDataCol.LOW], current),
             PxDataCol.CLOSE: current,
@@ -106,6 +84,26 @@ class PxDataCacheEntry:
             return "Breaking low"
 
         return None
+
+    def make_new_bar(self, epoch_sec: float):
+        epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
+        last_bar = self.data[max(self.data.keys())]
+
+        self.data[epoch_int] = {
+            PxDataCol.OPEN: last_bar[PxDataCol.CLOSE],
+            PxDataCol.HIGH: last_bar[PxDataCol.CLOSE],
+            PxDataCol.LOW: last_bar[PxDataCol.CLOSE],
+            PxDataCol.CLOSE: last_bar[PxDataCol.CLOSE],
+            PxDataCol.EPOCH_SEC: epoch_int,
+            PxDataCol.EPOCH_SEC_TIME: epoch_int % 86400,
+            PxDataCol.DATE_MARKET: calc_market_date(
+                datetime.fromtimestamp(epoch_int, tz=timezone.utc),
+                epoch_int,
+                self.symbol_complete
+            ),
+            PxDataCol.VOLUME: 0,
+        }
+        self.remove_oldest()
 
     def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
         pool = PxDataPool(
@@ -282,3 +280,17 @@ class PxDataCache:
                 px_data_list.extend(future.result())
 
         return px_data_list
+
+    def make_new_bar(self, data: SystemTimeData):
+        if data.epoch_sec == 0:
+            for cache_entry in self.data_dk.values():
+                print_log(
+                    f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]DK[/yellow]"
+                )
+                cache_entry.make_new_bar(data.epoch_sec)
+
+        for cache_entry in self.data_1k.values():
+            print_log(
+                f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]1K[/yellow]"
+            )
+            cache_entry.make_new_bar(data.epoch_sec)

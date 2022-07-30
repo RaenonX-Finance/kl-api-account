@@ -120,7 +120,7 @@ class TouchanceDataClient(TouchanceApiClient):
         execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
-        pass
+        self._px_data_cache.make_new_bar(data)
 
     def on_error(self, message: str) -> None:
         execute_async_function(on_error, OnErrorEvent(message=message))

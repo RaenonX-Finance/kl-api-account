@@ -269,12 +269,12 @@ class PxDataCache:
 
         with ThreadPoolExecutor() as executor:
             futures = [
-                executor.submit(self.data_1k[symbol_complete].to_px_data, px_configs)
-                for symbol_complete, px_configs in lookup_1k.items()
-            ] + [
-                executor.submit(self.data_dk[symbol_complete].to_px_data, px_configs)
-                for symbol_complete, px_configs in lookup_dk.items()
-            ]
+                          executor.submit(self.data_1k[symbol_complete].to_px_data, px_configs)
+                          for symbol_complete, px_configs in lookup_1k.items()
+                      ] + [
+                          executor.submit(self.data_dk[symbol_complete].to_px_data, px_configs)
+                          for symbol_complete, px_configs in lookup_dk.items()
+                      ]
 
             for future in as_completed(futures):
                 px_data_list.extend(future.result())
@@ -285,12 +285,14 @@ class PxDataCache:
         if data.epoch_sec == 0:
             for cache_entry in self.data_dk.values():
                 print_log(
-                    f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]DK[/yellow]"
+                    f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]DK[/yellow] "
+                    f"at {data.timestamp}"
                 )
                 cache_entry.make_new_bar(data.epoch_sec)
 
         for cache_entry in self.data_1k.values():
             print_log(
-                f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]1K[/yellow]"
+                f"[Server] Creating new bar for [yellow]{cache_entry.symbol}[/yellow] @ [yellow]1K[/yellow] "
+                f"at {data.timestamp}"
             )
             cache_entry.make_new_bar(data.epoch_sec)

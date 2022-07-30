@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from ._base import SubscriptionDataBase
 from .common import CommonData
@@ -11,5 +11,5 @@ class SystemTimeData(SubscriptionDataBase):
         self.timestamp: datetime = datetime.strptime(
             f"{self.data.body['Date']} {self.data.body['Time']:>06}",
             "%Y%m%d %H%M%S"
-        )
+        ).replace(tzinfo=timezone.utc)
         self.epoch_sec: float = self.timestamp.timestamp()

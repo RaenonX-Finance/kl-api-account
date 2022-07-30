@@ -25,6 +25,10 @@ class PxDataCacheEntry:
     interval_sec: int
 
     latest_market: RealtimeData | None = field(init=False, default=None)
+    latest_epoch: int | None = field(init=False)
+
+    def __post_init__(self):
+        self.latest_epoch = max(self.data.keys()) if self.data else None
 
     @property
     def is_ready(self) -> bool:
@@ -71,10 +75,9 @@ class PxDataCacheEntry:
 
         This should be called after the `is_ready` check.
         """
-        bar_current_epoch = max(self.data.keys())
-        bar_current = self.data[bar_current_epoch]
+        bar_current = self.data[self.latest_epoch]
 
-        self.data[bar_current_epoch] = bar_current | {
+        self.data[self.latest_epoch] = bar_current | {
             PxDataCol.HIGH: max(bar_current[PxDataCol.HIGH], current),
             PxDataCol.LOW: min(bar_current[PxDataCol.LOW], current),
             PxDataCol.CLOSE: current,
@@ -89,7 +92,7 @@ class PxDataCacheEntry:
 
     def make_new_bar(self, epoch_sec: float):
         epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
-        last_bar = self.data[max(self.data.keys())]
+        last_bar = self.data[self.latest_epoch]
 
         self.data[epoch_int] = {
             PxDataCol.OPEN: last_bar[PxDataCol.CLOSE],
@@ -105,6 +108,7 @@ class PxDataCacheEntry:
             ),
             PxDataCol.VOLUME: 0,
         }
+        self.latest_epoch = epoch_int
         self.remove_oldest()
 
     def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:

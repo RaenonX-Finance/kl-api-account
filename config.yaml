@@ -9,7 +9,7 @@ log:
 
 data:
   stream:
-    segment-count: 1000
+    segment-count: 2000
     timeout-sec: 300
     px-update:
       market-time-gate-sec: 0.075

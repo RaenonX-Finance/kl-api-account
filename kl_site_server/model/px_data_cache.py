@@ -52,7 +52,9 @@ class PxDataCacheEntry:
         for bar in bars:
             self.data[bar[PxDataCol.EPOCH_SEC]] = bar
 
-        self.latest_epoch = max(self.data.keys())
+        if self.data:
+            # This method could be called with empty `bars`
+            self.latest_epoch = max(self.data.keys())
 
     def update_latest_market(self, data: RealtimeData):
         """
@@ -91,6 +93,10 @@ class PxDataCacheEntry:
         return None
 
     def make_new_bar(self, epoch_sec: float):
+        if not self.latest_epoch:
+            # Data might not be initialized yet - no last bar to "inherit" the data
+            return
+
         epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
         last_bar = self.data[self.latest_epoch]
 

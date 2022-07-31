@@ -28,7 +28,8 @@ class PxDataConfig:
         ret = set()
 
         for request in requests:
-            identifier, offset = request["identifier"], request["offset"]
+            identifier = request["identifier"]
+            offset = request.get("offset")
 
             security, period_min = identifier.split("@", 1)
             ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=offset))

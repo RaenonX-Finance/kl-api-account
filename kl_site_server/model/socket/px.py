@@ -1,4 +1,5 @@
 from typing import TypedDict
+from typing_extensions import NotRequired
 
 
 class MarketPxSubscriptionMessage(TypedDict):
@@ -8,7 +9,7 @@ class MarketPxSubscriptionMessage(TypedDict):
 
 class RequestPxMessageSingle(TypedDict):
     identifier: str
-    offset: int | None
+    offset: NotRequired[int]
 
 
 class RequestPxMessage(TypedDict):

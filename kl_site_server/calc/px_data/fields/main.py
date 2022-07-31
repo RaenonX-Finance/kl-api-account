@@ -16,12 +16,16 @@ if TYPE_CHECKING:
 
 
 def calc_model(df: DataFrame, px_data_config: "PxDataConfig") -> DataFrame:
-    # Get the data rows to be calculated plus the period count of data needed
-    # > Use `offset_num` for starting window to avoid math error (`number - None`)
-    tail_start = -DATA_SEGMENT_COUNT - MAX_PERIOD - px_data_config.offset_num
-    # > Use `None` for ending window if no offset (`0` != `None`)
-    tail_end = -px_data_config.offset if px_data_config.offset else None
-    df = df.iloc[tail_start:tail_end].copy()
+    # Prioritize `limit`
+    if px_data_config.limit:
+        df = df.iloc[-px_data_config.limit - MAX_PERIOD:].copy()
+    else:
+        # Get the data rows to be calculated plus the period count of data needed
+        # > Use `offset_num` for starting window to avoid math error (`number - None`)
+        tail_start = -DATA_SEGMENT_COUNT - MAX_PERIOD - px_data_config.offset_num
+        # > Use `None` for ending window if no offset (`0` != `None`)
+        tail_end = -px_data_config.offset if px_data_config.offset else None
+        df = df.iloc[tail_start:tail_end].copy()
 
     df = calc_diff(df)
     df = calc_candlestick(df)
@@ -32,7 +36,7 @@ def calc_model(df: DataFrame, px_data_config: "PxDataConfig") -> DataFrame:
     df = df.fillna(np.nan).replace([np.nan], [None])
 
     # Tail again to keep calculated data only
-    df = df.tail(DATA_SEGMENT_COUNT)
+    df = df.tail(px_data_config.limit or DATA_SEGMENT_COUNT)
 
     return df
 

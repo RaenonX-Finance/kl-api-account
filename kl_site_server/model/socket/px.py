@@ -10,6 +10,7 @@ class MarketPxSubscriptionMessage(TypedDict):
 class RequestPxMessageSingle(TypedDict):
     identifier: str
     offset: NotRequired[int]
+    limit: NotRequired[int]
 
 
 class RequestPxMessage(TypedDict):

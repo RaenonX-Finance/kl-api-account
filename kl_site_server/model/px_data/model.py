@@ -18,6 +18,7 @@ class PxDataConfig:
     security: str
     period_min: int
     offset: int | None
+    limit: int | None
 
     @property
     def offset_num(self) -> int:
@@ -30,9 +31,10 @@ class PxDataConfig:
         for request in requests:
             identifier = request["identifier"]
             offset = request.get("offset")
+            limit = request.get("limit")
 
             security, period_min = identifier.split("@", 1)
-            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=offset))
+            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=offset, limit=limit))
 
         return ret
 
@@ -42,7 +44,7 @@ class PxDataConfig:
 
         for identifier in identifiers:
             security, period_min = identifier.split("@", 1)
-            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=None))
+            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=None, limit=None))
 
         return ret
 

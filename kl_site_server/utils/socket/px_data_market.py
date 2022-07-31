@@ -5,13 +5,12 @@ from tcoreapi_mq.message import RealtimeData
 
 
 class PxDataMarketSingle(TypedDict):
-    symbol: str
-    open: float
-    high: float
-    low: float
-    close: float
-    changeVal: float
-    changePct: float
+    o: float
+    h: float
+    l: float
+    c: float
+    diffVal: float
+    diffPct: float
 
 
 PxDataMarket: TypeAlias = dict[str, PxDataMarketSingle]
@@ -19,13 +18,12 @@ PxDataMarket: TypeAlias = dict[str, PxDataMarketSingle]
 
 def from_realtime_data_single(data: RealtimeData) -> PxDataMarketSingle:
     return {
-        "symbol": data.security,
-        "open": data.open,
-        "high": data.high,
-        "low": data.low,
-        "close": data.last_px,  # DO NOT use `close` because it is a fixed number for FITX
-        "changeVal": data.change_val,
-        "changePct": data.change_pct,
+        "o": data.open,
+        "h": data.high,
+        "l": data.low,
+        "c": data.last_px,  # DO NOT use `close` because it is a fixed number for FITX
+        "diffVal": data.change_val,
+        "diffPct": float(f"{data.change_pct:.3f}"),  # Fix change % to 3 decimal places but in numeric type
     }
 
 

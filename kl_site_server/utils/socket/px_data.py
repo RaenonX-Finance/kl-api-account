@@ -66,13 +66,12 @@ def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarketSi
     change_val = current[PxDataCol.CLOSE] - open_val
 
     return {
-        "symbol": px_data.pool.symbol,
-        "open": open_val,
-        "high": current[PxDataCol.HIGH],
-        "low": current[PxDataCol.LOW],
-        "close": current[PxDataCol.CLOSE],
-        "changeVal": change_val,
-        "changePct": change_val / open_val * 100,
+        "o": open_val,
+        "h": current[PxDataCol.HIGH],
+        "l": current[PxDataCol.LOW],
+        "c": current[PxDataCol.CLOSE],
+        "diffVal": change_val,
+        "diffPct": float(f"{change_val / open_val * 100:.3f}"),
     }
 
 

@@ -23,7 +23,7 @@ def print_console(rich_console: Console, level: LogLevels, message: str, *, time
         if not DEVELOPMENT_MODE:
             return
 
-    message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] [{threading.get_ident():>5}]: " \
+    message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] [{threading.get_ident():>6}]: " \
               f"{message}"
 
     if DEVELOPMENT_MODE:

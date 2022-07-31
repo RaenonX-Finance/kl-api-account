@@ -275,12 +275,12 @@ class PxDataCache:
 
         with ThreadPoolExecutor() as executor:
             futures = [
-                          executor.submit(self.data_1k[symbol_complete].to_px_data, px_configs)
-                          for symbol_complete, px_configs in lookup_1k.items()
-                      ] + [
-                          executor.submit(self.data_dk[symbol_complete].to_px_data, px_configs)
-                          for symbol_complete, px_configs in lookup_dk.items()
-                      ]
+                executor.submit(self.data_1k[symbol_complete].to_px_data, px_configs)
+                for symbol_complete, px_configs in lookup_1k.items()
+            ] + [
+                executor.submit(self.data_dk[symbol_complete].to_px_data, px_configs)
+                for symbol_complete, px_configs in lookup_dk.items()
+            ]
 
             for future in as_completed(futures):
                 px_data_list.extend(future.result())

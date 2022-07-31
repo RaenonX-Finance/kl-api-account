@@ -20,8 +20,8 @@ async def socket_send_to_room(
     await fast_api_socket.emit(event, data, namespace=namespace, room=room)
 
 
-async def socket_send_to_all(event: str, data: str | bytes):
-    await fast_api_socket.emit(event, data)
+async def socket_send_to_all(event: str, data: str | bytes, *, namespace: SocketNamespace = "/"):
+    await fast_api_socket.emit(event, data, namespace=namespace)
 
 
 def socket_join_room(session_id: str, room: str, namespace: SocketNamespace):

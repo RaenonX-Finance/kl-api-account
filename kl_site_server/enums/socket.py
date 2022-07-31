@@ -11,3 +11,4 @@ class PxSocketEvent:
     REQUEST = "request"
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"
+    MIN_CHANGE = "minChange"

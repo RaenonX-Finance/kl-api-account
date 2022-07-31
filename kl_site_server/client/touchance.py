@@ -1,10 +1,14 @@
+import asyncio
 import threading
 import time
 from datetime import datetime, timedelta
 
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_log, print_warning
-from kl_site_server.app import on_error, on_px_data_updated_market, on_px_data_new_bar_created
+from kl_site_server.app import (
+    on_error, on_px_data_updated_market, on_px_data_new_bar_created,
+    on_system_time_min_change,
+)
 from kl_site_server.db import get_history_data_from_db, store_history_to_db
 from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent,
@@ -122,7 +126,7 @@ class TouchanceDataClient(TouchanceApiClient):
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         self._px_data_cache.make_new_bar(data)
 
-        execute_async_function(on_px_data_new_bar_created, self)
+        execute_async_function(asyncio.gather, on_system_time_min_change(data), on_px_data_new_bar_created(self))
 
     def on_error(self, message: str) -> None:
         execute_async_function(on_error, OnErrorEvent(message=message))

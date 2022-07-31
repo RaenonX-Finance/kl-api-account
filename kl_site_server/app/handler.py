@@ -9,7 +9,9 @@ from kl_site_server.model import OnErrorEvent, OnMarketDataReceivedEvent, PxData
 from kl_site_server.utils import (
     SocketNamespace, get_px_data_identifiers_from_room_name, get_px_sub_securities_from_room_name, socket_send_to_all,
     socket_send_to_room, to_socket_message_error, to_socket_message_px_data_list, to_socket_message_px_data_market,
+    to_socket_min_change,
 )
+from tcoreapi_mq.message import SystemTimeData
 
 if TYPE_CHECKING:
     from kl_site_server.client import TouchanceDataClient
@@ -93,6 +95,13 @@ async def on_px_data_new_bar_created(client: "TouchanceDataClient"):
         f"[Server] Px BAR Created - {time.time() - _start:.3f} s "
         f"({len(px_data_dict)} / [blue]{', '.join(sorted(identifiers))}[/blue])"
     )
+
+
+async def on_system_time_min_change(data: SystemTimeData):
+    namespace: SocketNamespace = "/px"
+
+    print_log(f"[Server] Server minute change to {data.timestamp} ({data.epoch_sec})")
+    await socket_send_to_all(PxSocketEvent.MIN_CHANGE, to_socket_min_change(data), namespace=namespace)
 
 
 async def on_error(e: OnErrorEvent):

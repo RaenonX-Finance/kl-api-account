@@ -84,11 +84,12 @@ def _sr_levels_get_recent_n_only(
 def _sr_levels_range_of_pair(
     df_selected: DataFrame, *,
     group_basis: str,
+    current_px: float,
 ) -> Generator[list[float], None, None]:
     columns = [PxDataCol.OPEN, PxDataCol.HIGH, PxDataCol.LOW]
 
     today = pd.Timestamp.today(tz="UTC")
-    df_selected = df_selected[today - BDay(6):today]  # 6 because the most recent pair could be incomplete
+    df_selected = df_selected[today - BDay(6):]  # 6 because the most recent pair could be incomplete
     grouped_dict = df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict()
 
     sr_level_data = _sr_levels_get_recent_n_only(grouped_dict, 5)
@@ -100,10 +101,8 @@ def _sr_levels_range_of_pair(
         )
         return
 
-    flattened_data = [data for _, pair in sr_level_data for data in pair]
-
-    range_high = max(flattened_data, key=lambda item: item[PxDataCol.HIGH])[PxDataCol.HIGH] * 1.02  # +2%
-    range_low = min(flattened_data, key=lambda item: item[PxDataCol.LOW])[PxDataCol.LOW] * 0.98  # -2%
+    range_high = current_px * 1.02  # +2%
+    range_low = current_px * 0.98  # -2%
 
     for timestamp_date, data_pair in sr_level_data:
         higher = max(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]
@@ -128,7 +127,12 @@ def sr_levels_range_of_pair(df_1k: DataFrame, symbol: str) -> list[list[float]]:
 
     levels: list[list[float]] = []
 
-    for levels_group in _sr_levels_range_of_pair(df_selected, group_basis=PxDataCol.AUTO_SR_GROUP_BASIS):
+    levels_pair = _sr_levels_range_of_pair(
+        df_selected,
+        group_basis=PxDataCol.AUTO_SR_GROUP_BASIS,
+        current_px=df_1k[PxDataCol.CLOSE][-1]
+    )
+    for levels_group in levels_pair:
         levels.append(levels_group)
 
     return levels
@@ -142,7 +146,12 @@ def sr_levels_range_of_pair_merged(df_1k: DataFrame, symbol: str) -> list[float]
 
     levels: list[float] = []
 
-    for levels_group in _sr_levels_range_of_pair(df_selected, group_basis=PxDataCol.DATE_MARKET):
+    levels_pair = _sr_levels_range_of_pair(
+        df_selected,
+        group_basis=PxDataCol.AUTO_SR_GROUP_BASIS,
+        current_px=df_1k[PxDataCol.CLOSE][-1]
+    )
+    for levels_group in levels_pair:
         levels.extend(levels_group)
 
     return sorted(levels)

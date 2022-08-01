@@ -3,6 +3,7 @@ class GeneralSocketEvent:
     ERROR = "error"
     SIGN_IN = "signIn"
     PING = "ping"
+    AUTH = "auth"
 
 
 class PxSocketEvent:

@@ -2,6 +2,13 @@ from kl_site_server.const import fast_api_socket
 from .channels import SocketNamespace
 
 
+async def socket_disconnect_session(
+    session_id: str, *,
+    namespace: SocketNamespace = "/",
+):
+    await fast_api_socket.disconnect(session_id, namespace=namespace)
+
+
 async def socket_send_to_session(
     event: str,
     data: str | bytes,

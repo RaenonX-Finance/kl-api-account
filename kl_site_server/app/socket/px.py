@@ -1,3 +1,4 @@
+import asyncio
 import time
 
 from fastapi import HTTPException
@@ -6,12 +7,14 @@ from kl_site_common.utils import print_error, print_socket_event
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.const import fast_api_socket
 from kl_site_server.endpoints import get_active_user_by_oauth2_token
-from kl_site_server.enums import GeneralSocketEvent, PxSocketEvent
+from kl_site_server.enums import PxSocketEvent
 from kl_site_server.model import MarketPxSubscriptionMessage, PxDataConfig, PxInitMessage, RequestPxMessage
 from kl_site_server.utils import (
-    SocketNamespace, make_px_data_room_name, make_px_sub_room_name, socket_join_room, socket_leave_room,
+    SocketNamespace, make_px_data_room_name, make_px_sub_room_name, socket_join_room,
+    socket_leave_room,
     socket_send_to_session, to_socket_message_px_data_list,
 )
+from .utils import get_tasks_with_session_control, on_http_exception
 
 
 def register_handlers_px(client: TouchanceDataClient):
@@ -28,17 +31,20 @@ def register_handlers_px(client: TouchanceDataClient):
         px_data_config = set()
 
         try:
-            get_active_user_by_oauth2_token(init_message["token"])
+            user_data = get_active_user_by_oauth2_token(init_message["token"])
             px_data_config = PxDataConfig.from_unique_identifiers(init_message["identifiers"])
 
-            await socket_send_to_session(
-                PxSocketEvent.PX_INIT,
-                to_socket_message_px_data_list(client.get_px_data(px_data_config)),
-                session_id,
-                namespace=namespace
+            await asyncio.gather(
+                *get_tasks_with_session_control(user_data.id, namespace, session_id),
+                socket_send_to_session(
+                    PxSocketEvent.PX_INIT,
+                    to_socket_message_px_data_list(client.get_px_data(px_data_config)),
+                    session_id,
+                    namespace=namespace
+                )
             )
         except HTTPException as ex:
-            await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
+            await on_http_exception(ex, session_id, namespace)
         finally:
             print_socket_event(
                 PxSocketEvent.PX_INIT,
@@ -64,7 +70,7 @@ def register_handlers_px(client: TouchanceDataClient):
             socket_join_room(session_id, make_px_sub_room_name(identifiers), namespace)
             socket_join_room(session_id, make_px_data_room_name(identifiers), namespace)
         except HTTPException as ex:
-            await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
+            await on_http_exception(ex, session_id, namespace)
 
     @fast_api_socket.on(PxSocketEvent.UNSUBSCRIBE, namespace=namespace)
     async def on_market_px_unsubscribe(session_id: str, subscription_message: MarketPxSubscriptionMessage):
@@ -95,7 +101,7 @@ def register_handlers_px(client: TouchanceDataClient):
                 namespace=namespace
             )
         except HTTPException as ex:
-            await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
+            await on_http_exception(ex, session_id, namespace)
         finally:
             print_socket_event(
                 PxSocketEvent.REQUEST,

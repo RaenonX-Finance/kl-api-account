@@ -1,2 +1,2 @@
-from .general import PxInitMessage
+from .general import PxInitMessage, PxCheckAuthMessage
 from .px import MarketPxSubscriptionMessage, RequestPxMessageSingle, RequestPxMessage

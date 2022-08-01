@@ -1,7 +1,7 @@
+from typing import TYPE_CHECKING
+
 import numpy as np
 from pandas import DataFrame
-
-from typing import TYPE_CHECKING
 
 from kl_site_common.const import DATA_SEGMENT_COUNT
 from kl_site_server.utils import MAX_PERIOD
@@ -15,30 +15,30 @@ if TYPE_CHECKING:
     from kl_site_server.model import PxDataConfig
 
 
-def calc_model(df: DataFrame, px_data_config: "PxDataConfig") -> DataFrame:
+def calc_model(df: DataFrame, interval_sec: int, px_data_config: "PxDataConfig") -> DataFrame:
     # Prioritize `limit`
     if px_data_config.limit:
-        df = df.iloc[-px_data_config.limit - MAX_PERIOD:].copy()
+        df_model = df.iloc[-px_data_config.limit - MAX_PERIOD:].copy()
     else:
         # Get the data rows to be calculated plus the period count of data needed
         # > Use `offset_num` for starting window to avoid math error (`number - None`)
         tail_start = -DATA_SEGMENT_COUNT - MAX_PERIOD - px_data_config.offset_num
         # > Use `None` for ending window if no offset (`0` != `None`)
         tail_end = -px_data_config.offset if px_data_config.offset else None
-        df = df.iloc[tail_start:tail_end].copy()
+        df_model = df.iloc[tail_start:tail_end].copy()
 
-    df = calc_diff(df)
-    df = calc_candlestick(df)
-    df = calc_ema(df)
-    df = calc_tie_point(df, px_data_config.period_min)
+    df_model = calc_diff(df_model)
+    df_model = calc_candlestick(df_model)
+    df_model = calc_ema(df, df_model, interval_sec)
+    df_model = calc_tie_point(df_model, px_data_config.period_min)
 
     # Remove NaNs
-    df = df.fillna(np.nan).replace([np.nan], [None])
+    df_model = df_model.fillna(np.nan).replace([np.nan], [None])
 
     # Tail again to keep calculated data only
-    df = df.tail(px_data_config.limit or DATA_SEGMENT_COUNT)
+    df_model = df_model.tail(px_data_config.limit or DATA_SEGMENT_COUNT)
 
-    return df
+    return df_model
 
 
 def calc_pool(df_1k: DataFrame) -> DataFrame:

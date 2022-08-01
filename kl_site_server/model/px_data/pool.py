@@ -21,6 +21,7 @@ class PxDataPool:
         min_tick: float,
         decimals: int,
         latest_market: RealtimeData,
+        interval_sec: int,
     ):
         if not bars:
             raise ValueError(f"PxData should be initialized with data ({symbol} @ Pool)")
@@ -34,6 +35,7 @@ class PxDataPool:
         self.symbol_name: str = source_of_symbol["name"]
         self.min_tick: float = min_tick
         self.decimals: int = decimals
+        self.interval_sec: int = interval_sec
         self.latest_market: RealtimeData | None = latest_market
 
         self.dataframe: DataFrame = calc_pool(DataFrame(bars))

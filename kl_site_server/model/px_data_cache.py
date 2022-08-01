@@ -124,6 +124,7 @@ class PxDataCacheEntry:
             min_tick=self.min_tick,
             decimals=self.decimals,
             latest_market=self.latest_market,
+            interval_sec=self.interval_sec,
         )
 
         with ThreadPoolExecutor() as executor:

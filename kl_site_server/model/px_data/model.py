@@ -71,7 +71,7 @@ class PxData:
         self.offset: int | None = px_data_config.offset
 
         self.dataframe: DataFrame = aggregate_df(pool.dataframe, px_data_config.period_min)
-        self.dataframe = calc_model(self.dataframe, px_data_config)
+        self.dataframe = calc_model(self.dataframe, pool.interval_sec, px_data_config)
 
         self.sr_levels_data = pool.sr_levels_data
 

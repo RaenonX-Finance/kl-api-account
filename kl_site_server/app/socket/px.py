@@ -6,6 +6,7 @@ from fastapi import HTTPException
 from kl_site_common.utils import print_error, print_socket_event
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.const import fast_api_socket
+from kl_site_server.db import record_session_disconnected
 from kl_site_server.endpoints import get_active_user_by_oauth2_token
 from kl_site_server.enums import PxSocketEvent
 from kl_site_server.model import MarketPxSubscriptionMessage, PxDataConfig, PxInitMessage, RequestPxMessage
@@ -108,3 +109,7 @@ def register_handlers_px(client: TouchanceDataClient):
                 session_id=session_id, namespace=namespace,
                 additional=f"{time.time() - _start:.3f} s / [yellow]{request_message['requests']}[/yellow]",
             )
+
+    @fast_api_socket.on(PxSocketEvent.DISCONNECT, namespace=namespace)
+    async def on_disconnect(session_id: str):
+        record_session_disconnected(namespace, session_id)

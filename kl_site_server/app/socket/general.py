@@ -4,6 +4,7 @@ from fastapi import HTTPException
 
 from kl_site_common.utils import print_socket_event
 from kl_site_server.const import fast_api_socket
+from kl_site_server.db import record_session_disconnected
 from kl_site_server.endpoints import get_active_user_by_oauth2_token, get_user_config_by_token
 from kl_site_server.enums import GeneralSocketEvent
 from kl_site_server.model import PxCheckAuthMessage
@@ -48,3 +49,7 @@ def register_handlers_general():
             await on_http_exception(ex, session_id, namespace)
         finally:
             print_socket_event(GeneralSocketEvent.AUTH, session_id=session_id, namespace=namespace)
+
+    @fast_api_socket.on(GeneralSocketEvent.DISCONNECT, namespace=namespace)
+    async def on_disconnect(session_id: str):
+        record_session_disconnected(namespace, session_id)

@@ -9,10 +9,10 @@ if TYPE_CHECKING:
     from kl_site_server.utils import SocketNamespace
 
 
-def record_session(
+def record_session_connected(
     account_id: PyObjectId,
     namespace: "SocketNamespace",
-    session_id: str
+    session_id: str,
 ) -> dict["SocketNamespace", str] | None:
     """
     Record the session of ``account_id``.
@@ -52,5 +52,10 @@ def record_session(
     return None
 
 
-def is_token_active() -> bool:
-    pass
+def record_session_disconnected(
+    namespace: "SocketNamespace",
+    session_id: str,
+):
+    filter_ = {f"session_id.{namespace}": session_id}
+    user_db_session.find_one_and_update(filter_, {"$unset": filter_})
+    print_log(f"[DB-Session] Session [yellow]{session_id}[/yellow] in [yellow]{namespace}[/yellow] disconnected")

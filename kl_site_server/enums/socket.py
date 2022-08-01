@@ -5,6 +5,8 @@ class GeneralSocketEvent:
     PING = "ping"
     AUTH = "auth"
 
+    DISCONNECT = "disconnect"
+
 
 class PxSocketEvent:
     PX_INIT = "pxInit"
@@ -13,3 +15,5 @@ class PxSocketEvent:
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"
     MIN_CHANGE = "minChange"
+
+    DISCONNECT = "disconnect"

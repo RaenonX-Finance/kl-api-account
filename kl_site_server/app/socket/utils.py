@@ -4,7 +4,7 @@ from typing import Any, Coroutine
 from fastapi import HTTPException
 
 from kl_site_common.db import PyObjectId
-from kl_site_server.db import record_session
+from kl_site_server.db import record_session_connected
 from kl_site_server.enums import GeneralSocketEvent
 from kl_site_server.utils import SocketNamespace, socket_disconnect_session, socket_send_to_session
 
@@ -21,7 +21,7 @@ def get_tasks_with_session_control(
     namespace: SocketNamespace,
     session_id: str
 ) -> list[Coroutine[Any, Any, None]]:
-    session_ids_to_disconnect = record_session(account_id, namespace, session_id)
+    session_ids_to_disconnect = record_session_connected(account_id, namespace, session_id)
 
     return [
         socket_disconnect_session(session_id, namespace=ns)

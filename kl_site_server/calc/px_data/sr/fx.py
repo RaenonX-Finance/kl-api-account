@@ -89,7 +89,9 @@ def _sr_levels_range_of_pair(
     columns = [PxDataCol.OPEN, PxDataCol.HIGH, PxDataCol.LOW]
 
     today = pd.Timestamp.today(tz="UTC")
-    df_selected = df_selected[today - BDay(6):]  # 6 because the most recent pair could be incomplete
+    # Tail `11` to ensure only 5 pairs exist
+    # `6` because the most recent pair could be incomplete
+    df_selected = df_selected[today - BDay(6):].tail(11)
     grouped_dict = df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict()
 
     sr_level_data = _sr_levels_get_recent_n_only(grouped_dict, 5)
@@ -101,8 +103,8 @@ def _sr_levels_range_of_pair(
         )
         return
 
-    range_high = current_px * 1.02  # +2%
-    range_low = current_px * 0.98  # -2%
+    range_high = current_px * 1.05  # +5%
+    range_low = current_px * 0.95  # -5%
 
     for timestamp_date, data_pair in sr_level_data:
         higher = max(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]

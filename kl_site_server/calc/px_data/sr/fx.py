@@ -86,7 +86,7 @@ def _sr_levels_range_of_pair(
     group_basis: str,
     current_px: float,
 ) -> Generator[list[float], None, None]:
-    columns = [PxDataCol.OPEN, PxDataCol.HIGH, PxDataCol.LOW]
+    columns = [PxDataCol.OPEN, PxDataCol.CLOSE]
 
     today = pd.Timestamp.today(tz="UTC")
     # Tail `11` to ensure only 5 pairs exist
@@ -107,17 +107,18 @@ def _sr_levels_range_of_pair(
     range_low = current_px * 0.95  # -5%
 
     for timestamp_date, data_pair in sr_level_data:
-        higher = max(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]
-        lower = min(data_pair, key=lambda item: item[PxDataCol.OPEN])[PxDataCol.OPEN]
+        _1, _2 = data_pair
+        _1 = _1[PxDataCol.CLOSE]
+        _2 = _2[PxDataCol.OPEN]
 
-        diff = higher - lower
+        diff = abs(_1 - _2)
 
         if diff < SR_LEVEL_MIN_DIFF:
             yield []
         else:
             yield list(np.concatenate([
-                np.arange(lower, range_low, -diff),
-                np.arange(higher, range_high, diff),
+                np.arange(min(_1, _2), range_low, -diff),
+                np.arange(max(_1, _2), range_high, diff),
             ]))
 
 

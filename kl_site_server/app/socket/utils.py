@@ -1,4 +1,3 @@
-import asyncio
 from typing import Any, Coroutine
 
 from fastapi import HTTPException
@@ -10,10 +9,9 @@ from kl_site_server.utils import SocketNamespace, socket_disconnect_session, soc
 
 
 async def on_http_exception(ex: HTTPException, session_id: str, namespace: SocketNamespace):
-    await asyncio.gather(
-        socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id),
-        socket_disconnect_session(session_id, namespace=namespace)
-    )
+    # Can't use `asyncio.gather()` here because sign-in event should be sent first
+    await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
+    await socket_disconnect_session(session_id, namespace=namespace)
 
 
 def get_tasks_with_session_control(

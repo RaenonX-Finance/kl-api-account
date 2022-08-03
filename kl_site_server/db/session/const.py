@@ -13,3 +13,5 @@ user_db: Database = mongo_client.get_database("user")
 
 user_db_session: Collection["UserSessionModel"] = Collection(user_db, "session")
 user_db_session.create_index("account_id", unique=True)
+# Invalidate session after 300 secs
+user_db_session.create_index("last_check", expireAfterSeconds=300)

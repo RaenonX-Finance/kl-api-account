@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING
 
 from kl_site_common.db import PyObjectId
@@ -24,7 +25,11 @@ def record_session_connected(
 
     if not session:
         # No existing session for the account
-        model = UserSessionModel(account_id=account_id, session_id={namespace: session_id})
+        model = UserSessionModel(
+            account_id=account_id,
+            session_id={namespace: session_id},
+            last_check=datetime.utcnow().replace(tzinfo=timezone.utc)
+        )
         user_db_session.insert_one(model.dict())
 
         print_log(f"[DB-Session] Session [cyan]created[/cyan] for account [yellow]{account_id}[/yellow]")
@@ -50,6 +55,13 @@ def record_session_connected(
     )
     print_log(f"[DB-Session] Session [cyan]recorded[/cyan] for account [yellow]{account_id}[/yellow]")
     return None
+
+
+def record_session_checked(account_id: PyObjectId):
+    user_db_session.update_one(
+        {"account_id": account_id},
+        {"$set": {"last_check": datetime.utcnow().replace(tzinfo=timezone.utc)}}
+    )
 
 
 def record_session_disconnected(

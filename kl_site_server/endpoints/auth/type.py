@@ -12,6 +12,7 @@ Permission = Literal[
     "permission:add",
     "permission:remove",
     "account:new",
+    "account:expiry",
     "account:block",
     "account:view",
 ]

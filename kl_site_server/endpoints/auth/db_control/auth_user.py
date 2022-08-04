@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import Body, Depends
 from fastapi.security import OAuth2PasswordRequestForm
@@ -64,7 +64,7 @@ def get_active_user_by_user_data(
     if current_user.blocked:
         raise generate_blocked_exception()
 
-    if current_user.expiry and datetime.utcnow() > current_user.expiry:
+    if current_user.expiry and datetime.utcnow().replace(tzinfo=timezone.utc) > current_user.expiry:
         raise generate_unauthorized_exception("Membership expired")
 
     return current_user

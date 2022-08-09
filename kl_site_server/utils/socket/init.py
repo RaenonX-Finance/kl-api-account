@@ -1,9 +1,11 @@
-from typing import TypeAlias, TypedDict
+from typing import TypeAlias, TypedDict, TYPE_CHECKING
 
 from kl_site_common.const import DATA_PERIOD_DAYS, DATA_PERIOD_MINS, DATA_SOURCES, SR_CUSTOM_LEVELS
-from kl_site_server.endpoints import UserConfigModel
 from .data import PeriodInfo, ProductInfo
 from .utils import dump_and_compress
+
+if TYPE_CHECKING:
+    from kl_site_server.db import UserConfigModel
 
 
 class CustomSrLevel(TypedDict):
@@ -15,7 +17,7 @@ CustomSrLevelDict: TypeAlias = dict[str, list[CustomSrLevel]]
 
 class InitData(TypedDict):
     customSrLevelDict: CustomSrLevelDict
-    config: UserConfigModel
+    config: "UserConfigModel"
     products: list[ProductInfo]
     periods: list[PeriodInfo]
 
@@ -52,7 +54,7 @@ def _to_periods() -> list[PeriodInfo]:
     return period_min_info + period_day_info
 
 
-def to_socket_message_init_data(config: UserConfigModel) -> bytes:
+def to_socket_message_init_data(config: "UserConfigModel") -> bytes:
     data: InitData = {
         "customSrLevelDict": _to_custom_sr_level_dict(),
         "config": config,

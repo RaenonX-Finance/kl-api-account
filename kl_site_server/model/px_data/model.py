@@ -9,7 +9,7 @@ from kl_site_server.calc import aggregate_df, calc_model
 from kl_site_server.enums import PxDataCol
 
 if TYPE_CHECKING:
-    from kl_site_server.endpoints import UserConfigModel
+    from kl_site_server.db import UserConfigModel
     from kl_site_server.model import PxDataPool, RequestPxMessageSingle
 
 

@@ -1,11 +1,12 @@
 from fastapi import APIRouter, Depends, status
 
+from kl_site_server.db import SignupKeyModel, UserDataModel, ValidationSecretsModel
 from .db_control import (
-    generate_access_token, generate_access_token_on_doc, generate_validation_secrets,
+    generate_access_token, generate_access_token_on_doc,
+    generate_account_creation_key as generate_account_creation_key_db, generate_validation_secrets,
     get_active_user_by_user_data, refresh_access_token, signup_user,
-    generate_account_creation_key as generate_account_creation_key_db,
 )
-from .model import OAuthToken, UserDataModel, ValidationSecretsModel, SignupKeyModel
+from .model import OAuthToken
 
 auth_router = APIRouter(prefix="/auth")
 

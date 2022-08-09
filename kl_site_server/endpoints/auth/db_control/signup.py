@@ -2,10 +2,10 @@ import pymongo.errors
 from fastapi import Body, Depends
 
 from kl_site_common.db import start_mongo_txn
+from kl_site_server.db import auth_db_signup_key, auth_db_users, SignupKeyModel, UserDataModel
 from .auth_user import get_user_data_by_username
-from ..const import auth_db_signup_key, auth_db_users
 from ..exceptions import generate_bad_request_exception
-from ..model import SignupKeyModel, UserDataModel, UserSignupModel
+from ..model import UserSignupModel
 
 
 def signup_user_ensure_unique(user: UserSignupModel = Body(...)) -> UserSignupModel:

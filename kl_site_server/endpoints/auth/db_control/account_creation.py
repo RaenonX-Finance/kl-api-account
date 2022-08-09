@@ -4,9 +4,8 @@ from datetime import datetime, timedelta, timezone
 from fastapi import Body, Depends
 
 from kl_site_common.const import ACCOUNT_SIGNUP_KEY_EXPIRY_SEC
+from kl_site_server.db import auth_db_signup_key, SignupKeyGenerationModel, SignupKeyModel, UserDataModel
 from .auth_user import get_admin_user_by_oauth2_token
-from ..const import auth_db_signup_key
-from ..model import SignupKeyGenerationModel, SignupKeyModel, UserDataModel
 
 
 def generate_account_creation_key(

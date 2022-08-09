@@ -4,9 +4,9 @@ from fastapi import Body, Depends
 from pymongo import ReturnDocument
 
 from kl_site_common.db import PyObjectId
-from .const import user_db_config
-from .model import UpdateConfigModel, UserConfigModel
-from ..auth import UserDataModel, get_active_user_by_user_data, get_active_user_by_oauth2_token
+from kl_site_server.db import user_db_config, UserDataModel, UserConfigModel
+from .model import UpdateConfigModel
+from ..auth import get_active_user_by_user_data, get_active_user_by_oauth2_token
 
 
 def create_new_user_config(account_id: PyObjectId) -> UserConfigModel:

@@ -5,9 +5,10 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import ExpiredSignatureError, JWTError
 
 from kl_site_common.env import DEVELOPMENT_MODE, FASTAPI_AUTH_CALLBACK, FASTAPI_AUTH_TOKEN_EXPIRY_MINS
-from ..const import auth_db_users, auth_db_validation, auth_oauth2_scheme
+from kl_site_server.db import auth_db_users, auth_db_validation, DbUserModel, UserDataModel
+from ..const import auth_oauth2_scheme
 from ..exceptions import generate_bad_request_exception, generate_blocked_exception, generate_unauthorized_exception
-from ..model import DbUserModel, RefreshAccessTokenModel, UserDataModel
+from ..model import RefreshAccessTokenModel
 from ..secret import create_access_token, decode_access_token, is_password_match
 
 

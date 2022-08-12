@@ -8,7 +8,8 @@ from kl_site_server.db import record_session_checked, record_session_disconnecte
 from kl_site_server.endpoints import get_active_user_by_oauth2_token, get_user_config_by_token
 from kl_site_server.enums import GeneralSocketEvent
 from kl_site_server.model import PxCheckAuthMessage
-from kl_site_server.utils import SocketNamespace, socket_send_to_session, to_socket_message_init_data
+from kl_site_server.socket import SocketNamespace, socket_send_to_session
+from kl_site_server.utils import to_socket_message_init_data
 from .utils import get_tasks_with_session_control, on_http_exception
 
 

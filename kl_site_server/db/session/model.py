@@ -6,7 +6,7 @@ from pydantic import BaseModel, Field
 from kl_site_common.db import PyObjectId
 
 if TYPE_CHECKING:
-    from kl_site_server.utils import SocketNamespace
+    from kl_site_server.socket import SocketNamespace
 
 
 class UserSessionModel(BaseModel):

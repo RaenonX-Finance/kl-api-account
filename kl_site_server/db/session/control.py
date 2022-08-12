@@ -7,7 +7,7 @@ from .const import user_db_session
 from .model import UserSessionModel
 
 if TYPE_CHECKING:
-    from kl_site_server.utils import SocketNamespace
+    from kl_site_server.socket import SocketNamespace
 
 
 def record_session_connected(

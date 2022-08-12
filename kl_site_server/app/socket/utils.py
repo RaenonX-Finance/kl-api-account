@@ -5,7 +5,7 @@ from fastapi import HTTPException
 from kl_site_common.db import PyObjectId
 from kl_site_server.db import record_session_connected
 from kl_site_server.enums import GeneralSocketEvent
-from kl_site_server.utils import SocketNamespace, socket_disconnect_session, socket_send_to_session
+from kl_site_server.socket import socket_disconnect_session, socket_send_to_session, SocketNamespace
 
 
 async def on_http_exception(ex: HTTPException, session_id: str, namespace: SocketNamespace):

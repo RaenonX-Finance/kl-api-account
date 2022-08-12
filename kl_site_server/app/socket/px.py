@@ -10,11 +10,8 @@ from kl_site_server.db import record_session_disconnected
 from kl_site_server.endpoints import get_active_user_by_oauth2_token
 from kl_site_server.enums import PxSocketEvent
 from kl_site_server.model import MarketPxSubscriptionMessage, PxDataConfig, PxInitMessage, RequestPxMessage
-from kl_site_server.utils import (
-    SocketNamespace, make_px_data_room_name, make_px_sub_room_name, socket_join_room,
-    socket_leave_room,
-    socket_send_to_session, to_socket_message_px_data_list,
-)
+from kl_site_server.socket import SocketNamespace, socket_join_room, socket_leave_room, socket_send_to_session
+from kl_site_server.utils import make_px_data_room_name, make_px_sub_room_name, to_socket_message_px_data_list
 from .utils import get_tasks_with_session_control, on_http_exception
 
 

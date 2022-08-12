@@ -9,7 +9,7 @@ from kl_site_common.env import DEVELOPMENT_MODE
 from .log import LogLevels, log_message_to_file
 
 if TYPE_CHECKING:
-    from kl_site_server.utils import SocketNamespace
+    from kl_site_server.socket import SocketNamespace
 
 
 def _get_current_timestamp() -> str:

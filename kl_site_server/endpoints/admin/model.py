@@ -7,6 +7,7 @@ from kl_site_server.db import Permission
 
 
 class AccountData(BaseModel):
+    id: str
     username: str
     permissions: list[Permission]
     expiry: Optional[datetime]

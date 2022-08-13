@@ -19,6 +19,7 @@ def get_account_list(user: UserDataModel = Depends(get_active_user_by_user_data)
         data = UserDataModel(**data)
 
         ret.append(AccountData(
+            id=str(data.id),
             username=data.username,
             permissions=data.permissions,
             expiry=data.expiry,

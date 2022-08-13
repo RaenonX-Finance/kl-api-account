@@ -4,7 +4,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 
 from kl_site_common.env import DEVELOPMENT_MODE
-from .endpoints import admin_router, auth_router, user_router
 
 fast_api = FastAPI(
     title="KL Site backend API",
@@ -28,7 +27,3 @@ fast_api.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
-fast_api.include_router(admin_router)
-fast_api.include_router(auth_router)
-fast_api.include_router(user_router)

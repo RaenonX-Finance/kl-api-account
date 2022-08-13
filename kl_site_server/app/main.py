@@ -6,9 +6,8 @@ from kl_site_common.utils import print_log
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.model import TouchancePxRequestParams
 from tcoreapi_mq.model import configs_sources_as_symbols
-
+from .routes import register_api_routes
 from .socket import register_handlers
-
 
 latest_date: datetime = datetime.utcnow() + timedelta(hours=1)
 
@@ -38,3 +37,4 @@ def start_server_app(
         client.request_px_data(params)
 
     register_handlers(client)
+    register_api_routes()

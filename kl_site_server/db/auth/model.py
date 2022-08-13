@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Literal
 
 from bson import ObjectId
 from pydantic import BaseModel, EmailStr, Field
@@ -16,7 +15,7 @@ class UserDataModel(BaseModel):
     expiry: datetime | None = Field(None, description="Account membership expiry.")
     blocked: bool = Field(False, description="If the account is blocked. Blocked account does not have access.")
     admin: bool = Field(False, description="If the account holder is an admin. Admin has all possible permissions.")
-    permissions: list[Literal[Permission]] = Field(
+    permissions: list[Permission] = Field(
         ...,
         description="List of permissions that the account holder has."
     )
@@ -25,6 +24,12 @@ class UserDataModel(BaseModel):
         allow_population_by_field_name = True
         arbitrary_types_allowed = True
         json_encoders = {ObjectId: str}
+
+    def has_permission(self, permission: Permission) -> bool:
+        if self.admin:
+            return True
+
+        return permission in self.permissions
 
 
 class DbUserModel(UserDataModel):

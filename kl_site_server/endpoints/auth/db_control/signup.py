@@ -3,8 +3,8 @@ from fastapi import Body, Depends
 
 from kl_site_common.db import start_mongo_txn
 from kl_site_server.db import auth_db_signup_key, auth_db_users, SignupKeyModel, UserDataModel
+from kl_site_server.utils import generate_bad_request_exception
 from .auth_user import get_user_data_by_username
-from ..exceptions import generate_bad_request_exception
 from ..model import UserSignupModel
 
 

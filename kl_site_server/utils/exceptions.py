@@ -1,4 +1,9 @@
+from typing import TYPE_CHECKING
+
 from fastapi import HTTPException, status
+
+if TYPE_CHECKING:
+    from kl_site_server.db import Permission
 
 
 def generate_unauthorized_exception(message: str) -> HTTPException:
@@ -7,6 +12,10 @@ def generate_unauthorized_exception(message: str) -> HTTPException:
         detail=message,
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+
+def generate_insufficient_permission_exception(permissions: list["Permission"]) -> HTTPException:
+    return generate_unauthorized_exception(f"Insufficient permission. Permissions needed: {', '.join(permissions)}")
 
 
 def generate_blocked_exception() -> HTTPException:

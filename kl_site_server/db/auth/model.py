@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Any
 
 from bson import ObjectId
 from pydantic import BaseModel, EmailStr, Field
@@ -30,6 +31,17 @@ class UserDataModel(BaseModel):
             return True
 
         return permission in self.permissions
+
+    def dict(
+        self,
+        *,
+        by_alias: bool | None = None,
+        **kwargs,
+    ) -> dict[str, Any]:
+        return super().dict(
+            by_alias=True if by_alias is None else by_alias,
+            **kwargs,
+        )
 
 
 class DbUserModel(UserDataModel):

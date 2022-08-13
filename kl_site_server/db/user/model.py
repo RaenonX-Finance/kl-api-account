@@ -1,6 +1,5 @@
 from typing import Literal, TypeAlias
 
-from bson import ObjectId
 from pydantic import BaseModel, Field
 
 from kl_site_common.db import PyObjectId
@@ -49,8 +48,3 @@ class UserConfigModel(BaseModel):
     layout_type: LayoutType | None = Field(None, description="Layout type.")
     layout_config: dict | None = Field(None, description="Layout config of slots.")
     shared_config: dict | None = Field(None, description="Shared config for Px cahrts.")
-
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {ObjectId: str}

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Callable
 
 from bson import ObjectId
 from fastapi import Body, Depends
@@ -21,7 +21,10 @@ def permission_check(executor_uid: PyObjectId | None, permission_required: Permi
         raise generate_insufficient_permission_exception([permission_required])
 
 
-def user_data_dict_to_account_data(user_data_raw: dict[str, Any], *, online: bool) -> AccountData:
+def user_data_dict_to_account_data(
+    user_data_raw: dict[str, Any], *,
+    online: Callable[[UserDataModel], bool]
+) -> AccountData:
     data = UserDataModel(**user_data_raw)
 
     return AccountData(
@@ -31,7 +34,7 @@ def user_data_dict_to_account_data(user_data_raw: dict[str, Any], *, online: boo
         expiry=data.expiry,
         blocked=data.blocked,
         admin=data.admin,
-        online=online,
+        online=online(data),
     )
 
 
@@ -42,7 +45,10 @@ def get_account_list(user: UserDataModel = Depends(get_active_user_by_user_data)
 
     ret: list[AccountData] = []
     for data in auth_db_users.find({"_id": {"$ne": user.id}}):
-        ret.append(user_data_dict_to_account_data(data, online=data["_id"] in logged_in_account_ids))
+        ret.append(user_data_dict_to_account_data(
+            data,
+            online=lambda user_data: user_data.id in logged_in_account_ids
+        ))
 
     return ret
 
@@ -64,7 +70,7 @@ def update_account_expiry(
 
     return user_data_dict_to_account_data(
         updated_account,
-        online=user_db_session.find_one({"account_id": ObjectId(updated_account.id)}) is not None,
+        online=lambda user_data: user_db_session.find_one({"account_id": user_data.id}) is not None,
     )
 
 
@@ -85,5 +91,5 @@ def update_account_blocked(
 
     return user_data_dict_to_account_data(
         updated_account,
-        online=user_db_session.find_one({"account_id": ObjectId(updated_account["_id"])}) is not None,
+        online=lambda user_data: user_db_session.find_one({"account_id": user_data.id}) is not None,
     )

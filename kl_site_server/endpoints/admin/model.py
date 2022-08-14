@@ -20,3 +20,8 @@ class AccountData(BaseModel):
 class ExpiryUpdateModel(BaseModel):
     id: PyObjectId = Field(...)
     expiry: datetime | None = Field(...)
+
+
+class BlockedUpdateModel(BaseModel):
+    id: PyObjectId = Field(...)
+    blocked: bool = Field(...)

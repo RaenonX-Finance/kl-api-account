@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends
 
-from .db_control import get_account_list, update_account_expiry
+from .db_control import get_account_list, update_account_blocked, update_account_expiry
 from .model import AccountData
 
 admin_router = APIRouter(prefix="/admin")
@@ -20,4 +20,12 @@ async def get_accounts(accounts: list[AccountData] = Depends(get_account_list)) 
     description="Update the membership expiry of an account.",
 )
 async def update_expiry(updated_account: AccountData = Depends(update_account_expiry)) -> AccountData:
+    return updated_account
+
+
+@admin_router.post(
+    "/update-blocked",
+    description="Update the blocking status of an account.",
+)
+async def update_blocked(updated_account: AccountData = Depends(update_account_blocked)) -> AccountData:
     return updated_account

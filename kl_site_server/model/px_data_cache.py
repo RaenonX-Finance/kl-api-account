@@ -77,6 +77,10 @@ class PxDataCacheEntry:
 
         This should be called after the `is_ready` check.
         """
+        if self.latest_epoch not in self.data:
+            # No data fetched yet - no data to be updated
+            return
+
         bar_current = self.data[self.latest_epoch]
 
         self.data[self.latest_epoch] = bar_current | {

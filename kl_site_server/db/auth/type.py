@@ -8,4 +8,5 @@ Permission = Literal[
     "account:expiry",
     "account:block",
     "account:view",
+    "config:session"
 ]

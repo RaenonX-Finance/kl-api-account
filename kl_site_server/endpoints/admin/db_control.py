@@ -5,9 +5,12 @@ from fastapi import Body, Depends
 from pymongo import ReturnDocument
 
 from kl_site_common.db import PyObjectId
-from kl_site_server.db import Permission, UserDataModel, auth_db_users, user_db_session
+from kl_site_server.db import (
+    FuturesMarketClosedSessionModel, Permission, UserDataModel, auth_db_users,
+    create_new_market_close_session, delete_market_close_session, get_all_market_close_session, user_db_session,
+)
 from kl_site_server.utils import generate_bad_request_exception, generate_insufficient_permission_exception
-from .model import AccountData, BlockedUpdateModel, ExpiryUpdateModel, PermissionUpdateModel
+from .model import AccountData, BlockedUpdateModel, ExpiryUpdateModel, PermissionUpdateModel, SessionDeleteModel
 from ..auth import get_active_user_by_user_data
 
 
@@ -129,3 +132,33 @@ def update_account_permission(
         raise generate_bad_request_exception("Update data should not have both empty `add` and `remove`")
 
     return updated_account_data
+
+
+def create_single_market_closed_session(
+    executor: UserDataModel = Depends(get_active_user_by_user_data),
+    new_session: FuturesMarketClosedSessionModel = Body(...),
+) -> list[FuturesMarketClosedSessionModel]:
+    require_permission(executor.id, "config:session")
+
+    create_new_market_close_session(new_session)
+
+    return get_all_market_close_session()
+
+
+def delete_single_market_closed_session(
+    executor: UserDataModel = Depends(get_active_user_by_user_data),
+    session_to_delete: SessionDeleteModel = Body(...),
+) -> list[FuturesMarketClosedSessionModel]:
+    require_permission(executor.id, "config:session")
+
+    delete_market_close_session(ObjectId(session_to_delete.session))
+
+    return get_all_market_close_session()
+
+
+def get_market_closed_session_list(
+    executor: UserDataModel = Depends(get_active_user_by_user_data),
+) -> list[FuturesMarketClosedSessionModel]:
+    require_permission(executor.id, "config:session")
+
+    return get_all_market_close_session()

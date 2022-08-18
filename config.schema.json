@@ -148,7 +148,8 @@
               "expiry",
               "exchange",
               "symbol",
-              "name"
+              "name",
+              "session"
             ],
             "additionalProperties": false,
             "properties": {
@@ -186,6 +187,53 @@
               "name": {
                 "type": "string",
                 "description": "Display name of the product."
+              },
+              "session": {
+                "type": "array",
+                "description": "Regular market sessions.",
+                "uniqueItems": true,
+                "items": {
+                  "type": "object",
+                  "description": "An entity of a regular market session.",
+                  "required": [
+                    "weekdays",
+                    "start",
+                    "end"
+                  ],
+                  "additionalProperties": false,
+                  "properties": {
+                    "weekdays": {
+                      "type": "array",
+                      "description": "List of weekdays that the market opens. Check https://docs.python.org/3/library/datetime.html#datetime.date.weekday for valid values and its meaning. Note that these weekdays correspond to start date. The application will automatically determines the weekday of the end time.",
+                      "uniqueItems": true,
+                      "items": {
+                        "type": "integer",
+                        "enum": [
+                          0,
+                          1,
+                          2,
+                          3,
+                          4,
+                          5,
+                          6
+                        ],
+                        "minItems": 1,
+                        "maxItems": 7,
+                        "uniqueItems": true
+                      }
+                    },
+                    "start": {
+                      "type": "string",
+                      "description": "Regular market opening time.",
+                      "format": "time"
+                    },
+                    "end": {
+                      "type": "string",
+                      "description": "Regular market closing time.",
+                      "format": "time"
+                    }
+                  }
+                }
               }
             }
           }

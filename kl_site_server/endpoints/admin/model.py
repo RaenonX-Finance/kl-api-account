@@ -44,3 +44,7 @@ class PermissionUpdateModel(BaseModel):
             raise ValueError("Either `add` or `remove` should have length > 0")
 
         return values
+
+
+class SessionDeleteModel(BaseModel):
+    session: str = Field(...)

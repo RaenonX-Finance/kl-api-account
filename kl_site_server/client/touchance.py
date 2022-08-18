@@ -9,7 +9,7 @@ from kl_site_server.app import (
     on_error, on_px_data_updated_market, on_px_data_new_bar_created,
     on_system_time_min_change,
 )
-from kl_site_server.db import get_history_data_from_db, store_history_to_db
+from kl_site_server.db import get_history_data_from_db, is_market_closed, store_history_to_db
 from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent,
     PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams,
@@ -85,6 +85,9 @@ class TouchanceDataClient(TouchanceApiClient):
                 continue
 
             for params in self._px_request_params.values():
+                if is_market_closed(params.symbol_obj.security):
+                    continue
+
                 start = datetime.utcnow() - timedelta(hours=DATA_PX_REFETCH_BACKWARD_HOUR)
                 end = datetime.utcnow() + timedelta(minutes=2)
 
@@ -99,6 +102,13 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_data_cache.update_complete_data_of_symbol(data)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
+        if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
+            print_log(
+                f"[TC Client] [red]Ignoring[/red] market Px data of [yellow]{data.security}[/yellow] - "
+                f"outside market hours"
+            )
+            return
+
         self._px_data_cache.update_latest_market_data_of_symbol(data)
 
         if not self._px_data_cache.is_px_data_ready(data.symbol_complete):

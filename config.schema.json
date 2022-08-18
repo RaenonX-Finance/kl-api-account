@@ -144,6 +144,7 @@
             "description": "An entity of product spec to report.",
             "required": [
               "type",
+              "type-market-date",
               "expiry",
               "exchange",
               "symbol",
@@ -156,6 +157,14 @@
                 "description": "Product type.",
                 "enum": [
                   "Futures"
+                ]
+              },
+              "type-market-date": {
+                "type": "string",
+                "description": "Market date calculation type.",
+                "enum": [
+                  "US Index Futures",
+                  "FITX"
                 ]
               },
               "expiry": {

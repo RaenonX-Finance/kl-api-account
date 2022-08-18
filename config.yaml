@@ -18,16 +18,19 @@ data:
       backward-hour: 1
   source:
     - type: Futures
+      type-market-date: US Index Futures
       exchange: CME
       symbol: NQ
       expiry: HOT
       name: 小那指
     - type: Futures
+      type-market-date: US Index Futures
       exchange: CBOT
       symbol: YM
       expiry: HOT
       name: 小道瓊
     - type: Futures
+      type-market-date: FITX
       exchange: TWF
       symbol: FITX
       expiry: HOT

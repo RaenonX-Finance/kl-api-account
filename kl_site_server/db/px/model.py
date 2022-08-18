@@ -89,4 +89,4 @@ class FuturesMarketClosedSessionModel(BaseModel):
     def is_now_closed(self) -> bool:
         now = datetime.utcnow().replace(tzinfo=timezone.utc)
 
-        return now < self.start or now > self.end
+        return self.start < now < self.end

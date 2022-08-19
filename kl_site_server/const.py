@@ -7,7 +7,7 @@ from kl_site_common.env import DEVELOPMENT_MODE
 
 fast_api = FastAPI(
     title="KL Site backend API",
-    version="0.4.0",
+    version="0.5.0",
     # Disable docs if not in dev mode
     openapi_url="/openapi.json" if DEVELOPMENT_MODE else None,
 )

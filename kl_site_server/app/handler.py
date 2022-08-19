@@ -19,7 +19,8 @@ if TYPE_CHECKING:
 
 async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     namespace: SocketNamespace = "/px"
-    rooms = fast_api_socket.manager.rooms.get(namespace)
+    # Cache `rooms` so the later iterations on it won't crash
+    rooms = list(fast_api_socket.manager.rooms.get(namespace))
 
     if not rooms:
         print_log(f"[Server] Px MKT Updated ({e} - [red]No active rooms[/red])")
@@ -55,7 +56,8 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
 async def on_px_data_new_bar_created(client: "TouchanceDataClient"):
     _start = time.time()
     namespace: SocketNamespace = "/px"
-    rooms = fast_api_socket.manager.rooms.get(namespace)
+    # Cache `rooms` so the later iterations on it won't crash
+    rooms = list(fast_api_socket.manager.rooms.get(namespace))
 
     if not rooms:
         print_log("[Server] Px BAR Created ([red]No active rooms[/red])")

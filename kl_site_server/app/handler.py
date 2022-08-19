@@ -26,7 +26,8 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
         return
 
     tasks = []
-    for room in rooms:
+    # Cache `rooms` so the later iterations on it won't crash
+    for room in list(rooms):
         room_securities = get_px_sub_securities_from_room_name(room)
 
         if not room_securities:
@@ -72,7 +73,8 @@ async def on_px_data_new_bar_created(client: "TouchanceDataClient"):
     }
 
     tasks = []
-    for room in rooms:
+    # Cache `rooms` so the later iterations on it won't crash
+    for room in list(rooms):
         room_identifiers = get_px_data_identifiers_from_room_name(room)
 
         if not room_identifiers:

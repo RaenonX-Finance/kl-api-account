@@ -261,9 +261,11 @@ class PxDataCache:
 
         return all(self.is_px_data_ready(symbol_complete) for symbol_complete in symbols)
 
-    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
-        lookup_1k = defaultdict(list)
-        lookup_dk = defaultdict(list)
+    def _get_px_data_config_to_lookup(
+        self, px_data_configs: Iterable[PxDataConfig]
+    ) -> tuple[DefaultDict[str, list[PxDataConfig]], DefaultDict[str, list[PxDataConfig]]]:
+        lookup_1k: DefaultDict[str, list[PxDataConfig]] = defaultdict(list)
+        lookup_dk: DefaultDict[str, list[PxDataConfig]] = defaultdict(list)
 
         for px_data_config in px_data_configs:
             security = px_data_config.security
@@ -281,6 +283,11 @@ class PxDataCache:
                 lookup_dk[symbol_complete].append(px_data_config)
             else:
                 lookup_1k[symbol_complete].append(px_data_config)
+
+        return lookup_1k, lookup_dk
+
+    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
+        lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
 
         px_data_list = []
 

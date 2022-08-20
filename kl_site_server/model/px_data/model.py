@@ -1,16 +1,38 @@
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass, field
 from datetime import datetime
-from typing import Iterable, TYPE_CHECKING
+from typing import Iterable, TYPE_CHECKING, cast
 
 from pandas import DataFrame, Series
 
 from kl_site_common.utils import print_log
 from kl_site_server.calc import aggregate_df, calc_model
 from kl_site_server.enums import PxDataCol
+from kl_site_server.utils import MAX_PERIOD
+from tcoreapi_mq.message import HistoryInterval, INTERVAL_TO_SEC
 
 if TYPE_CHECKING:
     from kl_site_server.db import UserConfigModel
     from kl_site_server.model import PxDataPool, RequestPxMessageSingle
+
+
+@dataclass(kw_only=True)
+class PxDataBarsInfo:
+    config: InitVar["PxDataConfig"]
+    latest_epoch_sec: int
+
+    earliest_epoch_sec: int = field(init=False)
+    bars_interval_needed: int = field(init=False)
+
+    def __post_init__(self, config: "PxDataConfig"):
+        sec_mult = INTERVAL_TO_SEC[cast(HistoryInterval, "1K" if config.period_min < 1440 else "DK")]
+
+        self.earliest_epoch_sec = self.latest_epoch_sec
+        # Push back the earliest time by offset - multiplier changes if `period_min` uses DK instead of 1K
+        self.earliest_epoch_sec -= config.offset_num * sec_mult
+        # Needs to be earlier to fetch necessary data for indicators
+        self.earliest_epoch_sec -= config.period_min * 60 * MAX_PERIOD
+
+        self.bars_interval_needed = (self.latest_epoch_sec - self.earliest_epoch_sec) // sec_mult + 1
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -23,6 +45,9 @@ class PxDataConfig:
     @property
     def offset_num(self) -> int:
         return self.offset or 0
+
+    def get_bars_info(self, latest_epoch_sec: int) -> PxDataBarsInfo:
+        return PxDataBarsInfo(config=self, latest_epoch_sec=latest_epoch_sec)
 
     @staticmethod
     def from_request_px_message(requests: Iterable["RequestPxMessageSingle"]) -> set["PxDataConfig"]:

@@ -76,7 +76,7 @@ class TouchanceDataClient(TouchanceApiClient):
             self.get_history(symbol, interval, result.latest, end)
 
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
-        return self._px_data_cache.get_px_data(px_data_configs)
+        return self._px_data_cache.get_px_data(px_data_configs, self.get_history_including_db)
 
     def _history_data_refetcher(self):
         while True:

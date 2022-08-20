@@ -2,143 +2,19 @@ import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import datetime
 from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
-from kl_site_server.enums import PxDataCol
-from tcoreapi_mq.message import HistoryData, RealtimeData, SystemTimeData, calc_market_date
-from tcoreapi_mq.model import SymbolBaseType
-from .bar_data import BarDataDict, to_bar_data_dict_tcoreapi
-from .px_data import PxData, PxDataConfig, PxDataPool
-from .px_data_update import MarketPxUpdateResult
+from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
+from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, SymbolBaseType
 
-
-@dataclass(kw_only=True)
-class PxDataCacheEntry:
-    security: str
-    symbol_complete: str
-    min_tick: float
-    decimals: int
-    data: dict[int, BarDataDict]  # Epoch sec / bar data
-    interval_sec: int
-
-    latest_market: RealtimeData | None = field(init=False, default=None)
-    latest_epoch: int | None = field(init=False)
-
-    def __post_init__(self):
-        self.latest_epoch = max(self.data.keys()) if self.data else None
-
-    @property
-    def is_ready(self) -> bool:
-        is_ready = bool(self.data)
-
-        if not is_ready:
-            print_warning(
-                f"[Server] Px data cache entry of [bold]{self.security} ({self.interval_sec})[/bold] not ready"
-            )
-
-        return is_ready
-
-    def remove_oldest(self):
-        # Only remove the oldest if there's >1 data
-        if len(self.data) > 1:
-            self.data.pop(min(self.data.keys()))
-
-    def update_all(self, bars: Iterable[BarDataDict]):
-        # `update_all` might be used for partial update,
-        # therefore using this instead of creating the whole dict then overwrites it
-        for bar in bars:
-            self.data[bar[PxDataCol.EPOCH_SEC]] = bar
-
-        if self.data:
-            # This method could be called with empty `bars`
-            self.latest_epoch = max(self.data.keys())
-
-    def update_latest_market(self, data: RealtimeData):
-        """
-        Updates the latest market data. Does NOT update the underlying cached data.
-
-        This should be called before the `is_ready` check.
-        """
-        if self.security != data.security:
-            print_warning(
-                f"[Server] `update_latest_market()` called at the wrong place - "
-                f"symbol not match ({self.security} / {data.security})"
-            )
-            return
-
-        self.latest_market = data
-
-    def update_latest(self, current: float) -> str | None:
-        """
-        Updates the latest price, then return the reason of force-send, if allowed.
-
-        This should be called after the `is_ready` check.
-        """
-        if self.latest_epoch not in self.data:
-            # No data fetched yet - no data to be updated
-            return
-
-        bar_current = self.data[self.latest_epoch]
-
-        self.data[self.latest_epoch] = bar_current | {
-            PxDataCol.HIGH: max(bar_current[PxDataCol.HIGH], current),
-            PxDataCol.LOW: min(bar_current[PxDataCol.LOW], current),
-            PxDataCol.CLOSE: current,
-        }
-
-        if current > bar_current[PxDataCol.HIGH]:
-            return "Breaking high"
-        if current < bar_current[PxDataCol.LOW]:
-            return "Breaking low"
-
-        return None
-
-    def make_new_bar(self, epoch_sec: float):
-        if not self.latest_epoch:
-            # Data might not be initialized yet - no last bar to "inherit" the data
-            return
-
-        epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
-        last_bar = self.data[self.latest_epoch]
-
-        self.data[epoch_int] = {
-            PxDataCol.OPEN: last_bar[PxDataCol.CLOSE],
-            PxDataCol.HIGH: last_bar[PxDataCol.CLOSE],
-            PxDataCol.LOW: last_bar[PxDataCol.CLOSE],
-            PxDataCol.CLOSE: last_bar[PxDataCol.CLOSE],
-            PxDataCol.EPOCH_SEC: epoch_int,
-            PxDataCol.EPOCH_SEC_TIME: epoch_int % 86400,
-            PxDataCol.DATE_MARKET: calc_market_date(
-                datetime.fromtimestamp(epoch_int, tz=timezone.utc),
-                epoch_int,
-                self.symbol_complete
-            ),
-            PxDataCol.VOLUME: 0,
-        }
-        self.latest_epoch = epoch_int
-        self.remove_oldest()
-
-    def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
-        pool = PxDataPool(
-            symbol=self.security,
-            bars=[self.data[key] for key in sorted(self.data.keys())],
-            min_tick=self.min_tick,
-            decimals=self.decimals,
-            latest_market=self.latest_market,
-            interval_sec=self.interval_sec,
-        )
-
-        with ThreadPoolExecutor() as executor:
-            return [
-                future.result() for future
-                in as_completed(
-                    executor.submit(pool.to_px_data, px_data_config)
-                    for px_data_config in px_data_configs
-                )
-            ]
+from ..bar_data import to_bar_data_dict_tcoreapi
+from ..px_data_update import MarketPxUpdateResult
+from ..px_data import PxData, PxDataBarsInfo, PxDataConfig
+from .entry import PxDataCacheEntry
+from .type import HistoryDataFetcherCallable
 
 
 @dataclass(kw_only=True)
@@ -286,8 +162,61 @@ class PxDataCache:
 
         return lookup_1k, lookup_dk
 
-    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
+    def _send_data_request_if_needed_and_wait(
+        self,
+        lookup: DefaultDict[str, list[PxDataConfig]],
+        px_data_cache_body: dict[str, PxDataCacheEntry],
+        request_history_data: HistoryDataFetcherCallable,
+        interval: HistoryInterval,
+    ):
+        symbols = lookup.keys()  # Complete symbol
+
+        bars_info_longest: dict[str, PxDataBarsInfo] = {
+            symbol: max(
+                (
+                    px_config.get_bars_info(px_data_cache_body[symbol].latest_epoch_sec)
+                    for px_config in px_configs
+                ),
+                key=lambda info: info.bars_interval_needed
+            )
+            for symbol, px_configs in lookup.items()
+        }
+        bar_count: dict[str, int] = {symbol: len(px_data_cache_body[symbol].data) for symbol in symbols}
+
+        def is_additional_data_needed():
+            return any(bar_count[symbol] < bars_info_longest[symbol].bars_interval_needed for symbol in symbols)
+
+        if not is_additional_data_needed():
+            return
+
+        for symbol in symbols:
+            request_history_data(
+                COMPLETE_SYMBOL_TO_SYM_OBJ[symbol],
+                interval,
+                datetime.fromtimestamp(bars_info_longest[symbol].earliest_epoch_sec),
+                datetime.fromtimestamp(px_data_cache_body[symbol].earliest_epoch_sec)
+            )
+
+        while is_additional_data_needed():
+            bar_count = {symbol: len(px_data_cache_body[symbol].data) for symbol in symbols}
+            bars_needed = {symbol: bars_info_longest[symbol].bars_interval_needed for symbol in symbols}
+
+            print_warning(
+                "[Server] Waiting necessary additional history data\n"
+                f"    [red]Bars needed: {bars_needed}[/red]\n"
+                f"    Bar count: {bar_count}"
+            )
+            time.sleep(0.1)
+
+    def get_px_data(
+        self,
+        px_data_configs: Iterable[PxDataConfig],
+        request_history_data: HistoryDataFetcherCallable,
+    ) -> list[PxData]:
         lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
+
+        self._send_data_request_if_needed_and_wait(lookup_1k, self.data_1k, request_history_data, "1K")
+        self._send_data_request_if_needed_and_wait(lookup_dk, self.data_dk, request_history_data, "DK")
 
         px_data_list = []
 

@@ -186,15 +186,10 @@ class PxDataCache:
         def is_additional_data_needed():
             return any(bar_count[symbol] < bars_info_longest[symbol].bars_interval_needed for symbol in symbols)
 
-        if not is_additional_data_needed():
-            return
-
-        for symbol in symbols:
-            request_history_data(
-                COMPLETE_SYMBOL_TO_SYM_OBJ[symbol],
-                interval,
-                datetime.fromtimestamp(bars_info_longest[symbol].earliest_epoch_sec),
-                datetime.fromtimestamp(px_data_cache_body[symbol].earliest_epoch_sec)
+            request_history_data(COMPLETE_SYMBOL_TO_SYM_OBJ[symbol], interval, start_ts, end_ts)
+            print_warning(
+                f"[Server] Requested additional history {interval} data "
+                f"of {symbol} from {start_ts} to {end_ts}"
             )
 
         while is_additional_data_needed():
@@ -234,18 +229,37 @@ class PxDataCache:
 
         return px_data_list
 
-    def make_new_bar(self, data: SystemTimeData):
-        if data.epoch_sec == 0:
-            for cache_entry in self.data_dk.values():
-                print_log(
-                    f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] @ [yellow]DK[/yellow] "
-                    f"at {data.timestamp}"
-                )
-                cache_entry.make_new_bar(data.epoch_sec)
+    def _make_new_bar(
+        self,
+        data: SystemTimeData,
+        cache_body: dict[str, PxDataCacheEntry],
+        interval: HistoryInterval
+    ) -> set[str]:
+        securities_created = set()
 
-        for cache_entry in self.data_1k.values():
+        for cache_entry in cache_body.values():
+            if is_market_closed(cache_entry.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
+                print_log(
+                    f"[Server] [red]Skipped[/red] creating new bar of [yellow]{cache_entry.security}[/yellow] - "
+                    f"outside market hours"
+                )
+                continue
+
             print_log(
-                f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] @ [yellow]1K[/yellow] "
-                f"at {data.timestamp}"
+                f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] "
+                f"in [yellow]{interval}[/yellow] at {data.timestamp}"
             )
             cache_entry.make_new_bar(data.epoch_sec)
+            securities_created.add(cache_entry.security)
+
+        return securities_created
+
+    def make_new_bar(self, data: SystemTimeData) -> set[str]:
+        securities_created = set()
+
+        if data.epoch_sec == 0:
+            securities_created |= self._make_new_bar(data, self.data_dk, "DK")
+
+        securities_created |= self._make_new_bar(data, self.data_dk, "1K")
+
+        return securities_created

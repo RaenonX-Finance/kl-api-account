@@ -64,11 +64,18 @@ class PxDataConfig:
         return ret
 
     @staticmethod
-    def from_unique_identifiers(identifiers: Iterable[str]) -> set["PxDataConfig"]:
+    def from_unique_identifiers(
+        identifiers: Iterable[str], *,
+        securities_to_include: Iterable[str] | None = None
+    ) -> set["PxDataConfig"]:
         ret = set()
 
         for identifier in identifiers:
             security, period_min = identifier.split("@", 1)
+
+            if securities_to_include and security not in securities_to_include:
+                continue
+
             ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=None, limit=None))
 
         return ret

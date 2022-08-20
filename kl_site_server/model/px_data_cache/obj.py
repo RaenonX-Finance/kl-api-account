@@ -2,19 +2,20 @@ import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
+from kl_site_common.const import DATA_PERIOD_DAYS, DATA_PERIOD_MINS, MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, SymbolBaseType
-
-from ..bar_data import to_bar_data_dict_tcoreapi
-from ..px_data_update import MarketPxUpdateResult
-from ..px_data import PxData, PxDataBarsInfo, PxDataConfig
 from .entry import PxDataCacheEntry
 from .type import HistoryDataFetcherCallable
+from ..bar_data import to_bar_data_dict_tcoreapi
+from ..px_data import PxData, PxDataConfig
+from ..px_data_update import MarketPxUpdateResult
+from ...db import is_market_closed
+from ...utils import MAX_PERIOD
 
 
 @dataclass(kw_only=True)
@@ -30,6 +31,8 @@ class PxDataCache:
     security_to_symbol_complete: dict[str, str] = field(init=False, default_factory=dict)
 
     buffer_mkt_px: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
+
+    complete_data_request_lock: set[str] = field(init=False, default_factory=set)
 
     def init_entry(
         self, *, symbol_obj: SymbolBaseType, min_tick: float, decimals: int,
@@ -63,6 +66,8 @@ class PxDataCache:
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.symbol_complete
+
+        self.complete_data_request_lock.discard(symbol_complete)
 
         print_log(
             f"[Server] Updating [purple]{data.data_len_as_str}[/purple] Px data bars "
@@ -164,44 +169,40 @@ class PxDataCache:
 
     def _send_data_request_if_needed_and_wait(
         self,
-        lookup: DefaultDict[str, list[PxDataConfig]],
+        max_group_count: int,
         px_data_cache_body: dict[str, PxDataCacheEntry],
         request_history_data: HistoryDataFetcherCallable,
         interval: HistoryInterval,
+        symbols_to_include: Iterable[str],
     ):
-        symbols = lookup.keys()  # Complete symbol
+        # x2 because simply using `timedelta` includes weekends, but weekends don't have bars
+        push_back_mins = max_group_count * MAX_PERIOD * 2 * (1440 if interval == "DK" else 1)
+        start_ts = datetime.utcnow() - timedelta(minutes=push_back_mins)
 
-        bars_info_longest: dict[str, PxDataBarsInfo] = {
-            symbol: max(
-                (
-                    px_config.get_bars_info(px_data_cache_body[symbol].latest_epoch_sec)
-                    for px_config in px_configs
-                ),
-                key=lambda info: info.bars_interval_needed
-            )
-            for symbol, px_configs in lookup.items()
-        }
-        bar_count: dict[str, int] = {symbol: len(px_data_cache_body[symbol].data) for symbol in symbols}
+        for symbol, px_cache_entry in px_data_cache_body.items():
+            if symbol not in symbols_to_include:
+                continue
 
-        def is_additional_data_needed():
-            return any(bar_count[symbol] < bars_info_longest[symbol].bars_interval_needed for symbol in symbols)
+            end_ts = datetime.fromtimestamp(px_cache_entry.earliest_epoch_sec)
+
+            self.complete_data_request_lock.add(symbol)
 
             request_history_data(COMPLETE_SYMBOL_TO_SYM_OBJ[symbol], interval, start_ts, end_ts)
-            print_warning(
-                f"[Server] Requested additional history {interval} data "
-                f"of {symbol} from {start_ts} to {end_ts}"
+            print_log(
+                f"[Server] Requested [blue]additional[/blue] history [yellow]{interval}[/yellow] data "
+                f"of [yellow]{symbol}[/yellow] from {start_ts} to {end_ts}"
             )
 
-        while is_additional_data_needed():
-            bar_count = {symbol: len(px_data_cache_body[symbol].data) for symbol in symbols}
-            bars_needed = {symbol: bars_info_longest[symbol].bars_interval_needed for symbol in symbols}
+        request_sent_epoch_sec = time.time()
 
-            print_warning(
-                "[Server] Waiting necessary additional history data\n"
-                f"    [red]Bars needed: {bars_needed}[/red]\n"
-                f"    Bar count: {bar_count}"
-            )
-            time.sleep(0.1)
+        while (
+            any(symbol in self.complete_data_request_lock for symbol in px_data_cache_body.keys()) and
+            time.time() - request_sent_epoch_sec < 10
+        ):
+            print_warning(f"[Server] Waiting additional history data of {self.complete_data_request_lock}")
+            time.sleep(0.5)
+
+        self.complete_data_request_lock = set()
 
     def get_px_data(
         self,
@@ -210,8 +211,20 @@ class PxDataCache:
     ) -> list[PxData]:
         lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
 
-        self._send_data_request_if_needed_and_wait(lookup_1k, self.data_1k, request_history_data, "1K")
-        self._send_data_request_if_needed_and_wait(lookup_dk, self.data_dk, request_history_data, "DK")
+        self._send_data_request_if_needed_and_wait(
+            max(DATA_PERIOD_MINS, key=lambda entry: entry["min"])["min"],
+            self.data_1k,
+            request_history_data,
+            "1K",
+            lookup_1k.keys(),
+        )
+        self._send_data_request_if_needed_and_wait(
+            max(DATA_PERIOD_DAYS, key=lambda entry: entry["day"])["day"],
+            self.data_dk,
+            request_history_data,
+            "DK",
+            lookup_dk.keys(),
+        )
 
         px_data_list = []
 

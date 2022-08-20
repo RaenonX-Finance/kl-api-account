@@ -1,2 +1,2 @@
 from .pool import PxDataPool
-from .model import PxData, PxDataConfig, PxDataBarsInfo
+from .model import PxData, PxDataConfig

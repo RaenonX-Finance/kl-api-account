@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class PxDataPool:
     def __init__(
         self, *,
-        symbol: str,
+        security: str,
         bars: list["BarDataDict"],
         min_tick: float,
         decimals: int,
@@ -24,14 +24,14 @@ class PxDataPool:
         interval_sec: int,
     ):
         if not bars:
-            raise ValueError(f"PxData should be initialized with data ({symbol} @ Pool)")
+            raise ValueError(f"PxData should be initialized with data ({security} @ Pool)")
 
         try:
-            source_of_symbol = next(data_source for data_source in DATA_SOURCES if data_source["symbol"] == symbol)
+            source_of_symbol = next(data_source for data_source in DATA_SOURCES if data_source["symbol"] == security)
         except StopIteration as ex:
-            raise ValueError(f"Symbol `{symbol}` is not included in data source list") from ex
+            raise ValueError(f"Symbol `{security}` is not included in data source list") from ex
 
-        self.symbol: str = symbol
+        self.security: str = security
         self.symbol_name: str = source_of_symbol["name"]
         self.min_tick: float = min_tick
         self.decimals: int = decimals
@@ -41,7 +41,7 @@ class PxDataPool:
         self.dataframe: DataFrame = calc_pool(DataFrame(bars))
 
         self.strength: int = calc_strength(self.dataframe)
-        self.sr_levels_data = calc_support_resistance_levels(self.dataframe, self.symbol)
+        self.sr_levels_data = calc_support_resistance_levels(self.dataframe, self.security)
 
     @property
     def earliest_time(self) -> datetime:

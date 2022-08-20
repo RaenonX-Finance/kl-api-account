@@ -125,7 +125,7 @@ class PxDataCacheEntry:
 
     def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
         pool = PxDataPool(
-            symbol=self.security,
+            security=self.security,
             bars=[self.data[key] for key in sorted(self.data.keys())],
             min_tick=self.min_tick,
             decimals=self.decimals,

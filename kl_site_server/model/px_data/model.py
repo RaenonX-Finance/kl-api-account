@@ -114,7 +114,7 @@ class PxData:
         return self.dataframe.iloc[-n]
 
     def save_to_file(self):
-        file_path = f"data-{self.pool.symbol}@{self.period_min}.csv"
+        file_path = f"data-{self.pool.security}@{self.period_min}.csv"
         self.dataframe.to_csv(file_path)
 
         print_log(f"[yellow]Px data saved to {file_path}[/yellow]")
@@ -135,7 +135,7 @@ class PxData:
 
     @property
     def unique_identifier(self) -> str:
-        return f"{self.pool.symbol}@{self.period_min}"
+        return f"{self.pool.security}@{self.period_min}"
 
     @property
     def data_count(self):

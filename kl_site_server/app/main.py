@@ -5,7 +5,7 @@ from kl_site_common.const import DATA_PERIOD_DAYS, DATA_PERIOD_MINS
 from kl_site_common.utils import print_log
 from kl_site_server.client import TouchanceDataClient
 from kl_site_server.model import TouchancePxRequestParams
-from tcoreapi_mq.model import configs_sources_as_symbols
+from tcoreapi_mq.model import SOURCE_SYMBOLS
 from .routes import register_api_routes
 from .socket import register_handlers
 
@@ -20,7 +20,7 @@ def start_server_app(
     client = client_cls()
     client.start()
 
-    for symbol_obj in configs_sources_as_symbols():
+    for symbol_obj in SOURCE_SYMBOLS:
         print_log(f"[Server] Requesting Px data of [yellow]{symbol_obj.symbol_complete}[/yellow]")
         params = TouchancePxRequestParams(
             symbol_obj=symbol_obj,

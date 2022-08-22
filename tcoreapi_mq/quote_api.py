@@ -72,12 +72,6 @@ class QuoteAPI(TCoreZMQ):
         end: datetime,
     ) -> SubscribePxHistoryMessage | None:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
-        print_log(
-            f"[TC Quote] Requesting history data of "
-            f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "
-            f"starting from {start} to {end}"
-        )
-
         with self.lock:
             try:
                 req = SubscribePxHistoryRequest(
@@ -87,9 +81,15 @@ class QuoteAPI(TCoreZMQ):
                     start_time=start,
                     end_time=end
                 )
+
+                print_log(
+                    f"[TC Quote] Request history data of "
+                    f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "
+                    f"starting from {start} to {end}"
+                )
                 self.socket.send_string(req.to_message())
             except ValueError:
-                print_warning(f"[TC Quote] Start time = end time, omitting request ({start} ~ {end})")
+                print_warning(f"[TC Quote] Omit history data request (Start = End, {start} ~ {end})")
                 return None
 
             return SubscribePxHistoryMessage(message=self.socket.get_message())

@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from typing import DefaultDict, Iterable
 
-from kl_site_common.const import DATA_PERIOD_DAYS, DATA_PERIOD_MINS, MARKET_PX_TIME_GATE_SEC
+from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, SymbolBaseType
@@ -207,24 +207,25 @@ class PxDataCache:
     def get_px_data(
         self,
         px_data_configs: Iterable[PxDataConfig],
-        request_history_data: HistoryDataFetcherCallable,
+        _: HistoryDataFetcherCallable,
     ) -> list[PxData]:
         lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
 
-        self._send_data_request_if_needed_and_wait(
-            max(DATA_PERIOD_MINS, key=lambda entry: entry["min"])["min"],
-            self.data_1k,
-            request_history_data,
-            "1K",
-            lookup_1k.keys(),
-        )
-        self._send_data_request_if_needed_and_wait(
-            max(DATA_PERIOD_DAYS, key=lambda entry: entry["day"])["day"],
-            self.data_dk,
-            request_history_data,
-            "DK",
-            lookup_dk.keys(),
-        )
+        # FIXME: Temporarily disables as the feature is incomplete, which could disrupt the data
+        # self._send_data_request_if_needed_and_wait(
+        #     max(DATA_PERIOD_MINS, key=lambda entry: entry["min"])["min"],
+        #     self.data_1k,
+        #     request_history_data,
+        #     "1K",
+        #     lookup_1k.keys(),
+        # )
+        # self._send_data_request_if_needed_and_wait(
+        #     max(DATA_PERIOD_DAYS, key=lambda entry: entry["day"])["day"],
+        #     self.data_dk,
+        #     request_history_data,
+        #     "DK",
+        #     lookup_dk.keys(),
+        # )
 
         px_data_list = []
 

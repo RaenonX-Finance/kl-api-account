@@ -5,4 +5,4 @@ from .px_history import SubscribePxHistoryRequest, GetPxHistoryRequest, Complete
 from .query_instrument import QueryInstrumentRequest
 from .query_instrument_all import QueryAllInstrumentRequest
 from .subscribe_realtime import SubscribeRealtimeRequest, UnsubscribeRealtimeRequest
-from .types import HistoryInterval, InstrumentType
+from .types import HistoryInterval, InstrumentType, INTERVAL_TO_SEC

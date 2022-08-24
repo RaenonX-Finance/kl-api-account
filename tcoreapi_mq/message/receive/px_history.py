@@ -95,7 +95,7 @@ class PxHistoryDataEntry:
             interval=interval,
             epoch_sec=epoch_sec,
             epoch_sec_time=epoch_sec_time,
-            market_date=calc_market_date(ts, epoch_sec, symbol_complete),
+            market_date=calc_market_date(ts, epoch_sec_time, symbol_complete),
         )
 
     @staticmethod

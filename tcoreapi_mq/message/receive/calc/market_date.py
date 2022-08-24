@@ -5,7 +5,7 @@ from pandas.tseries.offsets import BDay
 
 from kl_site_common.const import DATA_SOURCES
 from kl_site_common.utils import get_epoch_sec_time
-from tcoreapi_mq.model import configs_sources_as_symbols
+from tcoreapi_mq.model import SOURCE_SYMBOLS
 
 MarketDateType: TypeAlias = Literal[
     "US Index Futures",
@@ -26,7 +26,7 @@ _symbol_market_date_type_map: dict[str, MarketDateType] = {
         source for source in DATA_SOURCES
         if source["symbol"] == entry.symbol_
     )["type-market-date"]
-    for entry in configs_sources_as_symbols()
+    for entry in SOURCE_SYMBOLS
 }
 
 

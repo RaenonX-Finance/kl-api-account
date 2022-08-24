@@ -76,7 +76,7 @@ class TouchanceDataClient(TouchanceApiClient):
             self.get_history(symbol, interval, result.latest, end)
 
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
-        return self._px_data_cache.get_px_data(px_data_configs)
+        return self._px_data_cache.get_px_data(px_data_configs, self.get_history_including_db)
 
     def _history_data_refetcher(self):
         while True:
@@ -134,9 +134,13 @@ class TouchanceDataClient(TouchanceApiClient):
         execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
-        self._px_data_cache.make_new_bar(data)
+        securities_created = self._px_data_cache.make_new_bar(data)
 
-        execute_async_function(asyncio.gather, on_system_time_min_change(data), on_px_data_new_bar_created(self))
+        execute_async_function(
+            asyncio.gather,
+            on_system_time_min_change(data),
+            on_px_data_new_bar_created(self, securities_created)
+        )
 
     def on_error(self, message: str) -> None:
         execute_async_function(on_error, OnErrorEvent(message=message))

@@ -39,11 +39,18 @@ class PxDataConfig:
         return ret
 
     @staticmethod
-    def from_unique_identifiers(identifiers: Iterable[str]) -> set["PxDataConfig"]:
+    def from_unique_identifiers(
+        identifiers: Iterable[str], *,
+        securities_to_include: Iterable[str] | None = None
+    ) -> set["PxDataConfig"]:
         ret = set()
 
         for identifier in identifiers:
             security, period_min = identifier.split("@", 1)
+
+            if securities_to_include and security not in securities_to_include:
+                continue
+
             ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=None, limit=None))
 
         return ret
@@ -82,7 +89,7 @@ class PxData:
         return self.dataframe.iloc[-n]
 
     def save_to_file(self):
-        file_path = f"data-{self.pool.symbol}@{self.period_min}.csv"
+        file_path = f"data-{self.pool.security}@{self.period_min}.csv"
         self.dataframe.to_csv(file_path)
 
         print_log(f"[yellow]Px data saved to {file_path}[/yellow]")
@@ -103,7 +110,7 @@ class PxData:
 
     @property
     def unique_identifier(self) -> str:
-        return f"{self.pool.symbol}@{self.period_min}"
+        return f"{self.pool.security}@{self.period_min}"
 
     @property
     def data_count(self):

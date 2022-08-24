@@ -105,7 +105,7 @@ def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
     return {
         "minTick": px_data.pool.min_tick,
         "decimals": px_data.pool.decimals,
-        "symbol": px_data.pool.symbol,
+        "symbol": px_data.pool.security,
         "name": px_data.pool.symbol_name,
     }
 

@@ -19,6 +19,7 @@ if TYPE_CHECKING:
 
 async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     namespace: SocketNamespace = "/px"
+    # Cache `rooms` so the later iterations on it won't crash
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
@@ -52,9 +53,17 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     print_log(f"[Server] Px MKT Updated ({e} - {len(tasks)} subs)")
 
 
-async def on_px_data_new_bar_created(client: "TouchanceDataClient"):
+async def on_px_data_new_bar_created(
+    client: "TouchanceDataClient",
+    securities_created: set[str]
+):
+    if not securities_created:
+        print_log("[Server] Px BAR Created ([red]No new bars created[/red])")
+        return
+
     _start = time.time()
     namespace: SocketNamespace = "/px"
+    # Cache `rooms` so the later iterations on it won't crash
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
@@ -69,7 +78,9 @@ async def on_px_data_new_bar_created(client: "TouchanceDataClient"):
 
     px_data_dict: dict[str, PxData] = {
         px_data.unique_identifier: px_data
-        for px_data in client.get_px_data(PxDataConfig.from_unique_identifiers(identifiers))
+        for px_data in client.get_px_data(PxDataConfig.from_unique_identifiers(
+            identifiers, securities_to_include=securities_created
+        ))
     }
 
     tasks = []
@@ -80,9 +91,17 @@ async def on_px_data_new_bar_created(client: "TouchanceDataClient"):
         if not room_identifiers:
             continue
 
+        px_data_list = [
+            px_data_dict[identifier] for identifier in room_identifiers
+            if identifier in px_data_dict  # Identifiers that do not have new bars created are skipped
+        ]
+
+        if not px_data_list:
+            continue
+
         tasks.append(socket_send_to_room(
             PxSocketEvent.REQUEST,
-            to_socket_message_px_data_list([px_data_dict[identifier] for identifier in room_identifiers]),
+            to_socket_message_px_data_list(px_data_list),
             namespace=namespace,
             room=room,
         ))

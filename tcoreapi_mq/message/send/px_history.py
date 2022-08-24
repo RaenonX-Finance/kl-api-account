@@ -1,4 +1,4 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 
 from tcoreapi_mq.model import SymbolBaseType
@@ -14,24 +14,28 @@ class SubscribePxHistoryRequest(RequestBase):
     start_time: datetime
     end_time: datetime
 
-    def to_message_json(self) -> dict:
-        start_str = self.start_time.strftime("%Y%m%d%H")
-        end_str = self.end_time.strftime("%Y%m%d%H")
+    start_ts_str: str = field(init=False)
+    end_ts_str: str = field(init=False)
 
-        if start_str == end_str:
+    def __post_init__(self):
+        self.start_ts_str = self.start_time.strftime("%Y%m%d%H")
+        self.end_ts_str = self.end_time.strftime("%Y%m%d%H")
+
+        if self.start_ts_str == self.end_ts_str:
             raise ValueError(
                 "Per Touchance customer service's response, `start_time` and `end_time` must be different. "
-                f"(Current: {start_str})"
+                f"(Current: {self.start_ts_str})"
             )
 
+    def to_message_json(self) -> dict:
         return {
             "Request": "SUBQUOTE",
             "SessionKey": self.session_key,
             "Param": {
                 "Symbol": self.symbol.symbol_complete,
                 "SubDataType": self.interval,
-                "StartTime": start_str,
-                "EndTime": end_str
+                "StartTime": self.start_ts_str,
+                "EndTime": self.end_ts_str
             }
         }
 

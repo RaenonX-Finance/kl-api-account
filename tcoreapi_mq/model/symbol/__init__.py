@@ -1,3 +1,3 @@
-from .config import configs_sources_as_symbols
+from .config import SOURCE_SYMBOLS, COMPLETE_SYMBOL_TO_SYM_OBJ
 from .futures import FuturesSymbol
 from .types import SymbolBaseType

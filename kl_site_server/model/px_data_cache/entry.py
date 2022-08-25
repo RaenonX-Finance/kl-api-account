@@ -3,6 +3,9 @@ from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Iterable
 
+import numpy as np
+import numpy.typing as npt
+
 from kl_site_common.utils import print_warning
 from kl_site_server.enums import PxDataCol
 from kl_site_server.model import BarDataDict, PxData, PxDataConfig, PxDataPool
@@ -42,6 +45,12 @@ class PxDataCacheEntry:
     @property
     def latest_epoch_sec(self) -> int:
         return max(self.data.keys())
+
+    def get_last_n_of_close_px(self, count: int) -> npt.NDArray[float]:
+        return np.array([
+            data[PxDataCol.CLOSE] for epoch_sec, data
+            in sorted(self.data.items(), key=lambda item: item[0])[-count:]
+        ])
 
     def remove_oldest(self):
         # Only remove the oldest if there's >1 data

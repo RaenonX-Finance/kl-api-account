@@ -8,6 +8,7 @@ class MarketPxUpdateResult:
     allow_send: bool
     force_send_reason: str | None
     data: dict[str, RealtimeData]  # Security / Data
+    strength: dict[str, int]  # Security / Strength
 
     @property
     def is_force_send(self):

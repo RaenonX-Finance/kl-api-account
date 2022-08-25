@@ -72,6 +72,7 @@ def _from_px_data_last_bar_to_latest_market(px_data: "PxData") -> PxDataMarketSi
         "c": current[PxDataCol.CLOSE],
         "diffVal": change_val,
         "diffPct": float(f"{change_val / open_val * 100:.3f}"),
+        "strength": px_data.strength,
     }
 
 
@@ -135,7 +136,7 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
         # Sending initial data also calls this method
         # In this case, `latest_market` will be `None` since no market data has received yet
         "latestMarket": (
-            from_realtime_data_single(px_data.pool.latest_market)
+            from_realtime_data_single(px_data.pool.latest_market, px_data.strength)
             if px_data.pool.latest_market
             else _from_px_data_last_bar_to_latest_market(px_data)
         ),

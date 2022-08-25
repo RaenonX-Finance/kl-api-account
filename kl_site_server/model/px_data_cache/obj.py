@@ -274,6 +274,6 @@ class PxDataCache:
         if data.epoch_sec == 0:
             securities_created |= self._make_new_bar(data, self.data_dk, "DK")
 
-        securities_created |= self._make_new_bar(data, self.data_dk, "1K")
+        securities_created |= self._make_new_bar(data, self.data_1k, "1K")
 
         return securities_created

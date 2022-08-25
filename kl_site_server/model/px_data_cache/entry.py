@@ -113,6 +113,7 @@ class PxDataCacheEntry:
             return
 
         epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
+        epoch_sec_time = epoch_int % 86400
         last_bar = self.data[self.latest_epoch]
 
         self.data[epoch_int] = {
@@ -121,10 +122,10 @@ class PxDataCacheEntry:
             PxDataCol.LOW: last_bar[PxDataCol.CLOSE],
             PxDataCol.CLOSE: last_bar[PxDataCol.CLOSE],
             PxDataCol.EPOCH_SEC: epoch_int,
-            PxDataCol.EPOCH_SEC_TIME: epoch_int % 86400,
+            PxDataCol.EPOCH_SEC_TIME: epoch_sec_time,
             PxDataCol.DATE_MARKET: calc_market_date(
                 datetime.fromtimestamp(epoch_int, tz=timezone.utc),
-                epoch_int,
+                epoch_sec_time,
                 self.symbol_complete
             ),
             PxDataCol.VOLUME: 0,

@@ -8,7 +8,8 @@ from typing import DefaultDict, Iterable
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
-from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, SymbolBaseType
+from kl_site_server.calc import calc_strength
+from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .entry import PxDataCacheEntry
 from .type import HistoryDataFetcherCallable
 from ..bar_data import to_bar_data_dict_tcoreapi
@@ -114,10 +115,18 @@ class PxDataCache:
             reason = data_dk.update_latest(data.last_px) or reason
 
         now = time.time()
+        market_px_data = self.buffer_mkt_px | {data.security: data}
         result = MarketPxUpdateResult(
             allow_send=reason or now - self.last_market_send > MARKET_PX_TIME_GATE_SEC,
             force_send_reason=reason,
-            data=self.buffer_mkt_px | {data.security: data},
+            data=market_px_data,
+            strength={
+                security: calc_strength(
+                    # `calc_strength` needs 50 bars only for current setup
+                    self.data_1k[FUTURES_SECURITY_TO_SYM_OBJ[security].symbol_complete].get_last_n_of_close_px(70)
+                )
+                for security in market_px_data.keys()
+            }
         )
 
         if result.allow_send:

@@ -39,10 +39,6 @@ class PxDataCacheEntry:
         return is_ready
 
     @property
-    def earliest_epoch_sec(self) -> int:
-        return min(self.data.keys())
-
-    @property
     def latest_epoch_sec(self) -> int:
         return max(self.data.keys())
 

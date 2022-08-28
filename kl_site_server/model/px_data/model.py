@@ -1,8 +1,10 @@
 from dataclasses import dataclass
 from datetime import datetime
+from math import ceil
 from typing import Iterable, TYPE_CHECKING
 
 from pandas import DataFrame, Series
+from pandas.tseries.offsets import BDay
 
 from kl_site_common.utils import print_log
 from kl_site_server.calc import aggregate_df, calc_model
@@ -19,6 +21,10 @@ class PxDataConfig:
     period_min: int
     offset: int | None
     limit: int | None
+
+    @property
+    def earliest_ts(self) -> datetime:
+        return (datetime.utcnow() - BDay(ceil(self.period_min / 1440))).to_pydatetime()
 
     @property
     def offset_num(self) -> int:

@@ -7,16 +7,16 @@ from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
-from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
 from kl_site_server.calc import calc_strength
+from kl_site_server.db import is_market_closed
+from kl_site_server.utils import MAX_PERIOD
+from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .entry import PxDataCacheEntry
 from .type import HistoryDataFetcherCallable
 from ..bar_data import to_bar_data_dict_tcoreapi
 from ..px_data import PxData, PxDataConfig
 from ..px_data_update import MarketPxUpdateResult
-from ...db import is_market_closed
-from ...utils import MAX_PERIOD
 
 
 @dataclass(kw_only=True)
@@ -65,10 +65,11 @@ class PxDataCache:
             )
             self.period_days[symbol_complete] = period_days
 
-    def update_complete_data_of_symbol(self, data: HistoryData) -> None:
+    def update_complete_data_of_symbol(self, data: HistoryData, *, is_touchance_response: bool) -> None:
         symbol_complete = data.symbol_complete
 
-        self.complete_data_request_lock.discard(symbol_complete)
+        if is_touchance_response:
+            self.complete_data_request_lock.discard(symbol_complete)
 
         print_log(
             f"[Server] Updating [purple]{data.data_len_as_str}[/purple] Px data bars "
@@ -180,19 +181,20 @@ class PxDataCache:
         self,
         max_group_count: int,
         px_data_cache_body: dict[str, PxDataCacheEntry],
+        earliest_ts_dict: dict[str, datetime],
         request_history_data: HistoryDataFetcherCallable,
         interval: HistoryInterval,
         symbols_to_include: Iterable[str],
     ):
         # x2 because simply using `timedelta` includes weekends, but weekends don't have bars
         push_back_mins = max_group_count * MAX_PERIOD * 2 * (1440 if interval == "DK" else 1)
-        start_ts = datetime.utcnow() - timedelta(minutes=push_back_mins)
 
         for symbol, px_cache_entry in px_data_cache_body.items():
             if symbol not in symbols_to_include:
                 continue
 
-            end_ts = datetime.fromtimestamp(px_cache_entry.earliest_epoch_sec)
+            end_ts = earliest_ts_dict[symbol]
+            start_ts = end_ts - timedelta(minutes=push_back_mins)
 
             self.complete_data_request_lock.add(symbol)
 
@@ -224,6 +226,10 @@ class PxDataCache:
         # self._send_data_request_if_needed_and_wait(
         #     max(DATA_PERIOD_MINS, key=lambda entry: entry["min"])["min"],
         #     self.data_1k,
+        #     {
+        #         symbol: min(configs, key=lambda item: item.earliest_ts).earliest_ts
+        #         for symbol, configs in lookup_1k.items()
+        #     },
         #     request_history_data,
         #     "1K",
         #     lookup_1k.keys(),
@@ -231,6 +237,10 @@ class PxDataCache:
         # self._send_data_request_if_needed_and_wait(
         #     max(DATA_PERIOD_DAYS, key=lambda entry: entry["day"])["day"],
         #     self.data_dk,
+        #     {
+        #         symbol: min(configs, key=lambda item: item.earliest_ts).earliest_ts
+        #         for symbol, configs in lookup_dk.items()
+        #     },
         #     request_history_data,
         #     "DK",
         #     lookup_dk.keys(),

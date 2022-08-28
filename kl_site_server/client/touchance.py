@@ -6,8 +6,7 @@ from datetime import datetime, timedelta
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
 from kl_site_common.utils import execute_async_function, print_log, print_warning
 from kl_site_server.app import (
-    on_error, on_px_data_updated_market, on_px_data_new_bar_created,
-    on_system_time_min_change,
+    on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )
 from kl_site_server.db import get_history_data_from_db, is_market_closed, store_history_to_db
 from kl_site_server.model import (
@@ -65,9 +64,10 @@ class TouchanceDataClient(TouchanceApiClient):
 
         result = get_history_data_from_db(symbol_complete, interval, start, end)
 
-        self._px_data_cache.update_complete_data_of_symbol(HistoryData.from_db_fetch(
-            symbol_complete, interval, result
-        ))
+        self._px_data_cache.update_complete_data_of_symbol(
+            HistoryData.from_db_fetch(symbol_complete, interval, result),
+            is_touchance_response=False,
+        )
 
         if not result.earliest and not result.latest:
             self.get_history(symbol, interval, start, end)
@@ -99,7 +99,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
     def on_received_history_data(self, data: HistoryData) -> None:
         store_history_to_db(data)
-        self._px_data_cache.update_complete_data_of_symbol(data)
+        self._px_data_cache.update_complete_data_of_symbol(data, is_touchance_response=True)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40

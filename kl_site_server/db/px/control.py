@@ -51,12 +51,17 @@ def store_history_to_db(data: HistoryData):
         f"[yellow]{data.symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
     )
 
-    with start_mongo_txn() as session:
-        px_data_col.delete_many(
-            {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in data.to_db_entries()]},
-            session=session
-        )
-        px_data_col.insert_many(data.to_db_entries(), session=session)
+    entries = list(data.to_db_entries())
+    chunk_size = 10000
+    for i in range(0, len(entries), chunk_size):
+        chunk = entries[i:i + chunk_size]
+
+        with start_mongo_txn() as session:
+            px_data_col.delete_many(
+                {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
+                session=session
+            )
+            px_data_col.insert_many(chunk, session=session)
 
 
 # Keep local backup for faster access and db query count reduction

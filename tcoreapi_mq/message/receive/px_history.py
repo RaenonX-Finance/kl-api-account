@@ -155,8 +155,13 @@ class GetPxHistoryMessage:
             if not PxHistoryDataEntry.is_valid(data):
                 continue
 
-            entry = PxHistoryDataEntry.from_touchance(data, self.symbol_complete, self.interval)
-            self.data[entry.timestamp] = entry
+            try:
+                entry = PxHistoryDataEntry.from_touchance(data, self.symbol_complete, self.interval)
+                self.data[entry.timestamp] = entry
+            except ValueError:
+                # Temporary fix of erroneous datetime format
+                # https://github.com/RaenonX-Finance/kl-site-back/issues/80
+                continue
 
 
 @dataclass(kw_only=True)

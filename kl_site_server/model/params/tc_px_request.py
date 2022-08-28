@@ -26,7 +26,7 @@ class TouchancePxRequestParams:
             self.history_range_1k[1],
         )
         self.history_range_dk = (
-            self.history_range_dk[0] - get_start_offset(max(self.period_days) * 1440),
+            self.history_range_dk[0] - get_start_offset(max(self.period_days or [0]) * 1440),
             self.history_range_dk[1],
         )
 

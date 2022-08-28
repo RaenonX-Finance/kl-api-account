@@ -30,8 +30,8 @@ def start_server_app(
             period_days=(
                 period_days if period_days is not None else [period_day["day"] for period_day in DATA_PERIOD_DAYS]
             ),
-            history_range_1k=(latest_date - timedelta(days=7), latest_date),
-            history_range_dk=(latest_date - timedelta(days=180), latest_date),
+            history_range_1k=(latest_date - timedelta(days=240), latest_date),
+            history_range_dk=(latest_date - timedelta(days=1800), latest_date),
         )
 
         client.request_px_data(params)

@@ -24,6 +24,8 @@ class PxDataCacheEntry:
     latest_market: RealtimeData | None = field(init=False, default=None)
     latest_epoch: int | None = field(init=False)
 
+    pool: PxDataPool | None = field(init=False, default=None)
+
     def __post_init__(self):
         self.latest_epoch = max(self.data.keys()) if self.data else None
 
@@ -37,10 +39,6 @@ class PxDataCacheEntry:
             )
 
         return is_ready
-
-    @property
-    def earliest_epoch_sec(self) -> int:
-        return min(self.data.keys())
 
     @property
     def latest_epoch_sec(self) -> int:
@@ -134,20 +132,23 @@ class PxDataCacheEntry:
         self.remove_oldest()
 
     def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
-        pool = PxDataPool(
-            security=self.security,
-            bars=[self.data[key] for key in sorted(self.data.keys())],
-            min_tick=self.min_tick,
-            decimals=self.decimals,
-            latest_market=self.latest_market,
-            interval_sec=self.interval_sec,
-        )
+        if self.pool:
+            self.pool.update_data(self.data, self.latest_market)
+        else:
+            self.pool = PxDataPool(
+                security=self.security,
+                bars=[self.data[key] for key in sorted(self.data.keys())],
+                min_tick=self.min_tick,
+                decimals=self.decimals,
+                latest_market=self.latest_market,
+                interval_sec=self.interval_sec,
+            )
 
         with ThreadPoolExecutor() as executor:
             return [
                 future.result() for future
                 in as_completed(
-                    executor.submit(pool.to_px_data, px_data_config)
+                    executor.submit(self.pool.to_px_data, px_data_config)
                     for px_data_config in px_data_configs
                 )
             ]

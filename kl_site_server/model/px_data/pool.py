@@ -14,6 +14,14 @@ if TYPE_CHECKING:
 
 
 class PxDataPool:
+    @classmethod
+    def hash_bar_data(cls, bar: "BarDataDict") -> int:
+        return hash(tuple(bar.items()))
+
+    @classmethod
+    def get_hashed_bars(cls, bars: list["BarDataDict"]) -> dict[int, int]:
+        return {bar[PxDataCol.EPOCH_SEC]: cls.hash_bar_data(bar) for bar in bars}
+
     def __init__(
         self, *,
         security: str,
@@ -43,6 +51,8 @@ class PxDataPool:
         self.strength: int = calc_strength(self.dataframe[PxDataCol.CLOSE])
         self.sr_levels_data = calc_support_resistance_levels(self.dataframe, self.security)
 
+        self._bars_cache: dict[int, int] = self.get_hashed_bars(bars)
+
     @property
     def earliest_time(self) -> datetime:
         return self.dataframe[PxDataCol.DATE].min()
@@ -50,6 +60,24 @@ class PxDataPool:
     @property
     def latest_time(self) -> datetime:
         return self.dataframe[PxDataCol.DATE].max()
+
+    def update_data(self, updated_data: dict[int, "BarDataDict"], latest_market: RealtimeData | None):
+        self.latest_market = latest_market
+
+        to_update = set(updated_data.keys())
+        for epoch_sec, bar in updated_data.items():
+            if epoch_sec not in self._bars_cache or self._bars_cache[epoch_sec] != self.hash_bar_data(bar):
+                continue
+
+            to_update.remove(epoch_sec)
+
+        if not to_update:
+            return
+
+        bars = [updated_data[epoch_sec] for epoch_sec in to_update]
+        df_update = calc_pool(DataFrame(bars))
+        self.dataframe.update(df_update)
+        self._bars_cache.update(self.get_hashed_bars(bars))
 
     def to_px_data(self, px_data_config: PxDataConfig) -> PxData:
         return PxData(pool=self, px_data_config=px_data_config)

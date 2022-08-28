@@ -66,9 +66,7 @@ data:
         name: '30'
       - min: 60
         name: '60'
-    day:
-      - day: 1
-        name: 日
+    day: []
   sr-level:
     custom: {}
 

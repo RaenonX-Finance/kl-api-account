@@ -251,6 +251,7 @@
               "type": "array",
               "description": "Data periods based on 1K. The resulting data are aggregated from 1 minute candlestick.",
               "uniqueItems": true,
+              "minItems": 1,
               "items": {
                 "type": "object",
                 "description": "An entity of a data period.",

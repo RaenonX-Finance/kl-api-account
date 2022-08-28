@@ -66,7 +66,7 @@ class PxDataPool:
 
         to_update = set(updated_data.keys())
         for epoch_sec, bar in updated_data.items():
-            if epoch_sec not in self._bars_cache or self._bars_cache[epoch_sec] != self.hash_bar_data(bar):
+            if self._bars_cache.get(epoch_sec) != self.hash_bar_data(bar):
                 continue
 
             to_update.remove(epoch_sec)

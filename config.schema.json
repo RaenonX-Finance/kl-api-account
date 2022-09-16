@@ -69,6 +69,7 @@
       "type": "object",
       "description": "Data related settings.",
       "required": [
+        "download",
         "stream",
         "source",
         "period",
@@ -76,6 +77,27 @@
       ],
       "additionalProperties": false,
       "properties": {
+        "download": {
+          "type": "object",
+          "description": "Data download related settings.",
+          "required": [
+            "1k",
+            "dk"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "1k": {
+              "type": "integer",
+              "description": "Data duration to download for minute-bar (1K) in days.",
+              "exclusiveMinimum": 0
+            },
+            "dk": {
+              "type": "integer",
+              "description": "Data duration to download for daily-bar (DK) in days.",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
         "stream": {
           "type": "object",
           "description": "Data streaming related settings.",

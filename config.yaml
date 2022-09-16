@@ -8,6 +8,9 @@ log:
   suppress-warnings: false
 
 data:
+  download:
+    1k: 240
+    dk: 1800
   stream:
     segment-count: 2000
     timeout-sec: 300

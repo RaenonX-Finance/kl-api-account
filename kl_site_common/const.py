@@ -40,6 +40,15 @@ LOG_TO_DIR = _CONFIG_LOG.get("output-directory")
 
 _CONFIG_DATA = config["data"]
 
+# region Data / Download
+
+_CONFIG_DATA_DOWNLOAD = _CONFIG_DATA["download"]
+
+DATA_DOWNLOAD_1K = _CONFIG_DATA_DOWNLOAD["1k"]
+DATA_DOWNLOAD_DK = _CONFIG_DATA_DOWNLOAD["dk"]
+
+# endregion
+
 # region Data / Stream
 
 _CONFIG_DATA_STREAM = _CONFIG_DATA["stream"]

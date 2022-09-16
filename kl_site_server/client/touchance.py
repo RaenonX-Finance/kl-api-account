@@ -34,8 +34,7 @@ class TouchanceDataClient(TouchanceApiClient):
         params.reset_request_timeout()
         self._px_request_params[params.symbol_obj.symbol_complete] = params
 
-        self.register_symbol_info(params.symbol_obj)
-        instrument_info = self.get_instrument_info_by_symbol(params.symbol_obj)
+        instrument_info = self.get_symbol_info(params.symbol_obj)
 
         self._px_data_cache.init_entry(
             symbol_obj=params.symbol_obj,

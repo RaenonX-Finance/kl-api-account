@@ -18,29 +18,17 @@ class QuoteAPI(TCoreZMQ):
         self._info: dict[str, QueryInstrumentProduct] = {}
         self._subscribing_realtime: set[str] = set()
 
-    def register_symbol_info(self, symbol_obj: SymbolBaseType) -> None:
-        if symbol_obj.symbol_complete in self._info:
-            return
+    def get_symbol_info(self, symbol_obj: SymbolBaseType) -> QueryInstrumentProduct:
+        if ret := self._info.get(symbol_obj.symbol_complete):
+            return ret
 
-        msg = self.query_instrument_info(symbol_obj)
+        self._info[symbol_obj.symbol_complete] = self.query_instrument_info(symbol_obj).info_product
 
-        self._info[msg.symbol_obj.symbol_complete] = msg.info_product
-
-    def get_instrument_info_by_symbol(self, symbol_obj: SymbolBaseType) -> QueryInstrumentProduct:
-        key = symbol_obj.symbol_complete
-
-        if key not in self._info:
-            raise ValueError(
-                f"Symbol `{symbol_obj}` not yet registered. "
-                f"Run `register_symbol_info()`, `subscribe_realtime()`, or `subscribe_history()` first."
-            )
-
-        return self._info[key]
+        return self._info[symbol_obj.symbol_complete]
 
     def subscribe_realtime(self, symbol: SymbolBaseType) -> SubscribeRealtimeMessage:
         print_log(f"[TC Quote] Subscribing realtime data of [yellow]{symbol.symbol_complete}[/yellow]")
 
-        self.register_symbol_info(symbol)
         self._subscribing_realtime.add(symbol.symbol_complete)
 
         with self.lock:

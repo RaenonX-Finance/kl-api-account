@@ -1,20 +1,33 @@
 import time
 from datetime import datetime
+from typing import Callable
 
 import pymongo
 from bson import ObjectId
+from pymongo.cursor import Cursor
 from pymongo.errors import DuplicateKeyError
 
 from kl_site_common.const import DATA_SOURCES
 from kl_site_common.db import start_mongo_txn
 from kl_site_common.utils import print_log
+from kl_site_server.utils import generate_bad_request_exception
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry
 from .const import px_data_col, px_session_col
 from .model import DbHistoryDataResult, FuturesMarketClosedSessionModel, MarketSessionEntry
-from ...utils import generate_bad_request_exception
 
 
-def get_history_data_from_db(
+def _get_history_data_result(fn_get_find_cursor: Callable[[], Cursor]) -> DbHistoryDataResult:
+    try:
+        return DbHistoryDataResult(
+            earliest=fn_get_find_cursor().sort("ts", pymongo.ASCENDING).limit(1).next()["ts"],
+            latest=fn_get_find_cursor().sort("ts", pymongo.DESCENDING).limit(1).next()["ts"],
+            data=(PxHistoryDataEntry.from_mongo_doc(data) for data in fn_get_find_cursor()),
+        )
+    except StopIteration:
+        return DbHistoryDataResult(earliest=None, latest=None, data=[])
+
+
+def get_history_data_from_db_timeframe(
     symbol_complete: str,
     interval: HistoryInterval,
     start: datetime,
@@ -35,14 +48,26 @@ def get_history_data_from_db(
             }
         })
 
-    try:
-        return DbHistoryDataResult(
-            earliest=get_find_cursor().sort("ts", pymongo.ASCENDING).limit(1).next()["ts"],
-            latest=get_find_cursor().sort("ts", pymongo.DESCENDING).limit(1).next()["ts"],
-            data=(PxHistoryDataEntry.from_mongo_doc(data) for data in get_find_cursor()),
-        )
-    except StopIteration:
-        return DbHistoryDataResult(earliest=None, latest=None, data=[])
+    return _get_history_data_result(get_find_cursor)
+
+
+def get_history_data_from_db_limit_count(
+    symbol_complete: str,
+    interval: HistoryInterval,
+    count: int,
+) -> DbHistoryDataResult:
+    print_log(
+        f"[DB-Px] Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
+        f"- {count} bars"
+    )
+
+    def get_find_cursor():
+        return px_data_col.find({
+            "s": symbol_complete,
+            "i": interval
+        }).sort("ts", pymongo.DESCENDING).limit(count)
+
+    return _get_history_data_result(get_find_cursor)
 
 
 def store_history_to_db(data: HistoryData):

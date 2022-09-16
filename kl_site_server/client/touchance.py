@@ -8,7 +8,7 @@ from kl_site_common.utils import execute_async_function, print_log, print_warnin
 from kl_site_server.app import (
     on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )
-from kl_site_server.db import get_history_data_from_db, is_market_closed, store_history_to_db
+from kl_site_server.db import get_history_data_from_db_timeframe, is_market_closed, store_history_to_db
 from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent,
     PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams,
@@ -62,7 +62,7 @@ class TouchanceDataClient(TouchanceApiClient):
     ):
         symbol_complete = symbol.symbol_complete
 
-        result = get_history_data_from_db(symbol_complete, interval, start, end)
+        result = get_history_data_from_db_timeframe(symbol_complete, interval, start, end)
 
         self._px_data_cache.update_complete_data_of_symbol(
             HistoryData.from_db_fetch(symbol_complete, interval, result),

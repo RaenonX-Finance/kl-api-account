@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from datetime import datetime, time, timezone
-from typing import Any, Iterator
+from typing import Any
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, root_validator, validator
@@ -11,7 +11,7 @@ from tcoreapi_mq.message import PxHistoryDataEntry
 
 @dataclass(kw_only=True)
 class DbHistoryDataResult:
-    data: Iterator[PxHistoryDataEntry]
+    data: list[PxHistoryDataEntry]
     earliest: datetime | None
     latest: datetime | None
 

@@ -1,3 +1,6 @@
+from typing import Generator, TypeVar
+
+
 def find_missing_intervals(
     start: int,
     stop: int,
@@ -34,3 +37,11 @@ def find_missing_intervals(
         missing_start = None
 
     return ret
+
+
+T = TypeVar("T")
+
+
+def split_chunks(arr: list[T], chunk_size: int) -> Generator[list[T], None, None]:
+    for i in range(0, len(arr), chunk_size):
+        yield arr[i:i + chunk_size]

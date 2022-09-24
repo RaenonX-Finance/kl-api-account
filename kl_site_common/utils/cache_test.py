@@ -21,3 +21,13 @@ def test_data_cache_uses_existing_value():
     assert fn_get_value.call_count == 1
     cache.get_value(3)
     assert fn_get_value.call_count == 1
+
+
+def test_data_cache_no_store():
+    fn_get_value = MagicMock()
+    cache = DataCache(fn_get_value, lambda _: True)
+
+    cache.get_value(3)
+    assert fn_get_value.call_count == 1
+    cache.get_value(3)
+    assert fn_get_value.call_count == 2

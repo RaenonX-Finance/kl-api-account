@@ -25,3 +25,11 @@ They should be self-explanatory, and should have default value set to it, unless
 > Throws HTTP 400 bad request if the callback URI doesn't match.
 
 `MONGO_URL`: Mongo DB connection string. This should use SRV record (`mongodb+srv://`).
+
+### Optional
+
+`PATH_CONFIG_BASE`: Base config path. Default is `config.yaml`.
+
+`PATH_CONFIG_OVERRIDE`: Base config path. Default is `config-override.yaml`.
+
+`PATH_CONFIG_SCHEMA`: Base config path. Default is `config.schema.json`.

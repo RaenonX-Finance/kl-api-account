@@ -56,7 +56,7 @@ class PxDataCache:
                 interval_sec=86400,
             )
 
-    def get_last_n_of_close_px(self, security: str, count: int):
+    def get_last_n_of_close_px(self, security: str, count: int) -> list[float]:
         return self.data_1k[FUTURES_SECURITY_TO_SYM_OBJ[security].symbol_complete].get_last_n_of_close_px(count)
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:

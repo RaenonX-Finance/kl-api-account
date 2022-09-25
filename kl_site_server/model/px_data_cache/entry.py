@@ -44,11 +44,11 @@ class PxDataCacheEntry:
     def latest_epoch_sec(self) -> int:
         return max(self.data.keys())
 
-    def get_last_n_of_close_px(self, count: int) -> npt.NDArray[float]:
-        return np.array([
+    def get_last_n_of_close_px(self, count: int) -> list[float]:
+        return [
             data[PxDataCol.CLOSE] for epoch_sec, data
             in sorted(self.data.items(), key=lambda item: item[0])[-count:]
-        ])
+        ]
 
     def remove_oldest(self):
         # Only remove the oldest if there's >1 data

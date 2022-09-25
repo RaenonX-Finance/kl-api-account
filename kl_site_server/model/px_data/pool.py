@@ -5,8 +5,10 @@ from pandas import DataFrame
 
 from kl_site_common.const import DATA_SOURCES
 from kl_site_server.calc import calc_pool, calc_strength, calc_support_resistance_levels
+from kl_site_server.db import get_calculated_data_from_db
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import RealtimeData
+from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ
 from .model import PxData, PxDataConfig
 
 if TYPE_CHECKING:
@@ -80,4 +82,11 @@ class PxDataPool:
         self._bars_cache.update(self.get_hashed_bars(bars))
 
     def to_px_data(self, px_data_config: PxDataConfig) -> PxData:
-        return PxData(pool=self, px_data_config=px_data_config)
+        return PxData(
+            pool=self,
+            px_data_config=px_data_config,
+            calculated_data_cursor=get_calculated_data_from_db(
+                FUTURES_SECURITY_TO_SYM_OBJ[px_data_config.security], px_data_config.period_min,
+                count=px_data_config.limit, offset=px_data_config.offset
+            )
+        )

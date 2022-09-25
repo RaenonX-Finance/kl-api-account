@@ -17,6 +17,9 @@ _AGGREGATE_DICT: dict[str, Callable | str | list[Callable | str] | dict[str, Cal
 }
 
 _AGGREGATE_IGNORE_COLUMNS: set[str] = {
+    PxDataCol.INTERVAL,
+    PxDataCol.SYMBOL_COMPLETE,
+    PxDataCol.TIMESTAMP,
     PxDataCol.EPOCH_SEC,  # Group basis, will be included
 }
 

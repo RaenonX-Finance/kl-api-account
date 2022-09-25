@@ -3,6 +3,7 @@ from typing import Iterable, TYPE_CHECKING, TypeAlias, TypedDict
 from kl_site_common.const import (
     EMA_PERIOD_PAIRS_STRONG_SR, EMA_PERIOD_PAIR_NET, EmaPeriodPair, INDICATOR_EMA_PERIODS,
 )
+from kl_site_common.utils import print_warning
 from kl_site_server.enums import PxDataCol
 from .px_data_market import PxDataMarketSingle, from_realtime_data_single
 from .utils import df_rows_to_list_of_data, dump_and_compress
@@ -91,6 +92,10 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         PxDataCol.get_ema_col_name(period): f"ema{period}"
         for period in INDICATOR_EMA_PERIODS
     }
+
+    if not len(px_data.dataframe):
+        print_warning(f"[Socket] Px data of `{px_data.unique_identifier}` does not contain any bar")
+        return []
 
     return df_rows_to_list_of_data(px_data.dataframe, columns)
 

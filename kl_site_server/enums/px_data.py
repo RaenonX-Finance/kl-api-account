@@ -17,6 +17,12 @@ class PxDataCol:
 
     EPOCH_SEC_TIME = "epoch_sec_time"
 
+    # Other properties
+
+    SYMBOL_COMPLETE = "symbol_complete"
+    INTERVAL = "interval"
+    TIMESTAMP = "timestamp"
+
     # Common indicators
 
     @staticmethod

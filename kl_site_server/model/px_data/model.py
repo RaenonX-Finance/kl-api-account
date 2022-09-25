@@ -5,9 +5,9 @@ from typing import Iterable, TYPE_CHECKING
 
 from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
+from pymongo.cursor import Cursor
 
 from kl_site_common.utils import print_log
-from kl_site_server.calc import aggregate_df, calc_model
 from kl_site_server.enums import PxDataCol
 
 if TYPE_CHECKING:
@@ -77,16 +77,17 @@ class PxData:
         self, *,
         pool: "PxDataPool",
         px_data_config: PxDataConfig,
+        calculated_data_cursor: Cursor,
     ):
         self.pool: "PxDataPool" = pool
+
         self.period_min: int = px_data_config.period_min
-        self.strength: int = pool.strength
         self.offset: int | None = px_data_config.offset
 
-        self.dataframe: DataFrame = aggregate_df(pool.dataframe, px_data_config.period_min)
-        self.dataframe = calc_model(self.dataframe, pool.interval_sec, px_data_config)
+        self.dataframe: DataFrame = DataFrame(calculated_data_cursor)
 
         self.sr_levels_data = pool.sr_levels_data
+        self.strength: int = pool.strength
 
     def get_current(self) -> Series:
         return self.get_last_n(1)

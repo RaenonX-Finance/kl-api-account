@@ -1,19 +1,15 @@
 import time
 from collections import defaultdict
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
-from datetime import datetime, timedelta
 from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.calc import calc_strength
-from kl_site_server.db import is_market_closed
-from kl_site_server.utils import MAX_PERIOD
-from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
-from tcoreapi_mq.model import COMPLETE_SYMBOL_TO_SYM_OBJ, FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
+from kl_site_server.db import is_market_closed, store_history_to_db_from_entries
+from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
+from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .entry import PxDataCacheEntry
-from .type import HistoryDataFetcherCallable
 from ..bar_data import to_bar_data_dict_tcoreapi
 from ..px_data import PxData, PxDataConfig
 from ..px_data_update import MarketPxUpdateResult
@@ -21,6 +17,8 @@ from ..px_data_update import MarketPxUpdateResult
 
 @dataclass(kw_only=True)
 class PxDataCache:
+    symbol_obj_in_use: set[SymbolBaseType] = field(init=False, default_factory=set)
+
     data_1k: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
     data_dk: dict[str, PxDataCacheEntry] = field(init=False, default_factory=dict)
 
@@ -33,8 +31,6 @@ class PxDataCache:
 
     buffer_mkt_px: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
 
-    complete_data_request_lock: set[str] = field(init=False, default_factory=set)
-
     def init_entry(
         self, *, symbol_obj: SymbolBaseType, min_tick: float, decimals: int,
         period_mins: list[int], period_days: list[int],
@@ -42,6 +38,7 @@ class PxDataCache:
         symbol_complete = symbol_obj.symbol_complete
 
         self.security_to_symbol_complete[symbol_obj.security] = symbol_complete
+        self.symbol_obj_in_use.add(symbol_obj)
 
         if period_mins:
             self.data_1k[symbol_complete] = PxDataCacheEntry(
@@ -50,6 +47,7 @@ class PxDataCache:
                 min_tick=min_tick,
                 decimals=decimals,
                 data={},
+                interval="1K",
                 interval_sec=60,
             )
             self.period_mins[symbol_complete] = period_mins
@@ -61,15 +59,13 @@ class PxDataCache:
                 min_tick=min_tick,
                 decimals=decimals,
                 data={},
+                interval="DK",
                 interval_sec=86400,
             )
             self.period_days[symbol_complete] = period_days
 
-    def update_complete_data_of_symbol(self, data: HistoryData, *, is_touchance_response: bool) -> None:
+    def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.symbol_complete
-
-        if is_touchance_response:
-            self.complete_data_request_lock.discard(symbol_complete)
 
         print_log(
             f"[Server] Updating [purple]{data.data_len_as_str}[/purple] Px data bars "
@@ -177,98 +173,27 @@ class PxDataCache:
 
         return lookup_1k, lookup_dk
 
-    def _send_data_request_if_needed_and_wait(
-        self,
-        max_group_count: int,
-        px_data_cache_body: dict[str, PxDataCacheEntry],
-        earliest_ts_dict: dict[str, datetime],
-        request_history_data: HistoryDataFetcherCallable,
-        interval: HistoryInterval,
-        symbols_to_include: Iterable[str],
-    ):
-        # x2 because simply using `timedelta` includes weekends, but weekends don't have bars
-        push_back_mins = max_group_count * MAX_PERIOD * 2 * (1440 if interval == "DK" else 1)
-
-        for symbol, px_cache_entry in px_data_cache_body.items():
-            if symbol not in symbols_to_include:
-                continue
-
-            end_ts = earliest_ts_dict[symbol]
-            start_ts = end_ts - timedelta(minutes=push_back_mins)
-
-            self.complete_data_request_lock.add(symbol)
-
-            request_history_data(COMPLETE_SYMBOL_TO_SYM_OBJ[symbol], interval, start_ts, end_ts)
-            print_log(
-                f"[Server] Requested [blue]additional[/blue] history [yellow]{interval}[/yellow] data "
-                f"of [yellow]{symbol}[/yellow] from {start_ts} to {end_ts}"
-            )
-
-        request_sent_epoch_sec = time.time()
-
-        while (
-            any(symbol in self.complete_data_request_lock for symbol in px_data_cache_body.keys()) and
-            time.time() - request_sent_epoch_sec < 10
-        ):
-            print_warning(f"[Server] Waiting additional history data of {self.complete_data_request_lock}")
-            time.sleep(0.5)
-
-        self.complete_data_request_lock = set()
-
-    def get_px_data(
-        self,
-        px_data_configs: Iterable[PxDataConfig],
-        _: HistoryDataFetcherCallable,
-    ) -> list[PxData]:
+    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
         lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
-
-        # FIXME: Temporarily disables as the feature is incomplete, which could disrupt the data
-        # self._send_data_request_if_needed_and_wait(
-        #     max(DATA_PERIOD_MINS, key=lambda entry: entry["min"])["min"],
-        #     self.data_1k,
-        #     {
-        #         symbol: min(configs, key=lambda item: item.earliest_ts).earliest_ts
-        #         for symbol, configs in lookup_1k.items()
-        #     },
-        #     request_history_data,
-        #     "1K",
-        #     lookup_1k.keys(),
-        # )
-        # self._send_data_request_if_needed_and_wait(
-        #     max(DATA_PERIOD_DAYS, key=lambda entry: entry["day"])["day"],
-        #     self.data_dk,
-        #     {
-        #         symbol: min(configs, key=lambda item: item.earliest_ts).earliest_ts
-        #         for symbol, configs in lookup_dk.items()
-        #     },
-        #     request_history_data,
-        #     "DK",
-        #     lookup_dk.keys(),
-        # )
 
         px_data_list = []
 
-        with ThreadPoolExecutor() as executor:
-            futures = [
-                executor.submit(self.data_1k[symbol_complete].to_px_data, px_configs)
-                for symbol_complete, px_configs in lookup_1k.items()
-            ] + [
-                executor.submit(self.data_dk[symbol_complete].to_px_data, px_configs)
-                for symbol_complete, px_configs in lookup_dk.items()
-            ]
-
-            for future in as_completed(futures):
-                px_data_list.extend(future.result())
+        for symbol_complete, px_configs in lookup_1k.items():
+            px_data_list.extend(self.data_1k[symbol_complete].to_px_data(px_configs))
+        for symbol_complete, px_configs in lookup_dk.items():
+            px_data_list.extend(self.data_dk[symbol_complete].to_px_data(px_configs))
 
         return px_data_list
 
+    @staticmethod
     def _make_new_bar(
-        self,
         data: SystemTimeData,
         cache_body: dict[str, PxDataCacheEntry],
         interval: HistoryInterval
     ) -> set[str]:
         securities_created = set()
+
+        new_bars: list[PxHistoryDataEntry] = []
 
         for cache_entry in cache_body.values():
             if is_market_closed(cache_entry.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
@@ -282,8 +207,17 @@ class PxDataCache:
                 f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] "
                 f"in [yellow]{interval}[/yellow] at {data.timestamp}"
             )
-            cache_entry.make_new_bar(data.epoch_sec)
+            last_px = cache_entry.make_new_bar(data.epoch_sec)
+            new_bars.append(PxHistoryDataEntry.from_new_bar(
+                cache_entry.symbol_complete,
+                cache_entry.interval,
+                data.timestamp,
+                last_px
+            ))
+
             securities_created.add(cache_entry.security)
+
+        store_history_to_db_from_entries(new_bars)
 
         return securities_created
 

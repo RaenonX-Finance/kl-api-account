@@ -4,15 +4,18 @@ from typing import Callable
 
 import pymongo
 from bson import ObjectId
+from pandas import DataFrame
 from pymongo.cursor import Cursor
 from pymongo.errors import DuplicateKeyError
 
 from kl_site_common.const import DATA_SOURCES
 from kl_site_common.db import start_mongo_txn
-from kl_site_common.utils import print_log
+from kl_site_common.utils import print_log, split_chunks
+from kl_site_server.enums import PxDataCol
 from kl_site_server.utils import generate_bad_request_exception
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry
-from .const import px_data_col, px_session_col
+from tcoreapi_mq.model import SymbolBaseType
+from .const import px_data_calc_col, px_data_col, px_session_col
 from .model import DbHistoryDataResult, FuturesMarketClosedSessionModel, MarketSessionEntry
 
 
@@ -70,23 +73,80 @@ def get_history_data_from_db_limit_count(
     return _get_history_data_result(get_find_cursor)
 
 
+def get_history_data_from_db_full(
+    symbol_complete: str,
+    interval: HistoryInterval,
+) -> DbHistoryDataResult:
+    print_log(
+        f"[DB-Px] Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
+        "- All bars"
+    )
+
+    def get_find_cursor():
+        return px_data_col.find({
+            "s": symbol_complete,
+            "i": interval
+        })
+
+    return _get_history_data_result(get_find_cursor)
+
+
 def store_history_to_db(data: HistoryData):
     print_log(
         f"[DB-Px] Storing [purple]{data.data_len_as_str}[/purple] history data of "
         f"[yellow]{data.symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
     )
 
-    entries = list(data.to_db_entries())
-    chunk_size = 10000
-    for i in range(0, len(entries), chunk_size):
-        chunk = entries[i:i + chunk_size]
-
+    for chunk in split_chunks(list(data.to_db_entries()), 10000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
                 session=session
             )
             px_data_col.insert_many(chunk, session=session)
+
+
+def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):
+    print_log(f"[DB-Px] Storing [purple]{len(entries)}[/purple] history data entries")
+
+    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], 10000):
+        with start_mongo_txn() as session:
+            px_data_col.delete_many(
+                {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
+                session=session
+            )
+            px_data_col.insert_many(chunk, session=session)
+
+
+def get_calculated_data_from_db(
+    symbol_obj: SymbolBaseType, period_min: int, *,
+    count: int | None = None, offset: int | None = None,
+) -> Cursor:
+    cursor = px_data_calc_col \
+        .find({"s": symbol_obj.symbol_complete, "p": period_min}) \
+        .sort([(PxDataCol.EPOCH_SEC, pymongo.DESCENDING)])
+
+    cursor = cursor.limit((count or 2000) + (offset or 0))
+
+    if offset:
+        cursor = cursor.skip(offset)
+
+    return cursor.sort([(PxDataCol.EPOCH_SEC, pymongo.ASCENDING)])
+
+
+def store_calculated_to_db(
+    symbol_obj: SymbolBaseType, period_min: int, df: DataFrame, *,
+    full: bool,
+):
+    common_filter = {"s": symbol_obj.symbol_complete, "p": period_min}
+
+    for chunk in split_chunks(df.to_dict("records") if full else [df.iloc[-1].to_dict()], 10000):
+        with start_mongo_txn() as session:
+            px_data_calc_col.delete_many(
+                {"$or": [common_filter | {PxDataCol.EPOCH_SEC: entry[PxDataCol.EPOCH_SEC]} for entry in chunk]},
+                session=session
+            )
+            px_data_calc_col.insert_many([common_filter | entry for entry in chunk], session=session)
 
 
 # Keep local backup for faster access and db query count reduction

@@ -1,4 +1,3 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Iterable
@@ -9,7 +8,7 @@ import numpy.typing as npt
 from kl_site_common.utils import print_warning
 from kl_site_server.enums import PxDataCol
 from kl_site_server.model import BarDataDict, PxData, PxDataConfig, PxDataPool
-from tcoreapi_mq.message import RealtimeData, calc_market_date
+from tcoreapi_mq.message import HistoryInterval, RealtimeData, calc_market_date
 
 
 @dataclass(kw_only=True)
@@ -19,6 +18,7 @@ class PxDataCacheEntry:
     min_tick: float
     decimals: int
     data: dict[int, BarDataDict]  # Epoch sec / bar data
+    interval: HistoryInterval
     interval_sec: int
 
     latest_market: RealtimeData | None = field(init=False, default=None)
@@ -64,6 +64,8 @@ class PxDataCacheEntry:
         if self.data:
             # This method could be called with empty `bars`
             self.latest_epoch = max(self.data.keys())
+        else:
+            print_warning(f"[Server] `PxDataCacheEntry.update_all()` called, but `bars` is empty")
 
     def update_latest_market(self, data: RealtimeData):
         """
@@ -105,20 +107,20 @@ class PxDataCacheEntry:
 
         return None
 
-    def make_new_bar(self, epoch_sec: float):
+    def make_new_bar(self, epoch_sec: float) -> float | None:
         if not self.latest_epoch:
             # Data might not be initialized yet - no last bar to "inherit" the data
-            return
+            return None
 
         epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
         epoch_sec_time = epoch_int % 86400
-        last_bar = self.data[self.latest_epoch]
+        last_px = self.data[self.latest_epoch][PxDataCol.CLOSE]
 
         self.data[epoch_int] = {
-            PxDataCol.OPEN: last_bar[PxDataCol.CLOSE],
-            PxDataCol.HIGH: last_bar[PxDataCol.CLOSE],
-            PxDataCol.LOW: last_bar[PxDataCol.CLOSE],
-            PxDataCol.CLOSE: last_bar[PxDataCol.CLOSE],
+            PxDataCol.OPEN: last_px,
+            PxDataCol.HIGH: last_px,
+            PxDataCol.LOW: last_px,
+            PxDataCol.CLOSE: last_px,
             PxDataCol.EPOCH_SEC: epoch_int,
             PxDataCol.EPOCH_SEC_TIME: epoch_sec_time,
             PxDataCol.DATE_MARKET: calc_market_date(
@@ -131,7 +133,12 @@ class PxDataCacheEntry:
         self.latest_epoch = epoch_int
         self.remove_oldest()
 
+        return last_px
+
     def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
+        if not self.is_ready:
+            return []
+
         if self.pool:
             self.pool.update_data(self.data, self.latest_market)
         else:
@@ -144,11 +151,4 @@ class PxDataCacheEntry:
                 interval_sec=self.interval_sec,
             )
 
-        with ThreadPoolExecutor() as executor:
-            return [
-                future.result() for future
-                in as_completed(
-                    executor.submit(self.pool.to_px_data, px_data_config)
-                    for px_data_config in px_data_configs
-                )
-            ]
+        return [self.pool.to_px_data(px_data_config) for px_data_config in px_data_configs]

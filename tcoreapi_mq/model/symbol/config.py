@@ -8,8 +8,6 @@ SOURCE_SYMBOLS: list[FuturesSymbol] = [
     for entry in DATA_SOURCES
 ]
 
-COMPLETE_SYMBOL_TO_SYM_OBJ: dict[str, FuturesSymbol] = {entry.symbol_complete: entry for entry in SOURCE_SYMBOLS}
-
 FUTURES_SECURITY_TO_SYM_OBJ: dict[str, FuturesSymbol] = {
     entry.security: entry for entry in SOURCE_SYMBOLS if isinstance(entry, FuturesSymbol)
 }

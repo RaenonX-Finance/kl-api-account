@@ -1,6 +1,29 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://raw.githubusercontent.com/RaenonX-Finance/kl-site-back/main/config.schema.json",
+  "$defs": {
+    "sr-level-time-pair": {
+      "type": "object",
+      "description": "SR level calculation time-picking basis.",
+      "required": [
+        "open",
+        "close"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "open": {
+          "type": "string",
+          "description": "Regular market opening time. The opening price at this time will used as the reference point.",
+          "format": "time"
+        },
+        "close": {
+          "type": "string",
+          "description": "Regular market closing time. The opening price at this time will used as the reference point.",
+          "format": "time"
+        }
+      }
+    }
+  },
   "title": "KL Site Back Config Schema",
   "type": "object",
   "description": "JSON Schema for the px quoting server config.",
@@ -171,7 +194,8 @@
               "exchange",
               "symbol",
               "name",
-              "session"
+              "session",
+              "sr-level"
             ],
             "additionalProperties": false,
             "properties": {
@@ -254,6 +278,22 @@
                       "description": "Regular market closing time.",
                       "format": "time"
                     }
+                  }
+                }
+              },
+              "sr-level": {
+                "type": "object",
+                "description": "SR level calculation basis.",
+                "required": [
+                  "group"
+                ],
+                "additionalProperties": false,
+                "properties": {
+                  "group": {
+                    "$ref": "#/$defs/sr-level-time-pair"
+                  },
+                  "basic": {
+                    "$ref": "#/$defs/sr-level-time-pair"
                   }
                 }
               }

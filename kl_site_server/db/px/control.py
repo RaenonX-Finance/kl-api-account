@@ -91,6 +91,28 @@ def get_history_data_from_db_full(
     return _get_history_data_result(get_find_cursor)
 
 
+def get_history_data_close_px_from_db(
+    symbol_complete: str,
+    count: int,
+) -> list[float]:
+    return [entry.close for entry in get_history_data_from_db_limit_count(symbol_complete, "1K", count).data]
+
+
+def get_history_data_at_time_from_db(
+    symbol_complete: str,
+    epoch_time_secs: list[int], *,
+    count: int,
+) -> DbHistoryDataResult:
+    def get_find_cursor():
+        return px_data_col.find({
+            "s": symbol_complete,
+            "i": "1K",
+            "et": {"$in": epoch_time_secs}
+        }).sort("ts", pymongo.DESCENDING).limit(count)
+
+    return _get_history_data_result(get_find_cursor)
+
+
 def store_history_to_db(data: HistoryData):
     print_log(
         f"[DB-Px] Storing [purple]{data.data_len_as_str}[/purple] history data of "

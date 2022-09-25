@@ -30,6 +30,10 @@ data:
         - weekdays: [6, 0, 1, 2, 3]
           start: '22:00'
           end: '21:00'
+      sr-level:
+        group:
+          open: '13:30'
+          close: '20:00'
     - type: Futures
       type-market-date: US Index Futures
       exchange: CBOT
@@ -40,6 +44,10 @@ data:
         - weekdays: [6, 0, 1, 2, 3]
           start: '22:00'
           end: '21:00'
+      sr-level:
+        group:
+          open: '13:30'
+          close: '20:00'
     - type: Futures
       type-market-date: FITX
       exchange: TWF
@@ -53,6 +61,13 @@ data:
         - weekdays: [0, 1, 2, 3, 4]
           start: '07:00'
           end: '21:00'
+      sr-level:
+        group:
+          open: '00:45'
+          close: '05:30'
+        basic:
+          open: '07:00'
+          close: '05:30'
   period:
     min:
       - min: 1

@@ -47,9 +47,3 @@ def calculate_indicators_partial(period_min: int, df: DataFrame) -> DataFrame:
     df = calc_ema_last(df, INDICATOR_EMA_PERIODS)
 
     return df
-
-
-def calc_pool(df_1k: DataFrame) -> DataFrame:
-    calc_set_epoch_index(df_1k)
-
-    return df_1k

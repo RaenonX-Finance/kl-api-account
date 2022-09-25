@@ -12,7 +12,7 @@ from kl_site_server.enums import PxDataCol
 
 if TYPE_CHECKING:
     from kl_site_server.db import UserConfigModel
-    from kl_site_server.model import PxDataPool, RequestPxMessageSingle
+    from kl_site_server.model import PxDataCommon, RequestPxMessageSingle
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -75,19 +75,16 @@ class PxDataConfig:
 class PxData:
     def __init__(
         self, *,
-        pool: "PxDataPool",
+        common: "PxDataCommon",
         px_data_config: PxDataConfig,
         calculated_data_cursor: Cursor,
     ):
-        self.pool: "PxDataPool" = pool
+        self.common: "PxDataCommon" = common
 
         self.period_min: int = px_data_config.period_min
         self.offset: int | None = px_data_config.offset
 
         self.dataframe: DataFrame = DataFrame(calculated_data_cursor)
-
-        self.sr_levels_data = pool.sr_levels_data
-        self.strength: int = pool.strength
 
     def get_current(self) -> Series:
         return self.get_last_n(1)
@@ -96,7 +93,7 @@ class PxData:
         return self.dataframe.iloc[-n]
 
     def save_to_file(self):
-        file_path = f"data-{self.pool.security}@{self.period_min}.csv"
+        file_path = f"data-{self.common.security}@{self.period_min}.csv"
         self.dataframe.to_csv(file_path)
 
         print_log(f"[yellow]Px data saved to {file_path}[/yellow]")
@@ -117,7 +114,7 @@ class PxData:
 
     @property
     def unique_identifier(self) -> str:
-        return f"{self.pool.security}@{self.period_min}"
+        return f"{self.common.security}@{self.period_min}"
 
     @property
     def data_count(self):

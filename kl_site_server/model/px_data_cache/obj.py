@@ -5,7 +5,7 @@ from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
-from kl_site_server.calc import calc_strength
+from kl_site_server.calc import CALC_STRENGTH_BARS_NEEDED, calc_strength
 from kl_site_server.db import is_market_closed, store_history_to_db_from_entries
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
@@ -24,11 +24,6 @@ class PxDataCache:
 
     last_market_send: float = field(init=False, default=0)
 
-    period_mins: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
-    period_days: DefaultDict[str, list[int]] = field(init=False, default_factory=lambda: defaultdict(list))
-
-    security_to_symbol_complete: dict[str, str] = field(init=False, default_factory=dict)
-
     buffer_mkt_px: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
 
     def init_entry(
@@ -37,7 +32,6 @@ class PxDataCache:
     ) -> None:
         symbol_complete = symbol_obj.symbol_complete
 
-        self.security_to_symbol_complete[symbol_obj.security] = symbol_complete
         self.symbol_obj_in_use.add(symbol_obj)
 
         if period_mins:
@@ -50,7 +44,6 @@ class PxDataCache:
                 interval="1K",
                 interval_sec=60,
             )
-            self.period_mins[symbol_complete] = period_mins
 
         if period_days:
             self.data_dk[symbol_complete] = PxDataCacheEntry(
@@ -62,7 +55,9 @@ class PxDataCache:
                 interval="DK",
                 interval_sec=86400,
             )
-            self.period_days[symbol_complete] = period_days
+
+    def get_last_n_of_close_px(self, security: str, count: int):
+        return self.data_1k[FUTURES_SECURITY_TO_SYM_OBJ[security].symbol_complete].get_last_n_of_close_px(count)
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.symbol_complete
@@ -118,10 +113,7 @@ class PxDataCache:
             force_send_reason=reason,
             data=market_px_data,
             strength={
-                security: calc_strength(
-                    # `calc_strength` needs 50 bars only for current setup
-                    self.data_1k[FUTURES_SECURITY_TO_SYM_OBJ[security].symbol_complete].get_last_n_of_close_px(70)
-                )
+                security: calc_strength(self.get_last_n_of_close_px(security, CALC_STRENGTH_BARS_NEEDED))
                 for security in market_px_data.keys()
             }
         )
@@ -148,25 +140,17 @@ class PxDataCache:
 
         return all(self.is_px_data_ready(symbol_complete) for symbol_complete in symbols)
 
+    @staticmethod
     def _get_px_data_config_to_lookup(
-        self, px_data_configs: Iterable[PxDataConfig]
+        px_data_configs: Iterable[PxDataConfig]
     ) -> tuple[DefaultDict[str, list[PxDataConfig]], DefaultDict[str, list[PxDataConfig]]]:
         lookup_1k: DefaultDict[str, list[PxDataConfig]] = defaultdict(list)
         lookup_dk: DefaultDict[str, list[PxDataConfig]] = defaultdict(list)
 
         for px_data_config in px_data_configs:
-            security = px_data_config.security
-            period_min = px_data_config.period_min
-            offset = px_data_config.offset
+            symbol_complete = FUTURES_SECURITY_TO_SYM_OBJ[px_data_config.security].symbol_complete
 
-            if not (symbol_complete := self.security_to_symbol_complete.get(security)):
-                print_warning(
-                    f"Attempt to get the uninitialized Px data of [yellow]{security}[/yellow] @ {period_min}"
-                    f"{f' (-{offset})' if offset else ''}"
-                )
-                continue
-
-            if period_min >= 1440:
+            if px_data_config.period_min >= 1440:
                 lookup_dk[symbol_complete].append(px_data_config)
             else:
                 lookup_1k[symbol_complete].append(px_data_config)

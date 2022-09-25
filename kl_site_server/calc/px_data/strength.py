@@ -1,6 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 
+CALC_STRENGTH_BARS_NEEDED = 70
 
 def _calc_strength_single(close_px: npt.NDArray[float], short_period: int, long_period: int) -> int:
     last_close = close_px[-1]

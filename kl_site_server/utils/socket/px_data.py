@@ -6,7 +6,7 @@ from kl_site_common.const import (
 from kl_site_common.utils import print_warning
 from kl_site_server.enums import PxDataCol
 from .px_data_market import PxDataMarketSingle, from_realtime_data_single
-from .utils import df_rows_to_list_of_data, dump_and_compress
+from .utils import data_rename_col, dump_and_compress
 
 if TYPE_CHECKING:
     from kl_site_server.model import PxData
@@ -93,11 +93,11 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
         for period in INDICATOR_EMA_PERIODS
     }
 
-    if not len(px_data.dataframe):
-        print_warning(f"[Socket] Px data of `{px_data.unique_identifier}` does not contain any bar")
+    if not px_data.data:
+        print_warning(f"[Socket] Px data of `{px_data.unique_identifier}` does not contain any data")
         return []
 
-    return df_rows_to_list_of_data(px_data.dataframe, columns)
+    return data_rename_col(px_data.data, columns)
 
 
 def _from_px_data_support_resistance(px_data: "PxData") -> PxDataSupportResistance:

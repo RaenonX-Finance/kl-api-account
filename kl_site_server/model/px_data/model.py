@@ -3,16 +3,12 @@ from datetime import datetime
 from math import ceil
 from typing import Iterable, TYPE_CHECKING
 
-from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
 from pymongo.command_cursor import CommandCursor
 
-from kl_site_common.utils import print_log
-from kl_site_server.enums import PxDataCol
-
 if TYPE_CHECKING:
     from kl_site_server.db import UserConfigModel
-    from kl_site_server.model import PxDataCommon, RequestPxMessageSingle
+    from kl_site_server.model import BarDataDict, PxDataCommon, RequestPxMessageSingle
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -81,41 +77,17 @@ class PxData:
     ):
         self.common: "PxDataCommon" = common
 
+        self.data: list["BarDataDict"] = list(calculated_data_cursor)
+
         self.period_min: int = px_data_config.period_min
         self.offset: int | None = px_data_config.offset
 
-        self.dataframe: DataFrame = DataFrame(calculated_data_cursor)
-
-    def get_current(self) -> Series:
+    def get_current(self) -> "BarDataDict":
         return self.get_last_n(1)
 
-    def get_last_n(self, n: int) -> Series:
-        return self.dataframe.iloc[-n]
-
-    def save_to_file(self):
-        file_path = f"data-{self.common.security}@{self.period_min}.csv"
-        self.dataframe.to_csv(file_path)
-
-        print_log(f"[yellow]Px data saved to {file_path}[/yellow]")
-
-        return file_path
-
-    @property
-    def earliest_time(self) -> datetime:
-        return self.dataframe[PxDataCol.DATE].min()
-
-    @property
-    def latest_time(self) -> datetime:
-        return self.dataframe[PxDataCol.DATE].max()
-
-    @property
-    def current_close(self) -> float:
-        return self.get_current()[PxDataCol.CLOSE]
+    def get_last_n(self, n: int) -> "BarDataDict":
+        return self.data[-n]
 
     @property
     def unique_identifier(self) -> str:
         return f"{self.common.security}@{self.period_min}"
-
-    @property
-    def data_count(self):
-        return len(self.dataframe)

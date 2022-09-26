@@ -2,13 +2,15 @@ import json
 import zlib
 from typing import Any
 
-from pandas import DataFrame
-
 from kl_site_common.utils import JSONEncoder
+from kl_site_server.model import BarDataDict
 
 
-def df_rows_to_list_of_data(df: DataFrame, columns: dict[str, str]) -> list[dict[str, Any]]:
-    return df.rename(columns=columns)[columns.values()].to_dict("records")
+def data_rename_col(data: list[BarDataDict], columns: dict[str, str]) -> list[dict[str, int | float]]:
+    return [
+        {columns[k]: v for k, v in elem.items() if k in columns}
+        for elem in data
+    ]
 
 
 def dump_and_compress(data: Any) -> bytes:

@@ -6,3 +6,4 @@ from .func_exec import execute_async_function
 from .json_encoder import JSONEncoder
 from .system import set_current_process_to_highest_priority
 from .time_ import time_to_total_seconds, time_str_to_utc_time
+from .timer import ExecTimer

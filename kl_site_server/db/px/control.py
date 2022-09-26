@@ -5,6 +5,7 @@ from typing import Callable
 import pymongo
 from bson import ObjectId
 from pandas import DataFrame
+from pymongo.command_cursor import CommandCursor
 from pymongo.cursor import Cursor
 from pymongo.errors import DuplicateKeyError
 
@@ -143,17 +144,34 @@ def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):
 def get_calculated_data_from_db(
     symbol_obj: SymbolBaseType, period_min: int, *,
     count: int | None = None, offset: int | None = None,
-) -> Cursor:
-    cursor = px_data_calc_col \
-        .find({"s": symbol_obj.symbol_complete, "p": period_min}) \
-        .sort([(PxDataCol.EPOCH_SEC, pymongo.DESCENDING)])
-
-    cursor = cursor.limit((count or 2000) + (offset or 0))
+) -> CommandCursor:
+    aggr_stages = [
+        {
+            "$match": {
+                "s": symbol_obj.symbol_complete,
+                "p": period_min
+            }
+        },
+        {
+            "$sort": {
+                PxDataCol.EPOCH_SEC: pymongo.DESCENDING
+            }
+        },
+        {
+            "$limit": (count or 2000) + (offset or 0)
+        }
+    ]
 
     if offset:
-        cursor = cursor.skip(offset)
+        aggr_stages.append({"$skip": offset})
 
-    return cursor.sort([(PxDataCol.EPOCH_SEC, pymongo.ASCENDING)])
+    aggr_stages.append({
+        "$sort": {
+            PxDataCol.EPOCH_SEC: pymongo.DESCENDING
+        }
+    })
+
+    return px_data_calc_col.aggregate(aggr_stages)
 
 
 def store_calculated_to_db(

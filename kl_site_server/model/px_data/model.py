@@ -5,7 +5,7 @@ from typing import Iterable, TYPE_CHECKING
 
 from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
-from pymongo.cursor import Cursor
+from pymongo.command_cursor import CommandCursor
 
 from kl_site_common.utils import print_log
 from kl_site_server.enums import PxDataCol
@@ -77,7 +77,7 @@ class PxData:
         self, *,
         common: "PxDataCommon",
         px_data_config: PxDataConfig,
-        calculated_data_cursor: Cursor,
+        calculated_data_cursor: CommandCursor,
     ):
         self.common: "PxDataCommon" = common
 

@@ -1,6 +1,6 @@
 import time
 from datetime import datetime
-from typing import Callable
+from typing import Callable, NamedTuple
 
 import pymongo
 from bson import ObjectId
@@ -120,7 +120,7 @@ def store_history_to_db(data: HistoryData):
         f"[yellow]{data.symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
     )
 
-    for chunk in split_chunks(list(data.to_db_entries()), 10000):
+    for chunk in split_chunks(list(data.to_db_entries()), chunk_size=10000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
@@ -132,7 +132,7 @@ def store_history_to_db(data: HistoryData):
 def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):
     print_log(f"[DB-Px] Storing [purple]{len(entries)}[/purple] history data entries")
 
-    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], 10000):
+    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], chunk_size=10000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
@@ -174,19 +174,38 @@ def get_calculated_data_from_db(
     return px_data_calc_col.aggregate(aggr_stages)
 
 
-def store_calculated_to_db(
-    symbol_obj: SymbolBaseType, period_min: int, df: DataFrame, *,
-    full: bool,
-):
-    common_filter = {"s": symbol_obj.symbol_complete, "p": period_min}
+class StoreCalculatedDataArgs(NamedTuple):
+    symbol_obj: SymbolBaseType
+    period_min: int
+    df: DataFrame
+    full: bool
 
-    for chunk in split_chunks(df.to_dict("records") if full else [df.iloc[-1].to_dict()], 10000):
+
+def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
+    if not args:
+        return
+
+    all_del_conditions = []
+    all_recs_insert = []
+    for (symbol_obj, period_min, df, full) in args:
+        common_filter = {"s": symbol_obj.symbol_complete, "p": period_min}
+        recs = df.to_dict("records") if full else [df.iloc[-1].to_dict()]
+
+        all_del_conditions.extend(
+            common_filter | {PxDataCol.EPOCH_SEC: rec[PxDataCol.EPOCH_SEC]}
+            for rec in recs
+        )
+        all_recs_insert.extend(common_filter | rec for rec in recs)
+
+    print_log(
+        f"[DB-Px] Storing [purple]{len(all_recs_insert)}[/purple] calculated data of "
+        f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/yellow]"
+    )
+
+    for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=10000):
         with start_mongo_txn() as session:
-            px_data_calc_col.delete_many(
-                {"$or": [common_filter | {PxDataCol.EPOCH_SEC: entry[PxDataCol.EPOCH_SEC]} for entry in chunk]},
-                session=session
-            )
-            px_data_calc_col.insert_many([common_filter | entry for entry in chunk], session=session)
+            px_data_calc_col.delete_many({"$or": del_conditions}, session=session)
+            px_data_calc_col.insert_many(recs_insert, session=session)
 
 
 # Keep local backup for faster access and db query count reduction

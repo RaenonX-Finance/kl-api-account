@@ -1,10 +1,9 @@
 import asyncio
 import threading
 import time
-from collections import namedtuple
 from datetime import datetime, timedelta
 from itertools import product
-from typing import Iterator
+from typing import Iterator, NamedTuple
 
 from pandas import DataFrame
 
@@ -15,7 +14,8 @@ from kl_site_server.app import (
 )
 from kl_site_server.calc import calculate_indicators_full, calculate_indicators_partial
 from kl_site_server.db import (
-    get_calculated_data_from_db, get_history_data_from_db_full, get_history_data_from_db_timeframe, is_market_closed,
+    StoreCalculatedDataArgs, get_calculated_data_from_db, get_history_data_from_db_full,
+    get_history_data_from_db_timeframe, is_market_closed,
     store_calculated_to_db, store_history_to_db,
 )
 from kl_site_server.model import (
@@ -27,7 +27,10 @@ from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import SymbolBaseType
 
-PeriodIntervalPair = namedtuple("PeriodIntervalPair", ["period_min", "interval"])
+
+class PeriodIntervalPair(NamedTuple):
+    period_min: int
+    interval: HistoryInterval
 
 
 class TouchanceDataClient(TouchanceApiClient):
@@ -36,6 +39,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
+        self._update_calculated_data_lock: threading.Lock = threading.Lock()
 
         threading.Thread(target=self._history_data_refetcher).start()
 
@@ -119,39 +123,51 @@ class TouchanceDataClient(TouchanceApiClient):
         return period_min_set
 
     def _update_calculated_data(self) -> None:
-        def get_history_data(key: tuple[SymbolBaseType, HistoryInterval]) -> list[PxHistoryDataEntry]:
-            symbol_obj_, interval = key
-            return get_history_data_from_db_full(symbol_obj_.symbol_complete, interval).data
+        def update_calculated_data_thread() -> None:
+            if self._update_calculated_data_lock.locked():
+                return
 
-        period_pairs = self._get_params_period_min()
-        history_data_cache = DataCache(get_history_data)
-        product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalPair]] = product(
-            self._px_data_cache.symbol_obj_in_use,
-            period_pairs
-        )
+            with self._update_calculated_data_lock:
+                def get_history_data(key: tuple[SymbolBaseType, HistoryInterval]) -> list[PxHistoryDataEntry]:
+                    symbol_obj_, interval = key
+                    return get_history_data_from_db_full(symbol_obj_.symbol_complete, interval).data
 
-        for symbol_obj, period_pair in product_gen:
-            cached_calculated_data = list(get_calculated_data_from_db(
-                symbol_obj, period_pair.period_min, count=MAX_PERIOD_NO_EMA
-            ))
-            full_update = not cached_calculated_data
-
-            calculated_df = None
-            if cached_calculated_data:
-                calculated_df = calculate_indicators_partial(
-                    period_pair.period_min,
-                    DataFrame(cached_calculated_data)
+                period_pairs = self._get_params_period_min()
+                history_data_cache = DataCache(get_history_data)
+                product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalPair]] = product(
+                    self._px_data_cache.symbol_obj_in_use,
+                    period_pairs
                 )
-            elif data_recs := history_data_cache.get_value((symbol_obj, period_pair.interval)):
-                calculated_df = calculate_indicators_full(period_pair.period_min, data_recs)
+                store_calculated_args: list[StoreCalculatedDataArgs] = []
 
-            if calculated_df is not None:
-                store_calculated_to_db(symbol_obj, period_pair.period_min, calculated_df, full=full_update)
-            else:
-                print_warning(
-                    "[TC Client] No history or cached calculated data available "
-                    f"for [bold]{symbol_obj.symbol_complete}[/bold]@{period_pair.period_min}"
-                )
+                for symbol_obj, period_pair in product_gen:
+                    cached_calculated_data = list(get_calculated_data_from_db(
+                        symbol_obj, period_pair.period_min, count=MAX_PERIOD_NO_EMA
+                    ))
+                    full_update = not cached_calculated_data
+
+                    calculated_df = None
+                    if cached_calculated_data:
+                        calculated_df = calculate_indicators_partial(
+                            period_pair.period_min,
+                            DataFrame(cached_calculated_data)
+                        )
+                    elif data_recs := history_data_cache.get_value((symbol_obj, period_pair.interval)):
+                        calculated_df = calculate_indicators_full(period_pair.period_min, data_recs)
+
+                    if calculated_df is not None:
+                        store_calculated_args.append(StoreCalculatedDataArgs(
+                            symbol_obj, period_pair.period_min, calculated_df, full_update
+                        ))
+                    else:
+                        print_warning(
+                            "[TC Client] No history or cached calculated data available "
+                            f"for [bold]{symbol_obj.symbol_complete}[/bold]@{period_pair.period_min}"
+                        )
+
+                store_calculated_to_db(store_calculated_args)
+
+        threading.Thread(target=update_calculated_data_thread).start()
 
     def on_received_history_data(self, data: HistoryData) -> None:
         print_log(

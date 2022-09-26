@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pandas import DataFrame
 
-from kl_site_server.calc import calc_ema_full, calc_ema_last
+from kl_site_server.calc.px_data_fields.ema import calc_ema_full, calc_ema_last
 from kl_site_server.enums import PxDataCol
 
 

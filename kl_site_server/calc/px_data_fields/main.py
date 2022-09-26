@@ -4,8 +4,8 @@ import numpy as np
 from pandas import DataFrame
 
 from kl_site_common.const import INDICATOR_EMA_PERIODS
-from .candlestick import calc_candlestick
-from .diff import calc_diff
+from .candlestick import calc_candlestick_full, calc_candlestick_last
+from .diff import calc_diff_full, calc_diff_last
 from .ema import calc_ema_full, calc_ema_last
 from .index import calc_set_epoch_index
 from .tie_point import calc_tie_point
@@ -29,8 +29,8 @@ def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> Dat
     calc_set_epoch_index(df)
     df = aggregate_df(df, period_min)
 
-    df = calc_diff(df)
-    df = calc_candlestick(df)
+    df = calc_diff_full(df)
+    df = calc_candlestick_full(df)
     df = calc_tie_point(df, period_min)
     df = calc_ema_full(df, INDICATOR_EMA_PERIODS)
 
@@ -41,8 +41,8 @@ def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> Dat
 def calculate_indicators_partial(period_min: int, df: DataFrame) -> DataFrame:
     calc_set_epoch_index(df)
 
-    df = calc_diff(df)
-    df = calc_candlestick(df)
+    df = calc_diff_last(df)
+    df = calc_candlestick_last(df)
     df = calc_tie_point(df, period_min)
     df = calc_ema_last(df, INDICATOR_EMA_PERIODS)
 

@@ -1,12 +1,13 @@
 import json
 import zlib
-from typing import Any
+from typing import Any, TYPE_CHECKING
 
 from kl_site_common.utils import JSONEncoder
-from kl_site_server.model import BarDataDict
+if TYPE_CHECKING:
+    from kl_site_server.model import BarDataDict
 
 
-def data_rename_col(data: list[BarDataDict], columns: dict[str, str]) -> list[dict[str, int | float]]:
+def data_rename_col(data: list["BarDataDict"], columns: dict[str, str]) -> list[dict[str, int | float]]:
     return [
         {columns[k]: v for k, v in elem.items() if k in columns}
         for elem in data

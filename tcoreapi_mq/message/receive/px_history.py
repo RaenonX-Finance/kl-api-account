@@ -121,7 +121,7 @@ class PxHistoryDataEntry:
         )
 
     @classmethod
-    def from_new_bar(
+    def make_new_bar(
         cls,
         symbol_complete: str,
         interval: HistoryInterval,

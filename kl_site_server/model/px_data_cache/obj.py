@@ -192,7 +192,7 @@ class PxDataCache:
                 f"in [yellow]{interval}[/yellow] at {data.timestamp}"
             )
             last_px = cache_entry.make_new_bar(data.epoch_sec)
-            new_bars.append(PxHistoryDataEntry.from_new_bar(
+            new_bars.append(PxHistoryDataEntry.make_new_bar(
                 cache_entry.symbol_complete,
                 cache_entry.interval,
                 data.timestamp,

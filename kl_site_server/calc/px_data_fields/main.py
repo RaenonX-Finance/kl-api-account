@@ -1,9 +1,9 @@
 from typing import Any
 
-import numpy as np
 from pandas import DataFrame
 
 from kl_site_common.const import INDICATOR_EMA_PERIODS
+from kl_site_common.utils import df_fill_na_with_none
 from .candlestick import calc_candlestick_full, calc_candlestick_last
 from .diff import calc_diff_full, calc_diff_last
 from .ema import calc_ema_full, calc_ema_last
@@ -12,17 +12,7 @@ from .tie_point import calc_tie_point
 from ..px_data import aggregate_df
 
 
-def df_fill_na(func):
-    def wrapper(*args, **kwargs):
-        df = func(*args, **kwargs)
-        df = df.fillna(np.nan)
-
-        return df
-
-    return wrapper
-
-
-@df_fill_na
+@df_fill_na_with_none
 def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> DataFrame:
     df = DataFrame(data_recs)
 
@@ -37,7 +27,7 @@ def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> Dat
     return df
 
 
-@df_fill_na
+@df_fill_na_with_none
 def calculate_indicators_partial(period_min: int, df: DataFrame) -> DataFrame:
     calc_set_epoch_index(df)
 

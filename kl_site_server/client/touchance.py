@@ -3,16 +3,21 @@ import threading
 import time
 from datetime import datetime, timedelta
 from itertools import product
-from typing import Callable, Iterator, NamedTuple
+from typing import Callable, Iterable, Iterator, NamedTuple
 
 from pandas import DataFrame
 
-from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR, DATA_PX_REFETCH_INTERVAL_SEC
+from kl_site_common.const import (
+    DATA_PX_REFETCH_BACKWARD_HOUR,
+    DATA_PX_REFETCH_INTERVAL_SEC,
+)
 from kl_site_common.utils import DataCache, execute_async_function, print_log, print_warning
 from kl_site_server.app import (
     on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )
-from kl_site_server.calc import calculate_indicators_full, calculate_indicators_partial
+from kl_site_server.calc import (
+    calculate_indicators_full, calculate_indicators_partial,
+)
 from kl_site_server.db import (
     StoreCalculatedDataArgs, get_calculated_data_from_db, get_history_data_from_db_full,
     get_history_data_from_db_limit_count, get_history_data_from_db_timeframe, is_market_closed,
@@ -22,7 +27,7 @@ from kl_site_server.model import (
     OnErrorEvent, OnMarketDataReceivedEvent,
     PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams,
 )
-from kl_site_server.utils import MAX_PERIOD_NO_EMA
+from kl_site_server.utils import MAX_PERIOD, MAX_PERIOD_NO_EMA
 from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import SymbolBaseType
@@ -43,9 +48,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         threading.Thread(target=self._history_data_refetcher).start()
 
-        self._calc_data_update()
-
-    def request_px_data(self, params: TouchancePxRequestParams) -> None:
+    def request_px_data(self, params: TouchancePxRequestParams, *, re_calc_data: bool) -> None:
         if not params.period_mins and not params.period_days:
             raise ValueError("Both `period_mins` or `period_days` in `params` cannot be 0 length at the same time")
 
@@ -67,6 +70,10 @@ class TouchanceDataClient(TouchanceApiClient):
 
         if params.period_days:
             self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
+
+        # Needs to be placed before `subscribe_realtime`
+        if re_calc_data:
+            self.re_calc_data_of_symbol(params.symbol_obj)
 
         self.subscribe_realtime(params.symbol_obj)
 
@@ -126,29 +133,27 @@ class TouchanceDataClient(TouchanceApiClient):
         self,
         fn_get_history_data: Callable[[tuple[SymbolBaseType, HistoryInterval]], list[PxHistoryDataEntry]],
         fn_get_cached_calculated_data: Callable[[SymbolBaseType, PeriodIntervalPair], tuple[list[dict] | None, bool]],
+        symbols: Iterable[SymbolBaseType],
+        *, use_thread: bool
     ) -> None:
-        def update_calculated_data_thread() -> None:
+        def update_calculated_data_exec() -> None:
             if self._update_calculated_data_lock.locked():
                 return
 
             with self._update_calculated_data_lock:
                 period_pairs = self._get_params_period_min()
                 history_data_cache = DataCache(fn_get_history_data)
-                product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalPair]] = product(
-                    self._px_data_cache.symbol_obj_in_use,
-                    period_pairs
-                )
+                product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalPair]] = product(symbols, period_pairs)
                 store_calculated_args: list[StoreCalculatedDataArgs] = []
 
                 for symbol_obj, period_pair in product_gen:
                     cached_calculated_data, full_update = fn_get_cached_calculated_data(symbol_obj, period_pair)
+                    cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
 
                     calculated_df = None
-                    if cached_calculated_data:
-                        calculated_df = calculate_indicators_partial(
-                            period_pair.period_min,
-                            DataFrame(cached_calculated_data)
-                        )
+                    # Calculated data might not have newer bars
+                    if cached_calculated_df is not None:
+                        calculated_df = calculate_indicators_partial(period_pair.period_min, cached_calculated_df)
                     elif data_recs := history_data_cache.get_value((symbol_obj, period_pair.interval)):
                         calculated_df = calculate_indicators_full(period_pair.period_min, data_recs)
 
@@ -164,26 +169,33 @@ class TouchanceDataClient(TouchanceApiClient):
 
                 store_calculated_to_db(store_calculated_args)
 
-        threading.Thread(target=update_calculated_data_thread).start()
+        if use_thread:
+            threading.Thread(target=update_calculated_data_exec).start()
+        else:
+            update_calculated_data_exec()
 
     def _calc_data_make_new_bar(self) -> None:
         def get_history_data(key: tuple[SymbolBaseType, HistoryInterval]) -> list[PxHistoryDataEntry]:
             symbol_obj_, interval = key
-            return get_history_data_from_db_limit_count(
+            data = get_history_data_from_db_limit_count(
                 symbol_obj_.symbol_complete,
                 interval,
                 MAX_PERIOD_NO_EMA
             ).data
 
+            return data
+
         def get_cached_calculated_data(_: SymbolBaseType, __: PeriodIntervalPair) -> tuple[list[dict] | None, bool]:
             return None, True
 
-        threading.Thread(
-            target=self._calc_data_update_common,
-            args=(get_history_data, get_cached_calculated_data),
-        ).start()
+        self._calc_data_update_common(
+            get_history_data,
+            get_cached_calculated_data,
+            self._px_data_cache.symbol_obj_in_use,
+            use_thread=True
+        )
 
-    def _calc_data_update(self) -> None:
+    def _calc_data_update_last(self) -> None:
         def get_history_data(key: tuple[SymbolBaseType, HistoryInterval]) -> list[PxHistoryDataEntry]:
             symbol_obj_, interval = key
             return get_history_data_from_db_full(symbol_obj_.symbol_complete, interval).data
@@ -193,16 +205,36 @@ class TouchanceDataClient(TouchanceApiClient):
             period_pair: PeriodIntervalPair
         ) -> tuple[list[dict] | None, bool]:
             cached_calculated_data = list(get_calculated_data_from_db(
-                symbol_obj, period_pair.period_min, count=MAX_PERIOD_NO_EMA
+                symbol_obj, period_pair.period_min,
+                count=MAX_PERIOD
             ))
             full_update = not cached_calculated_data
 
             return cached_calculated_data, full_update
 
-        threading.Thread(
-            target=self._calc_data_update_common,
-            args=(get_history_data, get_cached_calculated_data),
-        ).start()
+        self._calc_data_update_common(
+            get_history_data,
+            get_cached_calculated_data,
+            self._px_data_cache.symbol_obj_in_use,
+            use_thread=True
+        )
+
+    def re_calc_data_of_symbol(self, symbol_obj: SymbolBaseType) -> None:
+        def get_history_data(key: tuple[SymbolBaseType, HistoryInterval]) -> list[PxHistoryDataEntry]:
+            symbol_obj_, interval = key
+            return get_history_data_from_db_full(symbol_obj_.symbol_complete, interval).data
+
+        def get_cached_calculated_data(_: SymbolBaseType, __: PeriodIntervalPair) -> tuple[None, bool]:
+            return None, True
+
+        print_log(f"[TC Client] [blue]Started data re-calculation of [yellow]{symbol_obj.security}[/yellow][/blue]")
+        self._calc_data_update_common(
+            get_history_data,
+            get_cached_calculated_data,
+            {symbol_obj},
+            use_thread=False
+        )
+        print_log(f"[TC Client] [blue]Completed data re-calculation of [yellow]{symbol_obj.security}[/yellow][/blue]")
 
     def on_received_history_data(self, data: HistoryData) -> None:
         print_log(
@@ -212,7 +244,7 @@ class TouchanceDataClient(TouchanceApiClient):
         store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
-        self._calc_data_update()
+        self._calc_data_update_last()
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
@@ -229,7 +261,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
             if params.should_re_request:
                 print_warning(f"[TC Client] Re-requesting Px data of {data.security}")
-                self.request_px_data(params)
+                self.request_px_data(params, re_calc_data=False)
 
             return
 
@@ -244,7 +276,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 f"Reason: [blue]{update_result.force_send_reason}[/blue]"
             )
 
-        self._calc_data_update()
+        self._calc_data_update_last()
         execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:

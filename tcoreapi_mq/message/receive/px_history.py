@@ -126,7 +126,7 @@ class PxHistoryDataEntry:
         symbol_complete: str,
         interval: HistoryInterval,
         ts: datetime,
-        px: float
+        px: float,
     ) -> "PxHistoryDataEntry":
         epoch_sec, epoch_sec_time = cls._ts_to_epoch(ts)
 

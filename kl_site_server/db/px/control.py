@@ -159,17 +159,16 @@ def get_calculated_data_from_db(
         },
         {
             "$limit": (count or 2000) + (offset or 0)
-        }
+        },
+        {
+            "$sort": {
+                PxDataCol.EPOCH_SEC: pymongo.ASCENDING
+            }
+        },
     ]
 
     if offset:
         aggr_stages.append({"$skip": offset})
-
-    aggr_stages.append({
-        "$sort": {
-            PxDataCol.EPOCH_SEC: pymongo.DESCENDING
-        }
-    })
 
     return px_data_calc_col.aggregate(aggr_stages)
 

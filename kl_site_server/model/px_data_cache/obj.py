@@ -187,11 +187,16 @@ class PxDataCache:
                 )
                 continue
 
+            last_px = cache_entry.make_new_bar(data.epoch_sec)
+
+            if not last_px:
+                continue
+
             print_log(
                 f"[Server] Creating new bar for [yellow]{cache_entry.security}[/yellow] "
                 f"in [yellow]{interval}[/yellow] at {data.timestamp}"
             )
-            last_px = cache_entry.make_new_bar(data.epoch_sec)
+
             new_bars.append(PxHistoryDataEntry.make_new_bar(
                 cache_entry.symbol_complete,
                 cache_entry.interval,

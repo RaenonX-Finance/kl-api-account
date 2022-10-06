@@ -34,7 +34,7 @@ def start_server_app(
             history_range_dk=(latest_date - timedelta(days=DATA_DOWNLOAD_DK), latest_date),
         )
 
-        client.request_px_data(params)
+        client.request_px_data(params, re_calc_data=True)
 
     register_handlers(client)
     register_api_routes()

@@ -133,11 +133,12 @@ class TouchanceDataClient(TouchanceApiClient):
         self,
         fn_get_history_data: Callable[[tuple[SymbolBaseType, HistoryInterval]], list[PxHistoryDataEntry]],
         fn_get_cached_calculated_data: Callable[[SymbolBaseType, PeriodIntervalPair], tuple[list[dict] | None, bool]],
-        symbols: Iterable[SymbolBaseType],
-        *, use_thread: bool
+        symbols: Iterable[SymbolBaseType], *,
+        use_thread: bool,
+        skip_if_locked: bool = True,
     ) -> None:
         def update_calculated_data_exec() -> None:
-            if self._update_calculated_data_lock.locked():
+            if skip_if_locked and self._update_calculated_data_lock.locked():
                 return
 
             with self._update_calculated_data_lock:
@@ -192,7 +193,8 @@ class TouchanceDataClient(TouchanceApiClient):
             get_history_data,
             get_cached_calculated_data,
             self._px_data_cache.symbol_obj_in_use,
-            use_thread=True
+            use_thread=False,  # Can't be threaded, or new minute bar won't report correctly
+            skip_if_locked=False,
         )
 
     def _calc_data_update_last(self) -> None:

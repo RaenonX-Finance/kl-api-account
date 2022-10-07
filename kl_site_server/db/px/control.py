@@ -65,13 +65,34 @@ def get_history_data_from_db_limit_count(
         f"- {count} bars"
     )
 
-    def get_find_cursor():
-        return px_data_col.find({
-            "s": symbol_complete,
-            "i": interval
-        }).sort("ts", pymongo.DESCENDING).limit(count)
+    aggr_cursor = px_data_col.aggregate([
+        {
+            "$match": {
+                "s": symbol_complete,
+                "i": interval
+            }
+        },
+        {
+            "$sort": {
+                "ts": pymongo.DESCENDING
+            }
+        },
+        {
+            "$limit": count
+        },
+        {
+            "$sort": {
+                "ts": pymongo.ASCENDING
+            }
+        }
+    ])
+    data = [PxHistoryDataEntry.from_mongo_doc(entry) for entry in aggr_cursor]
 
-    return _get_history_data_result(get_find_cursor)
+    return DbHistoryDataResult(
+        earliest=data[0].timestamp,
+        latest=data[-1].timestamp,
+        data=data,
+    )
 
 
 def get_history_data_from_db_full(

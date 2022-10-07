@@ -190,6 +190,10 @@ class PxDataCache:
             last_px = cache_entry.make_new_bar(data.epoch_sec)
 
             if not last_px:
+                print_log(
+                    f"[Server] [red]Skipped[/red] creating new bar of [yellow]{cache_entry.security}[/yellow] - "
+                    f"no last px"
+                )
                 continue
 
             print_log(

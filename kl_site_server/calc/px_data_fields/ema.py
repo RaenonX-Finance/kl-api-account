@@ -6,6 +6,11 @@ from pandas import DataFrame
 from kl_site_server.enums import PxDataCol
 
 
+def calc_ema_single(current: float, prev_ema: float, period: int) -> float:
+    k = 2 / (period + 1)
+    return current * k + prev_ema * (1 - k)
+
+
 def calc_ema_full(df: DataFrame, periods: Iterable[int]) -> DataFrame:
     for period in periods:
         ema_col_name = PxDataCol.get_ema_col_name(period)
@@ -18,13 +23,11 @@ def calc_ema_full(df: DataFrame, periods: Iterable[int]) -> DataFrame:
 def calc_ema_last(df: DataFrame, periods: Iterable[int]) -> DataFrame:
     for period in periods:
         ema_col_name = PxDataCol.get_ema_col_name(period)
-        k = 2 / (period + 1)
         last_ema = df.at[df.index[-2], ema_col_name]
 
         if last_ema:
-            df.at[df.index[-1], ema_col_name] = (
-                df.at[df.index[-1], PxDataCol.CLOSE] * k
-                + last_ema * (1 - k)
+            df.at[df.index[-1], ema_col_name] = calc_ema_single(
+                df.at[df.index[-1], PxDataCol.CLOSE], last_ema, period
             )
         else:
             df.at[df.index[-1], ema_col_name] = None

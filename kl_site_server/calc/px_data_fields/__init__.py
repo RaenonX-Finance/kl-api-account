@@ -1,1 +1,2 @@
-from .main import calculate_indicators_full, calculate_indicators_partial
+from .main import calculate_indicators_full, calculate_indicators_partial, calculate_indicators_last
+from .index import calc_set_epoch_index

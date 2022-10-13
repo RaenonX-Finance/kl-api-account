@@ -22,6 +22,7 @@ class PxDataCol:
     SYMBOL_COMPLETE = "symbol_complete"
     INTERVAL = "interval"
     TIMESTAMP = "timestamp"
+    MACD_SIGNAL = "macd_signal"
 
     # Common indicators
 

@@ -54,6 +54,7 @@ class PxHistoryDataMongoModel(TypedDict):
 
 @dataclass(kw_only=True)
 class PxHistoryDataEntry:
+    # Some names are synced with the value of `PxDataCol`
     timestamp: datetime
 
     open: float

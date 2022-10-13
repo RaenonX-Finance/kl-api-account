@@ -141,7 +141,7 @@ def store_history_to_db(data: HistoryData):
         f"[yellow]{data.symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
     )
 
-    for chunk in split_chunks(list(data.to_db_entries()), chunk_size=10000):
+    for chunk in split_chunks(list(data.to_db_entries()), chunk_size=1000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
@@ -153,7 +153,7 @@ def store_history_to_db(data: HistoryData):
 def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):
     print_log(f"[DB-Px] Storing [purple]{len(entries)}[/purple] history data entries")
 
-    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], chunk_size=10000):
+    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], chunk_size=1000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
@@ -222,7 +222,7 @@ def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
         f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/yellow]"
     )
 
-    for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=10000):
+    for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=1000):
         with start_mongo_txn() as session:
             px_data_calc_col.delete_many({"$or": del_conditions}, session=session)
             px_data_calc_col.insert_many(recs_insert, session=session)

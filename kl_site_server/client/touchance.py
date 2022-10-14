@@ -53,6 +53,10 @@ class TouchanceDataClient(TouchanceApiClient):
 
         instrument_info = self.get_symbol_info(params.symbol_obj)
 
+        # Needs to be placed before `subscribe_realtime`
+        if re_calc_data:
+            self._calc_data_update_full(params.symbol_obj)
+
         self._px_data_cache.init_entry(
             symbol_obj=params.symbol_obj,
             min_tick=instrument_info.tick,
@@ -66,10 +70,6 @@ class TouchanceDataClient(TouchanceApiClient):
 
         if params.period_days:
             self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
-
-        # Needs to be placed before `subscribe_realtime`
-        if re_calc_data:
-            self._calc_data_update_full(params.symbol_obj)
 
         self.subscribe_realtime(params.symbol_obj)
 

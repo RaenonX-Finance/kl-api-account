@@ -3,7 +3,7 @@ from typing import Any
 from pandas import DataFrame
 
 from kl_site_common.const import INDICATOR_EMA_PERIODS
-from kl_site_common.utils import df_fill_na_with_none
+from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val
 from kl_site_server.enums import PxDataCol
 from .candlestick import calc_candlestick_full, calc_candlestick_last, calc_candlestick_partial
 from .diff import calc_diff_full, calc_diff_last
@@ -39,16 +39,12 @@ def calculate_indicators_partial(period_min: int, data_recs: dict[str, Any], cac
 
     df = calc_diff_full(df)
 
-    check_close_index_loc = -1
-    check_close_index = cached_calc_df.index[check_close_index_loc]
-    while df.at[check_close_index, PxDataCol.CLOSE] != cached_calc_df.at[check_close_index, PxDataCol.CLOSE]:
-        check_close_index_loc -= 1
-        check_close_index = cached_calc_df.index[check_close_index_loc]
+    close_match_idx_on_df = df_get_last_rev_index_of_matching_val(df, cached_calc_df, PxDataCol.CLOSE)
 
-    df = calc_tie_point_partial(df, cached_calc_df, check_close_index_loc, period_min)
+    df = calc_tie_point_partial(df, cached_calc_df, close_match_idx_on_df, period_min)
 
-    df = calc_candlestick_partial(df, cached_calc_df, check_close_index_loc)
-    df = calc_ema_partial(df, cached_calc_df, check_close_index_loc, INDICATOR_EMA_PERIODS)
+    df = calc_candlestick_partial(df, cached_calc_df, close_match_idx_on_df)
+    df = calc_ema_partial(df, cached_calc_df, close_match_idx_on_df, INDICATOR_EMA_PERIODS)
 
     # Partial only calculate until the last of `cached_calc_df`
     # Aggregated `df` could have new timestamp that `cached_calc_df` doesn't have

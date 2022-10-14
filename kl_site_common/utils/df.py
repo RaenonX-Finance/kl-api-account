@@ -12,3 +12,13 @@ def df_fill_na_with_none(func: Callable[[Any], DataFrame]):
         return df
 
     return wrapper
+
+
+def df_get_last_non_nan_rev_index(df: DataFrame, columns: list[str]) -> int:
+    rev_indexes = []
+
+    for column in columns:
+        last_non_nan_index_val = df[column].last_valid_index()
+        rev_indexes.append(df.index.get_loc(last_non_nan_index_val) - len(df) + 1)
+
+    return min(rev_indexes)

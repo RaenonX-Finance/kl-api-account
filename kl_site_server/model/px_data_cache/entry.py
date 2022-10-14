@@ -67,7 +67,7 @@ class PxDataCacheEntry:
         if self.data:
             self.latest_epoch_sec = max(self.data.keys())
         else:
-            print_warning(f"[Server] `PxDataCacheEntry.update_all()` called, but `bars` is empty")
+            print_warning("[Server] `PxDataCacheEntry.update_all()` called, but `bars` is empty")
 
     def update_latest_market(self, data: RealtimeData):
         """

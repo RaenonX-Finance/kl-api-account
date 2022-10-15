@@ -28,6 +28,12 @@ def test_df_get_last_non_nan_rev_index():
     assert df_get_last_non_nan_rev_index(df, ["A", "B"]) == -2
 
 
+def test_df_get_last_non_nan_rev_index_all_nan():
+    df = DataFrame({"A": [np.nan, np.nan, np.nan, np.nan]})
+
+    assert df_get_last_non_nan_rev_index(df, ["A"]) is None
+
+
 def test_df_get_last_rev_index_of_matching_val():
     df_base = DataFrame({"A": [1, 6, 3]})
     df_comp = DataFrame({"A": [1, 6, 4, 5]})

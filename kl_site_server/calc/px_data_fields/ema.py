@@ -47,7 +47,7 @@ def calc_ema_partial(
 
         nan_rev_index = df_get_last_non_nan_rev_index(df, [ema_col_name])
 
-        for base_index in range(min(close_match_rev_idx_on_df, nan_rev_index), 0):
+        for base_index in range(min(close_match_rev_idx_on_df, nan_rev_index or 0), 0):
             df = _ema_of_index(
                 df,
                 df.index[base_index],

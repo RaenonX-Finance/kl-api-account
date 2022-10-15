@@ -4,6 +4,6 @@ from .exceptions import (
 )
 from .period import (
     CANDLESTICK_DIR_MACD_FAST, CANDLESTICK_DIR_MACD_REQUIRED, CANDLESTICK_DIR_MACD_SIGNAL, CANDLESTICK_DIR_MACD_SLOW,
-    MAX_PERIOD, MAX_PERIOD_NO_EMA, get_start_offset,
+    MAX_PERIOD, MAX_PERIOD_NO_EMA, get_dt_before_offset
 )
 from .socket import *  # noqa

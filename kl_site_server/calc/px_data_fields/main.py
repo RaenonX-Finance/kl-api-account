@@ -37,6 +37,11 @@ def calculate_indicators_partial(period_min: int, data_recs: dict[str, Any], cac
     calc_set_epoch_index(df)
     calc_set_epoch_index(cached_calc_df)
 
+    # `df` may have data older than the earliest data of `cached_calc_df`
+    # This ensures `df` starts from the same starting point of `cached_calc_df`
+    # Removing this creates incorrect `NaN`s in many columns
+    df = df[cached_calc_df.index[0]:]
+
     df = calc_diff_full(df)
 
     close_match_idx_on_df = df_get_last_rev_index_of_matching_val(df, cached_calc_df, PxDataCol.CLOSE)

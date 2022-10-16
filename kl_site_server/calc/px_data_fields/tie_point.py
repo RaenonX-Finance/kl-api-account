@@ -9,9 +9,9 @@ from kl_site_server.enums import PxDataCol
 
 
 def _tie_point_all_na(df: DataFrame) -> DataFrame:
-    df[PxDataCol.MARKET_DATE_HIGH] = np.empty(len(df))
-    df[PxDataCol.MARKET_DATE_LOW] = np.empty(len(df))
-    df[PxDataCol.TIE_POINT] = np.empty(len(df))
+    df[PxDataCol.MARKET_DATE_HIGH] = np.full([len(df)], np.nan)
+    df[PxDataCol.MARKET_DATE_LOW] = np.full([len(df)], np.nan)
+    df[PxDataCol.TIE_POINT] = np.full([len(df)], np.nan)
 
     return df
 

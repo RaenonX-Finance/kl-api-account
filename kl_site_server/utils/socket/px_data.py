@@ -150,6 +150,6 @@ def _to_px_data_dict(px_data: "PxData") -> PxDataDict:
 
 
 def to_socket_message_px_data_list(px_data_list: Iterable["PxData"]) -> bytes:
-    data: list[PxDataDict] = [_to_px_data_dict(px_data) for px_data in px_data_list if px_data]
+    data: list[PxDataDict] = [_to_px_data_dict(px_data) for px_data in px_data_list if px_data.data]
 
     return dump_and_compress(data)

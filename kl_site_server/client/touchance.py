@@ -151,7 +151,8 @@ class TouchanceDataClient(TouchanceApiClient):
         interval_info_list = self._get_params_interval_info()
         history_data_cache = DataCache(fn_get_history_data)
         product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalInfo]] = product(
-            symbols,
+            # Only pick initialized symbols to create new bars
+            (symbol for symbol in symbols if self._px_data_cache.is_px_data_ready(symbol.symbol_complete)),
             interval_info_list
         )
         store_calculated_args: list[StoreCalculatedDataArgs] = []

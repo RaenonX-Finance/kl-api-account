@@ -1,4 +1,4 @@
-import threading
+from threading import Lock
 from typing import Optional
 
 import zmq
@@ -21,7 +21,7 @@ class TCoreZMQ:
         self.service_key: str = service_key
         self.session_key_internal: str | None = None
 
-        self.lock: threading.Lock = threading.Lock()
+        self.lock: Lock = Lock()
         self.obj_zmq_keep_alive: Optional[KeepAliveHelper] = None
 
     @property

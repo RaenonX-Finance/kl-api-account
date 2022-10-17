@@ -1,6 +1,6 @@
-import threading
 from abc import ABC, abstractmethod
 from datetime import datetime
+from threading import Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_error, print_warning
@@ -16,7 +16,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
         if not login_result.success:
             raise RuntimeError("Px quoting connection failed")
 
-        threading.Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,)).start()
+        Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,)).start()
 
     @abstractmethod
     def on_received_realtime_data(self, data: RealtimeData) -> None:

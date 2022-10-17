@@ -59,6 +59,27 @@ class PxDataCache:
     def get_last_n_of_close_px(self, security: str, count: int) -> list[float]:
         return self.data_1k[FUTURES_SECURITY_TO_SYM_OBJ[security].symbol_complete].get_last_n_of_close_px(count)
 
+    def get_cache_entry_of_interval(self, interval: HistoryInterval, symbol_complete: str) -> PxDataCacheEntry:
+        if interval == "1K":
+            return self.data_1k[symbol_complete]
+
+        if interval == "DK":
+            return self.data_dk[symbol_complete]
+
+        raise ValueError(f"No associated cache entry available for `{symbol_complete}`")
+
+    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
+        lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
+
+        px_data_list = []
+
+        for symbol_complete, px_configs in lookup_1k.items():
+            px_data_list.extend(self.data_1k[symbol_complete].to_px_data(px_configs))
+        for symbol_complete, px_configs in lookup_dk.items():
+            px_data_list.extend(self.data_dk[symbol_complete].to_px_data(px_configs))
+
+        return px_data_list
+
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.symbol_complete
 
@@ -80,7 +101,7 @@ class PxDataCache:
             if symbol_complete not in self.data_dk:
                 print_warning(
                     f"Failed to update complete data of {symbol_complete} @ DK - "
-                    f"data dict not initialized ({list(self.data_1k.keys())})",
+                    f"data dict not initialized ({list(self.data_dk.keys())})",
                     force=True
                 )
                 return
@@ -156,18 +177,6 @@ class PxDataCache:
                 lookup_1k[symbol_complete].append(px_data_config)
 
         return lookup_1k, lookup_dk
-
-    def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
-        lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
-
-        px_data_list = []
-
-        for symbol_complete, px_configs in lookup_1k.items():
-            px_data_list.extend(self.data_1k[symbol_complete].to_px_data(px_configs))
-        for symbol_complete, px_configs in lookup_dk.items():
-            px_data_list.extend(self.data_dk[symbol_complete].to_px_data(px_configs))
-
-        return px_data_list
 
     @staticmethod
     def _make_new_bar(

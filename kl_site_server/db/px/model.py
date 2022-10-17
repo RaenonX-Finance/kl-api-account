@@ -16,6 +16,16 @@ class DbHistoryDataResult:
     earliest: datetime | None
     latest: datetime | None
 
+    def update_latest(self, entry: PxHistoryDataEntry) -> "DbHistoryDataResult":
+        if entry.timestamp == self.data[-1].timestamp:
+            self.data[-1] = entry
+        else:
+            self.data.append(entry)
+
+        self.latest = entry.timestamp
+
+        return self
+
 
 @dataclass
 class MarketSessionEntry:

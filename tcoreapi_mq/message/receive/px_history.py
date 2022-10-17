@@ -20,10 +20,14 @@ Sample history data entry:
 import json
 from dataclasses import InitVar, dataclass, field
 from datetime import datetime, timezone
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
+from kl_site_server.enums import PxDataCol
 from .calc import calc_interval_to_timedelta_offset, calc_market_date
 from ..send import HistoryInterval
+
+if TYPE_CHECKING:
+    from kl_site_server.model import BarDataDict
 
 
 @dataclass(kw_only=True)
@@ -119,6 +123,26 @@ class PxHistoryDataEntry:
             epoch_sec=doc["e"],
             epoch_sec_time=doc["et"],
             market_date=doc["m"],
+        )
+
+    @staticmethod
+    def from_bar_data_dict(
+        symbol_complete: str, interval: HistoryInterval, bar_data: "BarDataDict"
+    ) -> "PxHistoryDataEntry":
+        epoch_sec = bar_data[PxDataCol.EPOCH_SEC]
+
+        return PxHistoryDataEntry(
+            timestamp=datetime.fromtimestamp(epoch_sec, tz=timezone.utc),
+            open=bar_data[PxDataCol.OPEN],
+            high=bar_data[PxDataCol.HIGH],
+            low=bar_data[PxDataCol.LOW],
+            close=bar_data[PxDataCol.CLOSE],
+            volume=bar_data[PxDataCol.VOLUME],
+            symbol_complete=symbol_complete,
+            interval=interval,
+            epoch_sec=epoch_sec,
+            epoch_sec_time=bar_data[PxDataCol.EPOCH_SEC_TIME],
+            market_date=bar_data[PxDataCol.DATE_MARKET],
         )
 
     @classmethod

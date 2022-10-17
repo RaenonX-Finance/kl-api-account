@@ -37,14 +37,18 @@ class PxDataCacheEntry:
         return is_ready
 
     @property
-    def data_last_px(self) -> float:
+    def data_last_bar(self) -> BarDataDict:
         if not self.is_ready:
             print_warning(
                 f"[Server] Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] "
-                "not ready - failed to request last px from `data`"
+                "not ready - failed to request last bar from `data`"
             )
 
-        return self.data[self.latest_epoch_sec][PxDataCol.CLOSE]
+        return self.data[self.latest_epoch_sec]
+
+    @property
+    def data_last_px(self) -> float:
+        return self.data_last_bar[PxDataCol.CLOSE]
 
     def get_last_n_of_close_px(self, count: int) -> list[float]:
         return [

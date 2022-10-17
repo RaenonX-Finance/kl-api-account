@@ -265,7 +265,17 @@ class TouchanceDataClient(TouchanceApiClient):
     def _calc_data_update_last(self) -> None:
         def get_history_data(key: tuple[SymbolBaseType, PeriodIntervalInfo]) -> list[PxHistoryDataEntry]:
             symbol_obj_, interval_info = key
-            return get_history_data_from_db_full(symbol_obj_.symbol_complete, interval_info.interval).data
+
+            symbol_complete = symbol_obj_.symbol_complete
+            interval = interval_info.interval
+
+            last_entry = PxHistoryDataEntry.from_bar_data_dict(
+                symbol_complete,
+                interval,
+                self._px_data_cache.get_cache_entry_of_interval(interval, symbol_complete).data_last_bar
+            )
+
+            return get_history_data_from_db_full(symbol_complete, interval).update_latest(last_entry).data
 
         def get_cached_calculated_data(
             symbol_obj: SymbolBaseType,

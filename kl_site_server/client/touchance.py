@@ -111,10 +111,10 @@ class TouchanceDataClient(TouchanceApiClient):
                 end = datetime.utcnow() + timedelta(minutes=2)
 
                 if params.period_mins:
-                    self.get_history_including_db(params.symbol_obj, "1K", start, end)
+                    self.get_history(params.symbol_obj, "1K", start, end)
 
                 if params.period_days:
-                    self.get_history_including_db(params.symbol_obj, "DK", start, end)
+                    self.get_history(params.symbol_obj, "DK", start, end)
 
     def _get_params_interval_info(self) -> set[PeriodIntervalInfo]:
         period_min_set = set()
@@ -237,10 +237,6 @@ class TouchanceDataClient(TouchanceApiClient):
                     calculated_df = None
                     # Calculated data might not have newer bars
                     if cached_calculated_df is not None:
-                        print_log(
-                            "[TC Client] Calculating indicators of "
-                            f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/yellow] on last bar"
-                        )
                         calculated_df = calculate_indicators_last(interval_info.period_min, cached_calculated_df)
                     elif data_recs := history_data_cache.get_value((symbol_obj, interval_info)):
                         print_log(

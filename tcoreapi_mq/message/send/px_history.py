@@ -1,5 +1,5 @@
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from tcoreapi_mq.model import SymbolBaseType
 from ._base import RequestBase
@@ -19,7 +19,8 @@ class SubscribePxHistoryRequest(RequestBase):
 
     def __post_init__(self):
         self.start_ts_str = self.start_time.strftime("%Y%m%d%H")
-        self.end_ts_str = self.end_time.strftime("%Y%m%d%H")
+        # End time in message is exclusive in range (18~19 only fetches data until 18:59 not 19:59)
+        self.end_ts_str = (self.end_time + timedelta(hours=1)).strftime("%Y%m%d%H")
 
         if self.start_ts_str == self.end_ts_str:
             raise ValueError(

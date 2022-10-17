@@ -1,8 +1,9 @@
 import asyncio
-import threading
 import time
+from collections import defaultdict
 from datetime import datetime, timedelta
 from itertools import product
+from threading import Lock, Thread
 from typing import Callable, Iterable, Iterator, NamedTuple
 
 from pandas import DataFrame
@@ -24,7 +25,10 @@ from kl_site_server.model import (
 )
 from kl_site_server.utils import MAX_PERIOD, MAX_PERIOD_NO_EMA
 from tcoreapi_mq.client import TouchanceApiClient
-from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
+from tcoreapi_mq.message import (
+    HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData,
+    SubscribePxHistoryMessage, SystemTimeData,
+)
 from tcoreapi_mq.model import SymbolBaseType
 
 
@@ -40,9 +44,10 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
-        self._update_calculated_data_lock: threading.Lock = threading.Lock()
+        self._update_calculated_data_lock: Lock = Lock()
+        self._history_data_lock_dict: defaultdict[str, Lock] = defaultdict(Lock)
 
-        threading.Thread(target=self._history_data_refetcher).start()
+        Thread(target=self._history_data_refetcher).start()
 
     def request_px_data(self, params: TouchancePxRequestParams, *, re_calc_data: bool) -> None:
         if not params.period_mins and not params.period_days:
@@ -52,10 +57,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_request_params[params.symbol_obj.symbol_complete] = params
 
         instrument_info = self.get_symbol_info(params.symbol_obj)
-
-        # Needs to be placed before `subscribe_realtime`
-        if re_calc_data:
-            self._calc_data_update_full(params.symbol_obj)
 
         self._px_data_cache.init_entry(
             symbol_obj=params.symbol_obj,
@@ -71,7 +72,24 @@ class TouchanceDataClient(TouchanceApiClient):
         if params.period_days:
             self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
 
+        # Needs to be placed before `subscribe_realtime`
+        if re_calc_data:
+            # Ensure all history data requests are finished
+            with self._history_data_lock_dict[params.symbol_obj.symbol_complete]:
+                self._calc_data_update_full(params.symbol_obj)
+
         self.subscribe_realtime(params.symbol_obj)
+
+    def get_history(
+        self,
+        symbol: SymbolBaseType,
+        interval: HistoryInterval,
+        start: datetime,
+        end: datetime,
+    ) -> SubscribePxHistoryMessage | None:
+        self._history_data_lock_dict[symbol.symbol_complete].acquire()
+
+        return super().get_history(symbol, interval, start, end)
 
     def get_history_including_db(
         self,
@@ -151,13 +169,18 @@ class TouchanceDataClient(TouchanceApiClient):
         interval_info_list = self._get_params_interval_info()
         history_data_cache = DataCache(fn_get_history_data)
         product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalInfo]] = product(
-            # Only pick initialized symbols to create new bars
-            (symbol for symbol in symbols if self._px_data_cache.is_px_data_ready(symbol.symbol_complete)),
+            symbols,
             interval_info_list
         )
         store_calculated_args: list[StoreCalculatedDataArgs] = []
 
         for symbol_obj, interval_info in product_gen:
+            if not self._px_data_cache.is_all_ready_of_intervals(
+                    [interval_info.interval],
+                    symbol_obj.symbol_complete
+            ):
+                continue
+
             cached_calculated_data = fn_get_cached_calculated_data(symbol_obj, interval_info)
 
             cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
@@ -232,6 +255,11 @@ class TouchanceDataClient(TouchanceApiClient):
                 store_calculated_args: list[StoreCalculatedDataArgs] = []
 
                 for symbol_obj, interval_info in product_gen:
+                    symbol_complete = symbol_obj.symbol_complete
+
+                    if not self._px_data_cache.is_all_ready_of_intervals([interval_info.interval], symbol_complete):
+                        continue
+
                     cached_calculated_data, full_update = fn_get_cached_calculated_data(symbol_obj, interval_info)
                     cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
 
@@ -253,13 +281,13 @@ class TouchanceDataClient(TouchanceApiClient):
                     else:
                         print_warning(
                             "[TC Client] No history or cached calculated data available "
-                            f"for [bold]{symbol_obj.symbol_complete}[/bold]@{interval_info.period_min}"
+                            f"for [bold]{symbol_complete}[/bold]@{interval_info.period_min}"
                         )
 
                 store_calculated_to_db(store_calculated_args)
 
         if use_thread:
-            threading.Thread(target=update_calculated_data_exec).start()
+            Thread(target=update_calculated_data_exec).start()
         else:
             update_calculated_data_exec()
 
@@ -320,6 +348,8 @@ class TouchanceDataClient(TouchanceApiClient):
             f"[TC Client] Received history data of [yellow]{data.symbol_complete}[/yellow] "
             f"at [yellow]{data.data_type}[/yellow]"
         )
+        self._history_data_lock_dict[data.symbol_complete].release()
+
         store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
@@ -335,7 +365,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache.update_latest_market_data_of_symbol(data)
 
-        if not self._px_data_cache.is_px_data_ready(data.symbol_complete):
+        if not self._px_data_cache.is_all_ready_of_intervals(["1K", "DK"], data.symbol_complete):
             params = self._px_request_params[data.symbol_complete]
 
             if params.should_re_request:

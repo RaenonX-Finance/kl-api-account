@@ -147,19 +147,18 @@ class PxDataCache:
 
         return result
 
-    def is_px_data_ready(self, symbol_complete: str) -> bool:
-        if symbol_complete in self.data_1k:
-            return self.data_1k[symbol_complete].is_ready
-
-        if symbol_complete in self.data_dk:
-            return self.data_dk[symbol_complete].is_ready
-
-        return False
+    def is_all_ready_of_intervals(self, intervals: list[HistoryInterval], symbol_complete: str) -> bool:
+        return all(
+            self.get_cache_entry_of_interval(interval, symbol_complete).is_ready
+            for interval in intervals
+        )
 
     def is_all_px_data_ready(self) -> bool:
-        symbols = set(self.data_1k.keys()) | set(self.data_dk.keys())
+        for cache_entry in [*self.data_1k.values(), *self.data_dk.values()]:
+            if not cache_entry.is_ready:
+                return False
 
-        return all(self.is_px_data_ready(symbol_complete) for symbol_complete in symbols)
+        return True
 
     @staticmethod
     def _get_px_data_config_to_lookup(

@@ -49,3 +49,8 @@ def test_df_get_last_rev_index_of_matching_val():
     df_comp = DataFrame({"A": [1, 6, 3]})
 
     assert df_get_last_rev_index_of_matching_val(df_base, df_comp, "A") == -2
+
+    df_base = DataFrame({"A": [1, 2, 3, 4]}, index=["A", "B", "C", "D"])
+    df_comp = DataFrame({"A": [5, 6, 7]}, index=["B", "C", "D"])
+
+    assert df_get_last_rev_index_of_matching_val(df_base, df_comp, "A") is None

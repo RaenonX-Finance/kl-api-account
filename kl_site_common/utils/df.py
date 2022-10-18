@@ -31,7 +31,7 @@ def df_get_last_non_nan_rev_index(df: DataFrame, columns: list[str]) -> int | No
     return min(rev_indexes)
 
 
-def df_get_last_rev_index_of_matching_val(df_base: DataFrame, df_comp: DataFrame, column: str) -> int:
+def df_get_last_rev_index_of_matching_val(df_base: DataFrame, df_comp: DataFrame, column: str) -> int | None:
     same_val_rev_idx = -1
     same_val_idx_val = df_base.index[same_val_rev_idx]
     while (
@@ -39,6 +39,10 @@ def df_get_last_rev_index_of_matching_val(df_base: DataFrame, df_comp: DataFrame
         or df_base.at[same_val_idx_val, column] != df_comp.at[same_val_idx_val, column]
     ):
         same_val_rev_idx -= 1
+
+        if same_val_rev_idx + len(df_base) <= 0:
+            return None
+
         same_val_idx_val = df_base.index[same_val_rev_idx]
 
     return same_val_rev_idx

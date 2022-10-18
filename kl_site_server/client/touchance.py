@@ -1,6 +1,5 @@
 import asyncio
 import time
-from collections import defaultdict
 from datetime import datetime, timedelta
 from itertools import product
 from threading import Lock, Thread
@@ -25,10 +24,7 @@ from kl_site_server.model import (
 )
 from kl_site_server.utils import MAX_PERIOD, MAX_PERIOD_NO_EMA
 from tcoreapi_mq.client import TouchanceApiClient
-from tcoreapi_mq.message import (
-    HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData,
-    SubscribePxHistoryMessage, SystemTimeData,
-)
+from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import SymbolBaseType
 
 
@@ -45,7 +41,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
         self._update_calculated_data_lock: Lock = Lock()
-        self._history_data_lock_dict: defaultdict[str, Lock] = defaultdict(Lock)
 
         Thread(target=self._history_data_refetcher).start()
 
@@ -75,21 +70,13 @@ class TouchanceDataClient(TouchanceApiClient):
         # Needs to be placed before `subscribe_realtime`
         if re_calc_data:
             # Ensure all history data requests are finished
-            with self._history_data_lock_dict[params.symbol_obj.symbol_complete]:
-                self._calc_data_update_full(params.symbol_obj)
+            # Not using context manager because sometimes it unlocked locked lock
+            self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
+            self._calc_data_update_full(params.symbol_obj)
+            if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
+                self.history_data_lock_dict[params.symbol_obj.symbol_complete].release()
 
         self.subscribe_realtime(params.symbol_obj)
-
-    def get_history(
-        self,
-        symbol: SymbolBaseType,
-        interval: HistoryInterval,
-        start: datetime,
-        end: datetime,
-    ) -> SubscribePxHistoryMessage | None:
-        self._history_data_lock_dict[symbol.symbol_complete].acquire()
-
-        return super().get_history(symbol, interval, start, end)
 
     def get_history_including_db(
         self,
@@ -348,7 +335,6 @@ class TouchanceDataClient(TouchanceApiClient):
             f"[TC Client] Received history data of [yellow]{data.symbol_complete}[/yellow] "
             f"at [yellow]{data.data_type}[/yellow]"
         )
-        self._history_data_lock_dict[data.symbol_complete].release()
 
         store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)

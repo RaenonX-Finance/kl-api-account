@@ -1,4 +1,6 @@
+from collections import defaultdict
 from datetime import datetime
+from threading import Lock
 
 from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
 from kl_site_common.utils import print_log, print_warning
@@ -17,6 +19,7 @@ class QuoteAPI(TCoreZMQ):
 
         self._info: dict[str, QueryInstrumentProduct] = {}
         self._subscribing_realtime: set[str] = set()
+        self.history_data_lock_dict: defaultdict[str, Lock] = defaultdict(Lock)
 
     def get_symbol_info(self, symbol_obj: SymbolBaseType) -> QueryInstrumentProduct:
         if ret := self._info.get(symbol_obj.symbol_complete):
@@ -60,6 +63,13 @@ class QuoteAPI(TCoreZMQ):
         end: datetime,
     ) -> SubscribePxHistoryMessage | None:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
+        self.history_data_lock_dict[symbol.symbol_complete].acquire()
+        print_log(
+            f"[TC Quote] Request history data of "
+            f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "
+            f"starting from {start} to {end}"
+        )
+
         with self.lock:
             try:
                 req = SubscribePxHistoryRequest(
@@ -70,11 +80,6 @@ class QuoteAPI(TCoreZMQ):
                     end_time=end
                 )
 
-                print_log(
-                    f"[TC Quote] Request history data of "
-                    f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "
-                    f"starting from {start} to {end}"
-                )
                 self.socket.send_string(req.to_message())
             except ValueError:
                 print_warning(f"[TC Quote] Omit history data request (Start = End, {start} ~ {end})")
@@ -105,10 +110,12 @@ class QuoteAPI(TCoreZMQ):
             return GetPxHistoryMessage(message=self.socket.get_message())
 
     def complete_get_history(self, symbol_complete: str, interval: HistoryInterval, start: str, end: str):
+        self.history_data_lock_dict[symbol_complete].release()
         print_log(
             f"[TC Quote] History data fetching completed for [yellow]{symbol_complete}[/yellow] "
             f"at [yellow]{interval}[/yellow] starting from {start} to {end}"
         )
+
         with self.lock:
             req = CompletePxHistoryRequest(
                 session_key=self.session_key,

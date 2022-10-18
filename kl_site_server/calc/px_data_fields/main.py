@@ -45,6 +45,8 @@ def calculate_indicators_partial(period_min: int, data_recs: dict[str, Any], cac
     df = calc_diff_full(df)
 
     close_match_idx_on_df = df_get_last_rev_index_of_matching_val(df, cached_calc_df, PxDataCol.CLOSE)
+    if not close_match_idx_on_df:
+        close_match_idx_on_df = -len(df) + 1
 
     df = calc_tie_point_partial(df, cached_calc_df, close_match_idx_on_df, period_min)
 

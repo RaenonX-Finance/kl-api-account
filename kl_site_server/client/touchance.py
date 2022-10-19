@@ -284,7 +284,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 store_calculated_to_db(store_calculated_args)
 
         if use_thread:
-            self._update_calculated_data_executor.submit(update_calculated_data_exec).result()
+            self._update_calculated_data_executor.submit(update_calculated_data_exec)
         else:
             update_calculated_data_exec()
 

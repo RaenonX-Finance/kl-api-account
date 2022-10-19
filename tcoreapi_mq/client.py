@@ -1,6 +1,6 @@
-import threading
 from abc import ABC, abstractmethod
 from datetime import datetime
+from threading import Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_error, print_warning
@@ -16,7 +16,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
         if not login_result.success:
             raise RuntimeError("Px quoting connection failed")
 
-        threading.Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,)).start()
+        Thread(target=self._quote_subscription_loop, args=(login_result.sub_port,)).start()
 
     @abstractmethod
     def on_received_realtime_data(self, data: RealtimeData) -> None:
@@ -47,7 +47,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     data = RealtimeData(message)
 
                     if not data.is_valid:
-                        print_warning(f"[Client] Received invalid (no trade) realtime data from {data.security}")
+                        print_warning(f"Received invalid (no trade) realtime data from {data.security}")
                         return
 
                     if not self.is_subscribing_realtime(data.symbol_complete):
@@ -64,7 +64,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     handshake = HistoryDataHandshake(message)
 
                     if not handshake.is_ready:
-                        print_warning(f"[Client] Status of history data handshake is not ready ({handshake.status})")
+                        print_warning(f"Status of history data handshake is not ready ({handshake.status})")
                         return
 
                     query_idx = 0
@@ -73,10 +73,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     history_data_of_event: dict[datetime, PxHistoryDataEntry] = {}
 
                     while True:
-                        history_data_paged = self.get_paged_history(
-                            handshake.symbol_complete, handshake.data_type,
-                            handshake.start_time_str, handshake.end_time_str, query_idx
-                        )
+                        history_data_paged = self.get_paged_history(handshake, query_idx)
 
                         if not history_data_paged.data:
                             break
@@ -84,10 +81,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         history_data_of_event.update(history_data_paged.data)
                         query_idx = history_data_paged.last_query_idx
 
-                    self.complete_get_history(
-                        handshake.symbol_complete, handshake.data_type,
-                        handshake.start_time_str, handshake.end_time_str
-                    )
+                    self.complete_get_history(handshake)
 
                     if history_data_of_event:
                         self.on_received_history_data(HistoryData.from_socket_message(
@@ -96,7 +90,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         ))
                     else:
                         print_error(
-                            f"[Client] No history data available for "
+                            f"No history data available for "
                             f"[bold]{handshake.symbol_complete}[/bold] ({handshake.data_type})",
                         )
                 case "PING" | "UNSUBQUOTE":
@@ -104,9 +98,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                 case "SYSTEMTIME":
                     self.on_system_time_min_change(SystemTimeData(message))
                 case _:
-                    print_warning(f"[TC API] Unknown message data type: {message.data_type}")
+                    print_warning(f"Unknown message data type: {message.data_type}")
         except Exception as e:
-            print_error(f"[TC API] Error occurred on message received: {message.body}")
+            print_error(f"Error occurred on message received: {message.body}")
             self.on_error(f"Error occurred on receiving message type: {message.data_type} ({e.args})")
             raise e
 

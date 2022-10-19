@@ -23,7 +23,7 @@ def register_handlers_px(client: TouchanceDataClient):
         _start = time.time()
 
         if not init_message["identifiers"]:
-            print_error("[Socket] `identifiers` cannot be empty for socket event `pxInit`")
+            print_error("`identifiers` cannot be empty for socket event `pxInit`")
             return
 
         px_data_config = set()

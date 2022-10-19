@@ -2,7 +2,8 @@
 zmq
 
 # Data processing
-pandas
+# -- Significant performance issue for `calc_support_resistance_levels()`
+pandas==1.4.4
 numpy
 wheels/TA_Lib-0.4.24-cp310-cp310-win_amd64.whl
 

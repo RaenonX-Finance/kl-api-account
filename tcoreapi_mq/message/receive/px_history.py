@@ -20,10 +20,14 @@ Sample history data entry:
 import json
 from dataclasses import InitVar, dataclass, field
 from datetime import datetime, timezone
-from typing import TypedDict
+from typing import TYPE_CHECKING, TypedDict
 
+from kl_site_server.enums import PxDataCol
 from .calc import calc_interval_to_timedelta_offset, calc_market_date
 from ..send import HistoryInterval
+
+if TYPE_CHECKING:
+    from kl_site_server.model import BarDataDict
 
 
 @dataclass(kw_only=True)
@@ -54,6 +58,7 @@ class PxHistoryDataMongoModel(TypedDict):
 
 @dataclass(kw_only=True)
 class PxHistoryDataEntry:
+    # Some names are synced with the value of `PxDataCol`
     timestamp: datetime
 
     open: float
@@ -71,18 +76,24 @@ class PxHistoryDataEntry:
 
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:
-        # Note that `0` here is `str` not numertic type
+        # Note that `0` here is `str` not numeric type
         return body["Date"] != "0"
 
     @staticmethod
+    def _ts_to_epoch(ts: datetime) -> tuple[float, float]:
+        epoch_sec = ts.timestamp()
+        epoch_sec_time = epoch_sec % 86400
+
+        return epoch_sec, epoch_sec_time
+
+    @classmethod
     def from_touchance(
-        body: dict[str, str], symbol_complete: str, interval: HistoryInterval
+        cls, body: dict[str, str], symbol_complete: str, interval: HistoryInterval
     ) -> "PxHistoryDataEntry":
         ts = datetime.strptime(f"{body['Date']} {body['Time']:>06}", "%Y%m%d %H%M%S").replace(tzinfo=timezone.utc)
         ts -= calc_interval_to_timedelta_offset(interval)
 
-        epoch_sec = ts.timestamp()
-        epoch_sec_time = epoch_sec % 86400
+        epoch_sec, epoch_sec_time = cls._ts_to_epoch(ts)
 
         return PxHistoryDataEntry(
             timestamp=ts,
@@ -112,6 +123,50 @@ class PxHistoryDataEntry:
             epoch_sec=doc["e"],
             epoch_sec_time=doc["et"],
             market_date=doc["m"],
+        )
+
+    @staticmethod
+    def from_bar_data_dict(
+        symbol_complete: str, interval: HistoryInterval, bar_data: "BarDataDict"
+    ) -> "PxHistoryDataEntry":
+        epoch_sec = bar_data[PxDataCol.EPOCH_SEC]
+
+        return PxHistoryDataEntry(
+            timestamp=datetime.fromtimestamp(epoch_sec, tz=timezone.utc),
+            open=bar_data[PxDataCol.OPEN],
+            high=bar_data[PxDataCol.HIGH],
+            low=bar_data[PxDataCol.LOW],
+            close=bar_data[PxDataCol.CLOSE],
+            volume=bar_data[PxDataCol.VOLUME],
+            symbol_complete=symbol_complete,
+            interval=interval,
+            epoch_sec=epoch_sec,
+            epoch_sec_time=bar_data[PxDataCol.EPOCH_SEC_TIME],
+            market_date=bar_data[PxDataCol.DATE_MARKET],
+        )
+
+    @classmethod
+    def make_new_bar(
+        cls,
+        symbol_complete: str,
+        interval: HistoryInterval,
+        ts: datetime,
+        px: float,
+    ) -> "PxHistoryDataEntry":
+        epoch_sec, epoch_sec_time = cls._ts_to_epoch(ts)
+
+        return PxHistoryDataEntry(
+            timestamp=ts,
+            open=px,
+            high=px,
+            low=px,
+            close=px,
+            volume=0,
+            symbol_complete=symbol_complete,
+            interval=interval,
+            epoch_sec=epoch_sec,
+            epoch_sec_time=epoch_sec_time,
+            market_date=calc_market_date(ts, epoch_sec_time, symbol_complete),
         )
 
     def to_mongo_doc(self) -> PxHistoryDataMongoModel:

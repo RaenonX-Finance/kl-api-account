@@ -9,5 +9,5 @@ apps:
     env_production: {}
     # Others
     interpreter: py
-    cron_restart: '0 0 */3 * *'  # Restart every 3 days
+    cron_restart: '10 21 * * *'  # Restart at 21:10 everyday
     time: true  # Log timestamp in logs

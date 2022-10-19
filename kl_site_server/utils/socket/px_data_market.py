@@ -1,9 +1,11 @@
 import json
 from collections.abc import Iterable
-from typing import TypeAlias, TypedDict
+from typing import TypeAlias, TypedDict, TYPE_CHECKING
 
-from kl_site_server.model import OnMarketDataReceivedEvent
 from tcoreapi_mq.message import RealtimeData
+
+if TYPE_CHECKING:
+    from kl_site_server.model import OnMarketDataReceivedEvent
 
 
 class PxDataMarketSingle(TypedDict):
@@ -32,7 +34,7 @@ def from_realtime_data_single(data: RealtimeData, strength: int) -> PxDataMarket
 
 
 def to_socket_message_px_data_market(
-    e: OnMarketDataReceivedEvent,
+    e: "OnMarketDataReceivedEvent",
     securities_to_include: Iterable[str]
 ) -> str | None:
     if not securities_to_include:

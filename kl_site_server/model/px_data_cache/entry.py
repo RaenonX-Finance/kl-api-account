@@ -1,15 +1,12 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Iterable
 
-import numpy as np
-import numpy.typing as npt
-
 from kl_site_common.utils import print_warning
+from kl_site_server.db import CalculatedDataLookup
 from kl_site_server.enums import PxDataCol
-from kl_site_server.model import BarDataDict, PxData, PxDataConfig, PxDataPool
-from tcoreapi_mq.message import RealtimeData, calc_market_date
+from kl_site_server.model import BarDataDict, PxData, PxDataCommon, PxDataConfig
+from tcoreapi_mq.message import HistoryInterval, RealtimeData, calc_market_date
 
 
 @dataclass(kw_only=True)
@@ -19,15 +16,15 @@ class PxDataCacheEntry:
     min_tick: float
     decimals: int
     data: dict[int, BarDataDict]  # Epoch sec / bar data
+    interval: HistoryInterval
     interval_sec: int
 
     latest_market: RealtimeData | None = field(init=False, default=None)
-    latest_epoch: int | None = field(init=False)
-
-    pool: PxDataPool | None = field(init=False, default=None)
+    # Storing instead of using `@property` to save performance on request
+    latest_epoch_sec: int | None = field(init=False)
 
     def __post_init__(self):
-        self.latest_epoch = max(self.data.keys()) if self.data else None
+        self.latest_epoch_sec = max(self.data.keys()) if self.data else None
 
     @property
     def is_ready(self) -> bool:
@@ -35,20 +32,30 @@ class PxDataCacheEntry:
 
         if not is_ready:
             print_warning(
-                f"[Server] Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] not ready"
+                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] not ready"
             )
 
         return is_ready
 
     @property
-    def latest_epoch_sec(self) -> int:
-        return max(self.data.keys())
+    def data_last_bar(self) -> BarDataDict | None:
+        if not self.is_ready:
+            print_warning(
+                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] "
+                "not ready - failed to request last bar from `data`"
+            )
 
-    def get_last_n_of_close_px(self, count: int) -> npt.NDArray[float]:
-        return np.array([
+        return self.data.get(self.latest_epoch_sec)
+
+    @property
+    def data_last_px(self) -> float:
+        return self.data_last_bar[PxDataCol.CLOSE]
+
+    def get_last_n_of_close_px(self, count: int) -> list[float]:
+        return [
             data[PxDataCol.CLOSE] for epoch_sec, data
             in sorted(self.data.items(), key=lambda item: item[0])[-count:]
-        ])
+        ]
 
     def remove_oldest(self):
         # Only remove the oldest if there's >1 data
@@ -61,9 +68,11 @@ class PxDataCacheEntry:
         for bar in bars:
             self.data[bar[PxDataCol.EPOCH_SEC]] = bar
 
+        # This method could be called with empty `bars`
         if self.data:
-            # This method could be called with empty `bars`
-            self.latest_epoch = max(self.data.keys())
+            self.latest_epoch_sec = max(self.data.keys())
+        else:
+            print_warning("`PxDataCacheEntry.update_all()` called, but `bars` is empty")
 
     def update_latest_market(self, data: RealtimeData):
         """
@@ -73,7 +82,7 @@ class PxDataCacheEntry:
         """
         if self.security != data.security:
             print_warning(
-                f"[Server] `update_latest_market()` called at the wrong place - "
+                f"`update_latest_market()` called at the wrong place - "
                 f"symbol not match ({self.security} / {data.security})"
             )
             return
@@ -86,13 +95,13 @@ class PxDataCacheEntry:
 
         This should be called after the `is_ready` check.
         """
-        if self.latest_epoch not in self.data:
+        if not self.data:
             # No data fetched yet - no data to be updated
             return
 
-        bar_current = self.data[self.latest_epoch]
+        bar_current = self.data[self.latest_epoch_sec]
 
-        self.data[self.latest_epoch] = bar_current | {
+        self.data[self.latest_epoch_sec] = bar_current | {
             PxDataCol.HIGH: max(bar_current[PxDataCol.HIGH], current),
             PxDataCol.LOW: min(bar_current[PxDataCol.LOW], current),
             PxDataCol.CLOSE: current,
@@ -105,20 +114,20 @@ class PxDataCacheEntry:
 
         return None
 
-    def make_new_bar(self, epoch_sec: float):
-        if not self.latest_epoch:
-            # Data might not be initialized yet - no last bar to "inherit" the data
-            return
+    def make_new_bar(self, epoch_sec: float) -> float | None:
+        if not self.latest_epoch_sec:
+            # Data might not be initialized yet - no last bar to inherit the data
+            return None
 
         epoch_int = int(epoch_sec // self.interval_sec * self.interval_sec)
         epoch_sec_time = epoch_int % 86400
-        last_bar = self.data[self.latest_epoch]
+        last_px = self.data_last_px
 
         self.data[epoch_int] = {
-            PxDataCol.OPEN: last_bar[PxDataCol.CLOSE],
-            PxDataCol.HIGH: last_bar[PxDataCol.CLOSE],
-            PxDataCol.LOW: last_bar[PxDataCol.CLOSE],
-            PxDataCol.CLOSE: last_bar[PxDataCol.CLOSE],
+            PxDataCol.OPEN: last_px,
+            PxDataCol.HIGH: last_px,
+            PxDataCol.LOW: last_px,
+            PxDataCol.CLOSE: last_px,
             PxDataCol.EPOCH_SEC: epoch_int,
             PxDataCol.EPOCH_SEC_TIME: epoch_sec_time,
             PxDataCol.DATE_MARKET: calc_market_date(
@@ -128,27 +137,30 @@ class PxDataCacheEntry:
             ),
             PxDataCol.VOLUME: 0,
         }
-        self.latest_epoch = epoch_int
+        self.latest_epoch_sec = epoch_int
         self.remove_oldest()
 
-    def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
-        if self.pool:
-            self.pool.update_data(self.data, self.latest_market)
-        else:
-            self.pool = PxDataPool(
-                security=self.security,
-                bars=[self.data[key] for key in sorted(self.data.keys())],
-                min_tick=self.min_tick,
-                decimals=self.decimals,
-                latest_market=self.latest_market,
-                interval_sec=self.interval_sec,
-            )
+        return last_px
 
-        with ThreadPoolExecutor() as executor:
-            return [
-                future.result() for future
-                in as_completed(
-                    executor.submit(self.pool.to_px_data, px_data_config)
-                    for px_data_config in px_data_configs
-                )
-            ]
+    def to_px_data(
+        self, px_data_configs: Iterable[PxDataConfig], calculated_data_lookup: CalculatedDataLookup
+    ) -> list[PxData]:
+        if not self.is_ready:
+            return []
+
+        px_common = PxDataCommon(
+            security=self.security,
+            min_tick=self.min_tick,
+            decimals=self.decimals,
+            latest_market=self.latest_market,
+            interval_sec=self.interval_sec,
+            last_px=self.latest_market.close if self.latest_market else self.data_last_px
+        )
+
+        return [
+            px_common.to_px_data(
+                px_data_config,
+                calculated_data_lookup.get_calculated_data(self.symbol_complete, px_data_config.period_min)
+            )
+            for px_data_config in px_data_configs
+        ]

@@ -1,1 +1,1 @@
-from .touchance import TouchanceDataClient
+from .touchance import *  # noqa

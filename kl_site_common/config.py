@@ -5,6 +5,8 @@ from typing import MutableMapping
 import yaml
 from jsonschema import validate
 
+from kl_site_common.env import env
+
 _config: MutableMapping = {}
 
 
@@ -25,17 +27,21 @@ def get_config() -> MutableMapping:
     if _config:
         return _config
 
+    path_config_base = env.str("PATH_CONFIG_BASE", "config.yaml")
+    path_config_override = env.str("PATH_CONFIG_OVERRIDE", "config-override.yaml")
+    path_config_schema = env.str("PATH_CONFIG_SCHEMA", "config.schema.json")
+
     # Load default config
-    with open("config.yaml", "r", encoding="utf-8") as config_file:
+    with open(path_config_base, "r", encoding="utf-8") as config_file:
         config = yaml.safe_load(config_file)
 
     # Load overriding config
-    if os.path.exists("config-override.yaml"):
-        with open("config-override.yaml", "r", encoding="utf-8") as config_file:
+    if os.path.exists(path_config_override):
+        with open(path_config_override, "r", encoding="utf-8") as config_file:
             config = merge_dict(config, yaml.safe_load(config_file))
 
     # Validate config
-    with open("config.schema.json", "r") as config_schema:
+    with open(path_config_schema, "r") as config_schema:
         validate(config, yaml.safe_load(config_schema))
 
     _config = config

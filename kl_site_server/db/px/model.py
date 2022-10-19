@@ -1,19 +1,30 @@
 from dataclasses import dataclass
 from datetime import datetime, time, timezone
-from typing import Any, Iterator
+from typing import Any
 
 from bson import ObjectId
 from pydantic import BaseModel, Field, root_validator, validator
 
 from kl_site_common.db import PyObjectId
+from kl_site_common.utils import time_str_to_utc_time
 from tcoreapi_mq.message import PxHistoryDataEntry
 
 
 @dataclass(kw_only=True)
 class DbHistoryDataResult:
-    data: Iterator[PxHistoryDataEntry]
+    data: list[PxHistoryDataEntry]
     earliest: datetime | None
     latest: datetime | None
+
+    def update_latest(self, entry: PxHistoryDataEntry) -> "DbHistoryDataResult":
+        if entry.timestamp == self.data[-1].timestamp:
+            self.data[-1] = entry
+        else:
+            self.data.append(entry)
+
+        self.latest = entry.timestamp
+
+        return self
 
 
 @dataclass
@@ -45,8 +56,8 @@ class MarketSessionEntry:
     def from_config(config_obj: dict[str, Any]) -> "MarketSessionEntry":
         return MarketSessionEntry(
             weekdays=config_obj["weekdays"],
-            start=datetime.strptime(config_obj["start"], "%H:%M").time().replace(tzinfo=timezone.utc),
-            end=datetime.strptime(config_obj["end"], "%H:%M").time().replace(tzinfo=timezone.utc),
+            start=time_str_to_utc_time(config_obj["start"]),
+            end=time_str_to_utc_time(config_obj["end"]),
         )
 
 

@@ -1,21 +1,15 @@
-from dataclasses import dataclass
 from datetime import datetime
 from typing import Generator, TypeAlias
 
 import numpy as np
-import pandas as pd
 from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
 
 from kl_site_common.const import SR_LEVEL_MIN_DIFF
-from kl_site_common.utils import get_epoch_sec_time, print_warning
+from kl_site_common.utils import print_warning
+from kl_site_server.db import get_history_data_at_time_from_db
 from kl_site_server.enums import PxDataCol
-
-
-@dataclass(kw_only=True)
-class KeyTimestamps:
-    open: int
-    close: int
+from .model import SrLevelKeyTimePair
 
 
 def _get_bool_series_at_time(df: DataFrame, epoch_sec_time: int) -> Series:
@@ -32,31 +26,19 @@ def _calc_key_time_add_group_basis(df: DataFrame, epoch_sec_time: int) -> DataFr
     return df
 
 
-def _calc_key_time(df_1k: DataFrame, key_timestamps: KeyTimestamps) -> DataFrame:
-    open_epoch, close_epoch = key_timestamps.open, key_timestamps.close
+def _calc_key_time(df_1k: DataFrame, key_time_pair: SrLevelKeyTimePair) -> DataFrame:
+    open_time_sec, close_time_sec = key_time_pair.open_time_sec, key_time_pair.close_time_sec
 
-    day_open = _get_bool_series_at_time(df_1k, open_epoch)
-    day_close = _get_bool_series_at_time(df_1k, close_epoch)
+    day_open = _get_bool_series_at_time(df_1k, open_time_sec)
+    day_close = _get_bool_series_at_time(df_1k, close_time_sec)
 
-    return _calc_key_time_add_group_basis(df_1k[day_open | day_close].copy(), close_epoch)
+    return _calc_key_time_add_group_basis(df_1k[day_open | day_close].copy(), close_time_sec)
 
-
-_TS_FUT_US: KeyTimestamps = KeyTimestamps(open=get_epoch_sec_time(13, 30), close=get_epoch_sec_time(20, 0))
-
-_TS_FUT_TW_MAIN: KeyTimestamps = KeyTimestamps(open=get_epoch_sec_time(0, 45), close=get_epoch_sec_time(5, 30))
-
-_TS_FUT_TW_BASIC: KeyTimestamps = KeyTimestamps(open=get_epoch_sec_time(7, 0), close=get_epoch_sec_time(5, 30))
-
-_KEY_TS_MAP: dict[str, KeyTimestamps] = {
-    "NQ": _TS_FUT_US,
-    "YM": _TS_FUT_US,
-    "FITX": _TS_FUT_TW_MAIN,
-}
 
 SrLevelDataPair: TypeAlias = [dict[str, float], dict[str, float]]
 
 
-def _sr_levels_get_recent_n_only(
+def _get_recent_n_sr_level_pairs_only(
     grouped_dict: dict[datetime, SrLevelDataPair],
     count: int
 ) -> list[tuple[datetime, SrLevelDataPair]]:
@@ -81,20 +63,16 @@ def _sr_levels_get_recent_n_only(
     return ret
 
 
-def _sr_levels_range_of_pair(
+def _generate_sr_level_pairs(
     df_selected: DataFrame, *,
     group_basis: str,
     current_px: float,
 ) -> Generator[list[float], None, None]:
     columns = [PxDataCol.OPEN, PxDataCol.CLOSE]
 
-    today = pd.Timestamp.today(tz="UTC")
-    # Tail `11` to ensure only 5 pairs exist
-    # `6` because the most recent pair could be incomplete
-    df_selected = df_selected[today - BDay(6):].tail(11)
     grouped_dict = df_selected.groupby(group_basis)[columns].apply(lambda df: df.to_dict("records")).to_dict()
 
-    sr_level_data = _sr_levels_get_recent_n_only(grouped_dict, 5)
+    sr_level_data = _get_recent_n_sr_level_pairs_only(grouped_dict, 5)
 
     if not sr_level_data:
         print_warning(
@@ -122,39 +100,43 @@ def _sr_levels_range_of_pair(
             ]))
 
 
-def sr_levels_range_of_pair(df_1k: DataFrame, symbol: str) -> list[list[float]]:
-    if key_timestamp := _KEY_TS_MAP.get(symbol):
-        df_selected = _calc_key_time(df_1k, key_timestamp)
-    else:
-        raise ValueError(f"Symbol `{symbol}` does not have key time picking logic")
+def get_sr_level_pairs(
+    symbol_complete: str,
+    current_px: float,
+    key_time_pair: SrLevelKeyTimePair
+) -> list[list[float]]:
+    df = DataFrame(get_history_data_at_time_from_db(
+        symbol_complete,
+        [key_time_pair.open_time_sec, key_time_pair.close_time_sec],
+        count=12
+    ).data)
+    df = _calc_key_time(df, key_time_pair)
 
     levels: list[list[float]] = []
-
-    levels_pair = _sr_levels_range_of_pair(
-        df_selected,
+    levels_pair = _generate_sr_level_pairs(
+        df,
         group_basis=PxDataCol.AUTO_SR_GROUP_BASIS,
-        current_px=df_1k[PxDataCol.CLOSE][-1]
+        current_px=current_px
     )
+
     for levels_group in levels_pair:
         levels.append(levels_group)
 
     return levels
 
 
-def sr_levels_range_of_pair_merged(df_1k: DataFrame, symbol: str) -> list[float]:
-    if symbol != "FITX":
+def get_sr_level_pairs_merged(
+    symbol_complete: str,
+    current_px: float,
+    key_time_pair: SrLevelKeyTimePair | None,
+) -> list[float]:
+    if not key_time_pair:
         return []
 
-    df_selected = _calc_key_time(df_1k, _TS_FUT_TW_BASIC)
-
     levels: list[float] = []
+    levels_pair = get_sr_level_pairs(symbol_complete, current_px, key_time_pair)
 
-    levels_pair = _sr_levels_range_of_pair(
-        df_selected,
-        group_basis=PxDataCol.AUTO_SR_GROUP_BASIS,
-        current_px=df_1k[PxDataCol.CLOSE][-1]
-    )
     for levels_group in levels_pair:
         levels.extend(levels_group)
 
-    return sorted(levels)
+    return levels

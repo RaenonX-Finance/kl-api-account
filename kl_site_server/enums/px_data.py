@@ -17,6 +17,15 @@ class PxDataCol:
 
     EPOCH_SEC_TIME = "epoch_sec_time"
 
+    # Other properties
+
+    SYMBOL_COMPLETE = "symbol_complete"
+    INTERVAL = "interval"
+    TIMESTAMP = "timestamp"
+    MACD_SIGNAL = "macd_signal"
+    MARKET_DATE_HIGH = "market_date_high"
+    MARKET_DATE_LOW = "market_date_low"
+
     # Common indicators
 
     @staticmethod

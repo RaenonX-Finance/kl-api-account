@@ -24,9 +24,11 @@ def _print_console(rich_console: Console, level: LogLevels, message: str, *, tim
         if not DEVELOPMENT_MODE:
             return
 
-    message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] " \
-              f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}: " \
-              f"{message}"
+    message = (
+        f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] "
+        f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}: "  # noqa: W605
+        f"{message}"
+    )
 
     if DEVELOPMENT_MODE:
         message = f"[bold][yellow]-DEV-[/yellow][/bold] {message}"

@@ -32,7 +32,7 @@ def record_session_connected(
         )
         user_db_session.insert_one(model.dict())
 
-        print_log(f"Session [cyan]created[/cyan] for account [yellow]{account_id}[/yellow]")
+        print_log(f"Session [cyan]created[/] for account [yellow]{account_id}[/]")
         return None
 
     session_model = UserSessionModel(**session)
@@ -44,8 +44,8 @@ def record_session_connected(
             {"$set": {"session_id": {namespace: session_id}}},
         )
         print_log(
-            f"Session [bold][red]replaced[/red][/bold] for account [yellow]{account_id}[/yellow] - "
-            f"Session ID `[cyan]{session_model.session_id}[/cyan]` to disconnect"
+            f"Session [bold red]replaced[/] for account [yellow]{account_id}[/] - "
+            f"Session ID `[cyan]{session_model.session_id}[/]` to disconnect"
         )
         return session_model.session_id
 
@@ -53,7 +53,7 @@ def record_session_connected(
         {"account_id": account_id},
         {"$set": {f"session_id.{namespace}": session_id}},
     )
-    print_log(f"Session [cyan]recorded[/cyan] for account [yellow]{account_id}[/yellow]")
+    print_log(f"Session [cyan]recorded[/] for account [yellow]{account_id}[/]")
     return None
 
 
@@ -70,4 +70,4 @@ def record_session_disconnected(
 ):
     filter_ = {f"session_id.{namespace}": session_id}
     user_db_session.find_one_and_update(filter_, {"$unset": filter_})
-    print_log(f"Session [yellow]{session_id}[/yellow] in [yellow]{namespace}[/yellow] disconnected")
+    print_log(f"Session [yellow]{session_id}[/] in [yellow]{namespace}[/] disconnected")

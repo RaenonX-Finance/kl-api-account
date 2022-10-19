@@ -18,7 +18,4 @@ class OnMarketDataReceivedEvent:
         return list(self.data.keys())
 
     def __str__(self):
-        return " / ".join(
-            f"[yellow]{data.security}[/yellow] @ {data.last_px:.2f}"
-            for data in self.data.values()
-        )
+        return " / ".join(f"[yellow]{data.security}[/] @ {data.last_px:.2f}" for data in self.data.values())

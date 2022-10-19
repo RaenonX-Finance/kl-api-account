@@ -32,7 +32,7 @@ class PxDataCacheEntry:
 
         if not is_ready:
             print_warning(
-                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] not ready"
+                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/] not ready"
             )
 
         return is_ready
@@ -41,7 +41,7 @@ class PxDataCacheEntry:
     def data_last_bar(self) -> BarDataDict | None:
         if not self.is_ready:
             print_warning(
-                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] "
+                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/] "
                 "not ready - failed to request last bar from `data`"
             )
 

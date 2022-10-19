@@ -53,9 +53,7 @@ def get_calculated_data_from_db(
     count_override: dict[tuple[str, int], int] | None = None,
     offset_override: dict[tuple[str, int], int] | None = None,
 ) -> CalculatedDataLookup:
-    print_log(
-        f"Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/yellow]"
-    )
+    print_log(f"Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/]")
 
     ret = CalculatedDataLookup()
 
@@ -103,8 +101,8 @@ def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
         all_recs_insert.extend(common_filter | rec for rec in recs)
 
     print_log(
-        f"Storing [purple]{len(all_recs_insert)}[/purple] calculated data of "
-        f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/yellow]"
+        f"Storing [purple]{len(all_recs_insert)}[/] calculated data of "
+        f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/]"
     )
 
     for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=1000):

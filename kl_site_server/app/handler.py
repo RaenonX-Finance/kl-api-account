@@ -23,7 +23,7 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
-        print_log(f"Px MKT Updated ({e} - [red]No active rooms[/red])")
+        print_log(f"Px MKT Updated ({e} - [red]No active rooms[/])")
         return
 
     tasks = []
@@ -40,7 +40,7 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
         tasks.append(socket_send_to_room(PxSocketEvent.UPDATED, message, namespace=namespace, room=room))
 
     if not tasks:
-        print_log(f"Px MKT Updated ({e} - [red]No active subs[/red])")
+        print_log(f"Px MKT Updated ({e} - [red]No active subs[/])")
         return
 
     await asyncio.gather(*tasks)
@@ -54,7 +54,7 @@ async def on_px_data_new_bar_created(
     securities_created: set[str]
 ):
     if not securities_created:
-        print_log("Px BAR Created ([red]No new bars created[/red])")
+        print_log("Px BAR Created ([red]No new bars created[/])")
         return
 
     _start = time.time()
@@ -63,13 +63,13 @@ async def on_px_data_new_bar_created(
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
-        print_log("Px BAR Created ([red]No active rooms[/red])")
+        print_log("Px BAR Created ([red]No active rooms[/])")
         return
 
     identifiers = set(identifier for room in rooms for identifier in get_px_data_identifiers_from_room_name(room))
 
     if not identifiers:
-        print_log("Px BAR Created ([red]No active subs[/red])")
+        print_log("Px BAR Created ([red]No active subs[/])")
         return
 
     px_data_dict: dict[str, PxData] = {
@@ -103,14 +103,14 @@ async def on_px_data_new_bar_created(
         ))
 
     if not tasks:
-        print_log("Px BAR Created ([red]No active rooms[/red])")
+        print_log("Px BAR Created ([red]No active rooms[/])")
         return
 
     await asyncio.gather(*tasks)
 
     print_log(
         f"Px BAR Created - {time.time() - _start:.3f} s "
-        f"({len(px_data_dict)} / [blue]{', '.join(sorted(identifiers))}[/blue])"
+        f"({len(px_data_dict)} / [blue]{', '.join(sorted(identifiers))}[/])"
     )
 
 

@@ -23,7 +23,7 @@ def start_server_app(
     params_list: list[TouchancePxRequestParams] = []
 
     for symbol_obj in SOURCE_SYMBOLS:
-        print_log(f"Queueing Px data requests of [yellow]{symbol_obj.security}[/yellow]")
+        print_log(f"Queueing Px data requests of [yellow]{symbol_obj.security}[/]")
 
         params_list.append(TouchancePxRequestParams(
             symbol_obj=symbol_obj,
@@ -39,7 +39,7 @@ def start_server_app(
 
     print_log(
         "Sending Px data requests of "
-        f"{' / '.join([f'[yellow]{params.symbol_obj.security}[/yellow]' for params in params_list])}"
+        f"{' / '.join([f'[yellow]{params.symbol_obj.security}[/]' for params in params_list])}"
     )
     client.request_px_data(params_list, re_calc_data=True)
 

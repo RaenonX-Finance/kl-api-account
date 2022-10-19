@@ -13,7 +13,7 @@ config = get_config()
 
 def print_configs():
     # Print current config
-    console.print("[cyan]--- Config content ---[/cyan]")
+    console.print("[cyan]--- Config content ---[/]")
     console.print(yaml.dump(config, default_flow_style=False))
 
 

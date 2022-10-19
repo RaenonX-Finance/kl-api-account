@@ -166,8 +166,8 @@ class TouchanceDataClient(TouchanceApiClient):
 
         for symbol_obj, interval_info in product_gen:
             if not self._px_data_cache.is_all_ready_of_intervals(
-                    [interval_info.interval],
-                    symbol_obj.symbol_complete
+                [interval_info.interval],
+                symbol_obj.symbol_complete
             ):
                 continue
 

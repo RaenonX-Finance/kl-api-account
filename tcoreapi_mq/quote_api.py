@@ -107,8 +107,15 @@ class QuoteAPI(TCoreZMQ):
 
             return GetPxHistoryMessage(message=self.socket.get_message())
 
-    def complete_get_history(self, symbol_complete: str, interval: HistoryInterval, start: str, end: str):
-        self.history_data_lock_dict[symbol_complete].release()
+    def complete_get_history(self, handshake: HistoryDataHandshake):
+        symbol_complete = handshake.symbol_complete
+        interval = handshake.data_type
+        start_time_str = handshake.start_time_str
+        end_time_str = handshake.end_time_str
+
+        if self.history_data_lock_dict[symbol_complete].locked():
+            # Request from other session could trigger this, therefore using `locked()` to guard
+            self.history_data_lock_dict[symbol_complete].release()
         print_log(
             f"[TC Quote] History data fetching completed for [yellow]{symbol_complete}[/yellow] "
             f"at [yellow]{interval}[/yellow] starting from {start_time_str} to {end_time_str}"

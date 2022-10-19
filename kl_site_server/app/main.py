@@ -20,9 +20,12 @@ def start_server_app(
     client = client_cls()
     client.start()
 
+    params_list: list[TouchancePxRequestParams] = []
+
     for symbol_obj in SOURCE_SYMBOLS:
-        print_log(f"Requesting Px data of [yellow]{symbol_obj.security}[/yellow]")
-        params = TouchancePxRequestParams(
+        print_log(f"Queueing Px data requests of [yellow]{symbol_obj.security}[/yellow]")
+
+        params_list.append(TouchancePxRequestParams(
             symbol_obj=symbol_obj,
             period_mins=(
                 period_mins if period_mins is not None else [period_min["min"] for period_min in DATA_PERIOD_MINS]
@@ -32,9 +35,13 @@ def start_server_app(
             ),
             history_range_1k=(latest_date - timedelta(days=DATA_DOWNLOAD_1K), latest_date),
             history_range_dk=(latest_date - timedelta(days=DATA_DOWNLOAD_DK), latest_date),
-        )
+        ))
 
-        client.request_px_data(params, re_calc_data=True)
+    print_log(
+        "Sending Px data requests of "
+        f"{' / '.join([f'[yellow]{params.symbol_obj.security}[/yellow]' for params in params_list])}"
+    )
+    client.request_px_data(params_list, re_calc_data=True)
 
     register_handlers(client)
     register_api_routes()

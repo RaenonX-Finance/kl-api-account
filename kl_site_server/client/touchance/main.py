@@ -111,10 +111,10 @@ class TouchanceDataClient(TouchanceApiClient):
                 print_log(f"[TC Client] Re-fetching history of [yellow]{params.symbol_obj.security}[/yellow]")
 
                 if params.period_mins:
-                    self.get_history(params.symbol_obj, "1K", start, end)
+                    self.get_history(params.symbol_obj, "1K", start, end, ignore_lock=True)
 
                 if params.period_days:
-                    self.get_history(params.symbol_obj, "DK", start, end)
+                    self.get_history(params.symbol_obj, "DK", start, end, ignore_lock=True)
 
     def on_received_history_data(self, data: HistoryData) -> None:
         print_log(

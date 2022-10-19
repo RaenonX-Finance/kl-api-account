@@ -61,10 +61,12 @@ class QuoteAPI(TCoreZMQ):
         symbol: SymbolBaseType,
         interval: HistoryInterval,
         start: datetime,
-        end: datetime,
+        end: datetime, *,
+        ignore_lock: bool = False
     ) -> SubscribePxHistoryMessage | None:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
-        self.history_data_lock_dict[symbol.symbol_complete].acquire()
+        if not ignore_lock:
+            self.history_data_lock_dict[symbol.symbol_complete].acquire()
         print_log(
             f"[TC Quote] Request history data of "
             f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "

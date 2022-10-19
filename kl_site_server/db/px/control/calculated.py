@@ -1,4 +1,7 @@
-from typing import NamedTuple
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from dataclasses import dataclass
+from itertools import product
+from typing import Iterable, NamedTuple
 
 import pymongo
 from pandas import DataFrame
@@ -11,20 +14,20 @@ from tcoreapi_mq.model import SymbolBaseType
 from ..const import px_data_calc_col
 
 
-def get_calculated_data_from_db(
-    symbol_obj: SymbolBaseType, period_min: int, *,
-    count: int | None = None, offset: int | None = None,
-) -> CommandCursor:
-    print_log(
-        f"[DB-Px] Getting [purple]{count or '(?)'}{f' (-{offset})' if offset else ''}[/purple] calculated data of "
-        f"[yellow]{symbol_obj.security}@{period_min}[/yellow]"
-    )
+@dataclass(kw_only=True)
+class GetCalcDataArgs:
+    symbol_complete: str
+    period_min: int
+    count: int | None = None
+    offset: int | None = None
 
+
+def _get_calculated_data_single(args: GetCalcDataArgs) -> CommandCursor:
     aggr_stages = [
         {
             "$match": {
-                "s": symbol_obj.symbol_complete,
-                "p": period_min
+                "s": args.symbol_complete,
+                "p": args.period_min
             }
         },
         {
@@ -33,7 +36,7 @@ def get_calculated_data_from_db(
             }
         },
         {
-            "$limit": (count or 2000) + (offset or 0)
+            "$limit": (args.count or 2000) + (args.offset or 0)
         },
         {
             "$sort": {
@@ -42,10 +45,57 @@ def get_calculated_data_from_db(
         },
     ]
 
-    if offset:
-        aggr_stages.append({"$skip": offset})
+    if args.offset:
+        aggr_stages.append({"$skip": args.offset})
 
     return px_data_calc_col.aggregate(aggr_stages)
+
+
+class CalculatedDataLookup:
+    def __init__(self):
+        self._data: dict[tuple[str, int], list[dict]] = {}
+
+    @staticmethod
+    def _make_key(symbol_complete: str, period_min: int) -> tuple[str, int]:
+        return symbol_complete, period_min
+
+    def add_data(self, symbol_complete: str, period_min: int, data: list[dict]):
+        self._data[self._make_key(symbol_complete, period_min)] = data
+
+    def get_calculated_data(self, symbol_complete: str, period_min: int) -> list[dict] | None:
+        return self._data.get(self._make_key(symbol_complete, period_min))
+
+
+def get_calculated_data_from_db(
+    symbol_complete_list: Iterable[str], period_mins: Iterable[int], *,
+    count: int | None = None, offset: int | None = None,
+    count_override: dict[tuple[str, int], int] | None = None,
+    offset_override: dict[tuple[str, int], int] | None = None,
+) -> CalculatedDataLookup:
+    print_log(
+        f"[DB-Px] Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/yellow]"
+    )
+
+    ret = CalculatedDataLookup()
+
+    with ThreadPoolExecutor() as executor:
+        future_to_args = {
+            executor.submit(
+                _get_calculated_data_single,
+                GetCalcDataArgs(
+                    symbol_complete=symbol_complete, period_min=period_min,
+                    count=(count_override or {}).get((symbol_complete, period_min)) or count,
+                    offset=(offset_override or {}).get((symbol_complete, period_min)) or offset,
+                )
+            ): (symbol_complete, period_min)
+            for symbol_complete, period_min in product(symbol_complete_list, period_mins)
+        }
+        for future in as_completed(future_to_args):
+            symbol_complete, period_min = future_to_args[future]
+
+            ret.add_data(symbol_complete, period_min, list(future.result()))
+
+    return ret
 
 
 class StoreCalculatedDataArgs(NamedTuple):

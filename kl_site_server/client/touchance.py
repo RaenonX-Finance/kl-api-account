@@ -18,7 +18,8 @@ from kl_site_server.calc import (
     calculate_indicators_partial,
 )
 from kl_site_server.db import (
-    StoreCalculatedDataArgs, get_calculated_data_from_db, get_history_data_from_db_full,
+    CalculatedDataLookup, StoreCalculatedDataArgs, get_calculated_data_from_db,
+    get_history_data_from_db_full,
     get_history_data_from_db_limit_count, get_history_data_from_db_timeframe, is_market_closed,
     store_calculated_to_db, store_history_to_db,
 )
@@ -155,16 +156,20 @@ class TouchanceDataClient(TouchanceApiClient):
     def _calc_data_update_new_bar(
         self,
         fn_get_history_data: Callable[[PeriodIntervalInfo], list[PxHistoryDataEntry]],
-        fn_get_cached_calculated_data: Callable[[SymbolBaseType, PeriodIntervalInfo], list[dict] | None],
+        fn_get_calculated_data_lookup: Callable[[list[str], list[int]], CalculatedDataLookup],
         symbols: Iterable[SymbolBaseType],
     ) -> None:
         interval_info_list = self._get_params_interval_info()
+        store_calculated_args: list[StoreCalculatedDataArgs] = []
         history_data_cache = DataCache(fn_get_history_data)
         product_gen: Iterator[tuple[SymbolBaseType, PeriodIntervalInfo]] = product(
             symbols,
             interval_info_list
         )
-        store_calculated_args: list[StoreCalculatedDataArgs] = []
+        calculated_data_lookup = fn_get_calculated_data_lookup(
+            [symbol.symbol_complete for symbol in symbols],
+            [interval_info.period_min for interval_info in interval_info_list]
+        )
 
         for symbol_obj, interval_info in product_gen:
             if not self._px_data_cache.is_all_ready_of_intervals(
@@ -173,7 +178,9 @@ class TouchanceDataClient(TouchanceApiClient):
             ):
                 continue
 
-            cached_calculated_data = fn_get_cached_calculated_data(symbol_obj, interval_info)
+            cached_calculated_data = calculated_data_lookup.get_calculated_data(
+                symbol_obj.symbol_complete, interval_info.period_min
+            )
 
             cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
             data_recs = history_data_cache.get_value((symbol_obj, interval_info))
@@ -215,25 +222,25 @@ class TouchanceDataClient(TouchanceApiClient):
 
             return data
 
-        def get_cached_calculated_data(
-            symbol_obj: SymbolBaseType,
-            interval_info: PeriodIntervalInfo
-        ) -> list[dict] | None:
-            return list(get_calculated_data_from_db(
-                symbol_obj, interval_info.period_min,
+        def get_calculated_data_lookup(
+            symbol_complete_list: list[str],
+            period_mins: list[int],
+        ) -> CalculatedDataLookup:
+            return get_calculated_data_from_db(
+                symbol_complete_list, period_mins,
                 count=MAX_PERIOD_NO_EMA
-            ))
+            )
 
         self._calc_data_update_new_bar(
             get_history_data,
-            get_cached_calculated_data,
+            get_calculated_data_lookup,
             self._px_data_cache.symbol_obj_in_use,
         )
 
     def _calc_data_update_common(
         self,
         fn_get_history_data: Callable[[PeriodIntervalInfo], list[PxHistoryDataEntry]],
-        fn_get_cached_calculated_data: Callable[[SymbolBaseType, PeriodIntervalInfo], tuple[list[dict] | None, bool]],
+        fn_get_calculated_data_lookup: Callable[[list[str], list[int]], CalculatedDataLookup],
         symbols: Iterable[SymbolBaseType], *,
         use_thread: bool,
         skip_if_locked: bool = True,
@@ -250,6 +257,10 @@ class TouchanceDataClient(TouchanceApiClient):
                     interval_info_list
                 )
                 store_calculated_args: list[StoreCalculatedDataArgs] = []
+                calculated_data_lookup = fn_get_calculated_data_lookup(
+                    [symbol.symbol_complete for symbol in symbols],
+                    [interval_info.period_min for interval_info in interval_info_list]
+                )
 
                 for symbol_obj, interval_info in product_gen:
                     symbol_complete = symbol_obj.symbol_complete
@@ -257,7 +268,9 @@ class TouchanceDataClient(TouchanceApiClient):
                     if not self._px_data_cache.is_all_ready_of_intervals([interval_info.interval], symbol_complete):
                         continue
 
-                    cached_calculated_data, full_update = fn_get_cached_calculated_data(symbol_obj, interval_info)
+                    cached_calculated_data = calculated_data_lookup.get_calculated_data(
+                        symbol_complete, interval_info.period_min
+                    )
                     cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
 
                     calculated_df = None
@@ -273,7 +286,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
                     if calculated_df is not None:
                         store_calculated_args.append(StoreCalculatedDataArgs(
-                            symbol_obj, interval_info.period_min, calculated_df, full_update
+                            symbol_obj, interval_info.period_min, calculated_df, cached_calculated_data is None
                         ))
                     else:
                         print_warning(
@@ -303,21 +316,18 @@ class TouchanceDataClient(TouchanceApiClient):
 
             return get_history_data_from_db_full(symbol_complete, interval).update_latest(last_entry).data
 
-        def get_cached_calculated_data(
-            symbol_obj: SymbolBaseType,
-            interval_info: PeriodIntervalInfo
-        ) -> tuple[list[dict] | None, bool]:
-            cached_calculated_data = list(get_calculated_data_from_db(
-                symbol_obj, interval_info.period_min,
+        def get_calculated_data_lookup(
+            symbol_complete_list: list[str],
+            period_mins: list[int],
+        ) -> CalculatedDataLookup:
+            return get_calculated_data_from_db(
+                symbol_complete_list, period_mins,
                 count=MAX_PERIOD
-            ))
-            full_update = not cached_calculated_data
-
-            return cached_calculated_data, full_update
+            )
 
         self._calc_data_update_common(
             get_history_data,
-            get_cached_calculated_data,
+            get_calculated_data_lookup,
             self._px_data_cache.symbol_obj_in_use,
             use_thread=True
         )
@@ -327,13 +337,16 @@ class TouchanceDataClient(TouchanceApiClient):
             symbol_obj_, interval_info = key
             return get_history_data_from_db_full(symbol_obj_.symbol_complete, interval_info.interval).data
 
-        def get_cached_calculated_data(_: SymbolBaseType, __: PeriodIntervalInfo) -> tuple[None, bool]:
-            return None, True
+        def get_calculated_data_lookup(
+            _: list[str],
+            __: list[int],
+        ) -> CalculatedDataLookup:
+            return CalculatedDataLookup()
 
         print_log(f"[TC Client] [blue]Started data re-calculation of [yellow]{symbol_obj.security}[/yellow][/blue]")
         self._calc_data_update_common(
             get_history_data,
-            get_cached_calculated_data,
+            get_calculated_data_lookup,
             {symbol_obj},
             use_thread=False,
             skip_if_locked=False,

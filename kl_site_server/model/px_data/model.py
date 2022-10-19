@@ -4,7 +4,6 @@ from math import ceil
 from typing import Iterable, TYPE_CHECKING
 
 from pandas.tseries.offsets import BDay
-from pymongo.command_cursor import CommandCursor
 
 if TYPE_CHECKING:
     from kl_site_server.db import UserConfigModel
@@ -73,11 +72,11 @@ class PxData:
         self, *,
         common: "PxDataCommon",
         px_data_config: PxDataConfig,
-        calculated_data_cursor: CommandCursor,
+        calculated_data: list["BarDataDict"],
     ):
         self.common: "PxDataCommon" = common
 
-        self.data: list["BarDataDict"] = list(calculated_data_cursor)
+        self.data: list["BarDataDict"] = calculated_data
 
         self.period_min: int = px_data_config.period_min
         self.offset: int | None = px_data_config.offset

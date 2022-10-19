@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 from typing import Iterable
 
 from kl_site_common.utils import print_warning
+from kl_site_server.db import CalculatedDataLookup
 from kl_site_server.enums import PxDataCol
 from kl_site_server.model import BarDataDict, PxData, PxDataCommon, PxDataConfig
 from tcoreapi_mq.message import HistoryInterval, RealtimeData, calc_market_date
@@ -141,7 +142,9 @@ class PxDataCacheEntry:
 
         return last_px
 
-    def to_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
+    def to_px_data(
+        self, px_data_configs: Iterable[PxDataConfig], calculated_data_lookup: CalculatedDataLookup
+    ) -> list[PxData]:
         if not self.is_ready:
             return []
 
@@ -154,4 +157,10 @@ class PxDataCacheEntry:
             last_px=self.latest_market.close if self.latest_market else self.data_last_px
         )
 
-        return [px_common.to_px_data(px_data_config) for px_data_config in px_data_configs]
+        return [
+            px_common.to_px_data(
+                px_data_config,
+                calculated_data_lookup.get_calculated_data(self.symbol_complete, px_data_config.period_min)
+            )
+            for px_data_config in px_data_configs
+        ]

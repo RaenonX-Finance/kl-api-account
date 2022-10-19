@@ -6,7 +6,7 @@ from typing import DefaultDict, Iterable
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.calc import CALC_STRENGTH_BARS_NEEDED, calc_strength
-from kl_site_server.db import is_market_closed, store_history_to_db_from_entries
+from kl_site_server.db import get_calculated_data_from_db, is_market_closed, store_history_to_db_from_entries
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .entry import PxDataCacheEntry
@@ -68,17 +68,40 @@ class PxDataCache:
 
         raise ValueError(f"No associated cache entry available for `{symbol_complete}`")
 
+    @staticmethod
+    def _get_px_data_of_interval(
+        px_data_config_lookup: defaultdict[str, list[PxDataConfig]],
+        data_holder_dict: dict[str, PxDataCacheEntry],
+    ) -> list[PxData]:
+        px_data_list = []
+
+        calculated_data_lookup = get_calculated_data_from_db(
+            px_data_config_lookup.keys(),
+            {config.period_min for configs in px_data_config_lookup.values() for config in configs},
+            count_override={
+                (symbol_complete, FUTURES_SECURITY_TO_SYM_OBJ[px_config.security].symbol_complete): px_config.limit
+                for symbol_complete, px_configs in px_data_config_lookup.items()
+                for px_config in px_configs
+            },
+            offset_override={
+                (symbol_complete, FUTURES_SECURITY_TO_SYM_OBJ[px_config.security].symbol_complete): px_config.offset
+                for symbol_complete, px_configs in px_data_config_lookup.items()
+                for px_config in px_configs
+            },
+        )
+
+        for symbol_complete, px_configs in px_data_config_lookup.items():
+            px_data_list.extend(data_holder_dict[symbol_complete].to_px_data(px_configs, calculated_data_lookup))
+
+        return px_data_list
+
     def get_px_data(self, px_data_configs: Iterable[PxDataConfig]) -> list[PxData]:
         lookup_1k, lookup_dk = self._get_px_data_config_to_lookup(px_data_configs)
 
-        px_data_list = []
-
-        for symbol_complete, px_configs in lookup_1k.items():
-            px_data_list.extend(self.data_1k[symbol_complete].to_px_data(px_configs))
-        for symbol_complete, px_configs in lookup_dk.items():
-            px_data_list.extend(self.data_dk[symbol_complete].to_px_data(px_configs))
-
-        return px_data_list
+        return [
+            *self._get_px_data_of_interval(lookup_1k, self.data_1k),
+            *self._get_px_data_of_interval(lookup_dk, self.data_dk)
+        ]
 
     def update_complete_data_of_symbol(self, data: HistoryData) -> None:
         symbol_complete = data.symbol_complete

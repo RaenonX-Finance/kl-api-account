@@ -107,8 +107,8 @@ class PxDataCache:
         symbol_complete = data.symbol_complete
 
         print_log(
-            f"Updating [purple]{data.data_len_as_str}[/purple] Px data bars "
-            f"to [yellow]{symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
+            f"Updating [purple]{data.data_len_as_str}[/] Px data bars "
+            f"to [yellow]{symbol_complete}[/] at [yellow]{data.data_type}[/]"
         )
         if data.is_1k:
             if symbol_complete not in self.data_1k:
@@ -213,7 +213,7 @@ class PxDataCache:
         for cache_entry in cache_body.values():
             if is_market_closed(cache_entry.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
                 print_log(
-                    f"[red]Skipped[/red] creating new bar of [yellow]{cache_entry.security}[/yellow] - "
+                    f"[red]Skipped[/] creating new bar of [yellow]{cache_entry.security}[/] - "
                     f"outside market hours"
                 )
                 continue
@@ -222,14 +222,14 @@ class PxDataCache:
 
             if not last_px:
                 print_log(
-                    f"[red]Skipped[/red] creating new bar of [yellow]{cache_entry.security}[/yellow] - "
+                    f"[red]Skipped[/] creating new bar of [yellow]{cache_entry.security}[/] - "
                     f"no last px"
                 )
                 continue
 
             print_log(
-                f"Creating new bar for [yellow]{cache_entry.security}[/yellow] "
-                f"in [yellow]{interval}[/yellow] at {data.timestamp}"
+                f"Creating new bar for [yellow]{cache_entry.security}[/] "
+                f"in [yellow]{interval}[/] at {data.timestamp}"
             )
 
             new_bars.append(PxHistoryDataEntry.make_new_bar(

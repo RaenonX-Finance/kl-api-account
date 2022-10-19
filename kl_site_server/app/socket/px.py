@@ -50,7 +50,7 @@ def register_handlers_px(client: TouchanceDataClient):
                 namespace=namespace,
                 additional=(
                     f"{time.time() - _start:.3f} s "
-                    f"({' / '.join(f'[yellow]{config}[/yellow]' for config in px_data_config)})"
+                    f"({' / '.join(f'[yellow]{config}[/]' for config in px_data_config)})"
                 )
             )
 
@@ -59,7 +59,7 @@ def register_handlers_px(client: TouchanceDataClient):
         identifiers = subscription_message["identifiers"]
         print_socket_event(
             PxSocketEvent.SUBSCRIBE,
-            session_id=session_id, namespace=namespace, additional=f"[yellow]{identifiers}[/yellow]",
+            session_id=session_id, namespace=namespace, additional=f"[yellow]{identifiers}[/]",
         )
 
         try:
@@ -75,7 +75,7 @@ def register_handlers_px(client: TouchanceDataClient):
         identifiers = subscription_message["identifiers"]
         print_socket_event(
             PxSocketEvent.UNSUBSCRIBE,
-            session_id=session_id, namespace=namespace, additional=f"[yellow]{identifiers}[/yellow]",
+            session_id=session_id, namespace=namespace, additional=f"[yellow]{identifiers}[/]",
         )
 
         socket_leave_room(session_id, make_px_sub_room_name(identifiers), namespace)
@@ -104,7 +104,7 @@ def register_handlers_px(client: TouchanceDataClient):
             print_socket_event(
                 PxSocketEvent.REQUEST,
                 session_id=session_id, namespace=namespace,
-                additional=f"{time.time() - _start:.3f} s / [yellow]{request_message['requests']}[/yellow]",
+                additional=f"{time.time() - _start:.3f} s / [yellow]{request_message['requests']}[/]",
             )
 
     @fast_api_socket.on(PxSocketEvent.DISCONNECT, namespace=namespace)

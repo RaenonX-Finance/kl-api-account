@@ -25,13 +25,13 @@ def _print_console(rich_console: Console, level: LogLevels, message: str, *, tim
             return
 
     message = (
-        f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] "
+        f"[{timestamp_color}]{_get_current_timestamp()}[/] "
         f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}: "  # noqa: W605
         f"{message}"
     )
 
     if DEVELOPMENT_MODE:
-        message = f"[bold][yellow]-DEV-[/yellow][/bold] {message}"
+        message = f"[bold yellow]-DEV-[/] {message}"
 
     rich_console.print(message, soft_wrap=True)  # Disable soft wrapping
 
@@ -44,7 +44,7 @@ def print_warning(message: str, *, force: bool = False):
     if LOG_SUPPRESS_WARNINGS and not force:
         return
 
-    _print_console(console, "WARNING", f"[yellow]{message}[/yellow]", timestamp_color="yellow")
+    _print_console(console, "WARNING", f"[yellow]{message}[/]", timestamp_color="yellow")
 
 
 def print_error(message: str):
@@ -52,10 +52,10 @@ def print_error(message: str):
 
 
 def print_socket_event(event: str, *, session_id: str, additional: str = "", namespace: "SocketNamespace" = "/"):
-    message = f"Received `[purple]{event}[/purple] @ [blue]{namespace}[/blue]`"
+    message = f"Received `[purple]{event}[/] @ [blue]{namespace}[/]`"
 
     if session_id:
-        message += f" - SID: [yellow]{session_id}[/yellow]"
+        message += f" - SID: [yellow]{session_id}[/]"
 
     if additional:
         message += f" - {additional}"

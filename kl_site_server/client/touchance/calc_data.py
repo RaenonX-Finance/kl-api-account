@@ -97,13 +97,13 @@ class CalculatedDataManager:
         if cached_calculated_df is None or not data_recs:
             print_warning(
                 "No history or cached calculated data available "
-                f"for [bold]{symbol_obj.security}[/bold]@{interval_info.period_min}"
+                f"for [bold]{symbol_obj.security}[/]@{interval_info.period_min}"
             )
             return None
 
         print_log(
             "Calculating indicators of "
-            f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/yellow] on partial data"
+            f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/] on partial data"
         )
 
         try:
@@ -144,14 +144,14 @@ class CalculatedDataManager:
         ):
             print_log(
                 "Calculating indicators of "
-                f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/yellow] on all data"
+                f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/] on all data"
             )
             calculated_df = calculate_indicators_full(interval_info.period_min, data_recs)
 
         if calculated_df is None:
             print_warning(
                 "No history or cached calculated data available "
-                f"for [bold]{symbol_obj.security}[/bold]@{interval_info.period_min}"
+                f"for [bold]{symbol_obj.security}[/]@{interval_info.period_min}"
             )
             return None
 
@@ -295,7 +295,7 @@ class CalculatedDataManager:
         ) -> CalculatedDataLookup:
             return CalculatedDataLookup()
 
-        print_log(f"[blue]Started data re-calculation of [yellow]{symbol_obj.security}[/yellow][/blue]")
+        print_log(f"[blue]Started data re-calculation of [yellow]{symbol_obj.security}[/]")
         self._calc_data_update_lockable(
             get_history_data,
             get_calculated_data_lookup,
@@ -305,4 +305,4 @@ class CalculatedDataManager:
             threaded=False,
             skip_if_locked=False,
         )
-        print_log(f"[blue]Completed data re-calculation of [yellow]{symbol_obj.security}[/yellow][/blue]")
+        print_log(f"[blue]Completed data re-calculation of [yellow]{symbol_obj.security}[/]")

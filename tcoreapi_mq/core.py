@@ -45,7 +45,7 @@ class TCoreZMQ:
             self.create_ping_pong(data.sub_port)
 
         print_log(f"Connected to port {data.sub_port}.")
-        print_log(f"Session Key: [yellow]{data.session_key}[/yellow]")
+        print_log(f"Session Key: [yellow]{data.session_key}[/]")
 
         return data
 
@@ -72,7 +72,7 @@ class TCoreZMQ:
         self.session_key_internal = None
 
     def query_instrument_info(self, symbol_obj: SymbolBaseType) -> QueryInstrumentMessage:
-        print_log(f"Requesting instrument info of [yellow]{symbol_obj.security}[/yellow]")
+        print_log(f"Requesting instrument info of [yellow]{symbol_obj.security}[/]")
 
         with self.lock:
             self.socket.send_string(QueryInstrumentRequest(
@@ -81,7 +81,7 @@ class TCoreZMQ:
             return QueryInstrumentMessage(symbol_obj=symbol_obj, message=self.socket.get_message())
 
     def query_all_instrument_info(self, instrument_type: InstrumentType) -> ErrorMessage:
-        print_log(f"Requesting all instrument info of type [yellow]{instrument_type}[/yellow]")
+        print_log(f"Requesting all instrument info of type [yellow]{instrument_type}[/]")
 
         with self.lock:
             req = QueryAllInstrumentRequest(session_key=self.session_key, instrument_type=instrument_type)

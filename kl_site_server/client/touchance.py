@@ -12,7 +12,10 @@ from kl_site_common.utils import DataCache, execute_async_function, print_log, p
 from kl_site_server.app import (
     on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )
-from kl_site_server.calc import calculate_indicators_full, calculate_indicators_last, calculate_indicators_partial
+from kl_site_server.calc import (
+    CachedDataTooOldError, calculate_indicators_full, calculate_indicators_last,
+    calculate_indicators_partial,
+)
 from kl_site_server.db import (
     StoreCalculatedDataArgs, get_calculated_data_from_db, get_history_data_from_db_full,
     get_history_data_from_db_limit_count, get_history_data_from_db_timeframe, is_market_closed,
@@ -178,11 +181,16 @@ class TouchanceDataClient(TouchanceApiClient):
                     "[TC Client] Calculating indicators of "
                     f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/yellow] on partial data"
                 )
-                calculated_df = calculate_indicators_partial(
-                    interval_info.period_min,
-                    data_recs,
-                    cached_calculated_df
-                )
+
+                try:
+                    calculated_df = calculate_indicators_partial(
+                        interval_info.period_min,
+                        data_recs,
+                        cached_calculated_df
+                    )
+                except CachedDataTooOldError:
+                    calculated_df = calculate_indicators_full(interval_info.period_min, data_recs)
+
                 store_calculated_args.append(StoreCalculatedDataArgs(
                     symbol_obj, interval_info.period_min, calculated_df, True
                 ))

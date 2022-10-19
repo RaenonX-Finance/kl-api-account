@@ -13,6 +13,10 @@ from .tie_point import calc_tie_point_full, calc_tie_point_partial, calc_tie_poi
 from ..px_data import aggregate_df
 
 
+class CachedDataTooOldError(Exception):
+    pass
+
+
 @df_fill_na_with_none
 def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> DataFrame:
     df = DataFrame(data_recs)
@@ -46,7 +50,7 @@ def calculate_indicators_partial(period_min: int, data_recs: dict[str, Any], cac
 
     close_match_idx_on_df = df_get_last_rev_index_of_matching_val(df, cached_calc_df, PxDataCol.CLOSE)
     if not close_match_idx_on_df:
-        close_match_idx_on_df = -len(df) + 1
+        raise CachedDataTooOldError()
 
     df = calc_tie_point_partial(df, cached_calc_df, close_match_idx_on_df, period_min)
 

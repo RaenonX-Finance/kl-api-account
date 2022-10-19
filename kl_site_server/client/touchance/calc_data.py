@@ -97,7 +97,7 @@ class CalculatedDataManager:
         if cached_calculated_df is None or not data_recs:
             print_warning(
                 "[TC Client] No history or cached calculated data available "
-                f"for [bold]{symbol_obj.symbol_complete}[/bold]@{interval_info.period_min}"
+                f"for [bold]{symbol_obj.security}[/bold]@{interval_info.period_min}"
             )
             return None
 
@@ -151,7 +151,7 @@ class CalculatedDataManager:
         if calculated_df is None:
             print_warning(
                 "[TC Client] No history or cached calculated data available "
-                f"for [bold]{symbol_complete}[/bold]@{interval_info.period_min}"
+                f"for [bold]{symbol_obj.security}[/bold]@{interval_info.period_min}"
             )
             return None
 

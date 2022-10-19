@@ -101,14 +101,14 @@ class TouchanceDataClient(TouchanceApiClient):
                 if is_market_closed(params.symbol_obj.security):
                     print_log(
                         f"[TC Client] Skipped re-fetching history of "
-                        f"[yellow]{params.symbol_obj.symbol_complete}[/yellow] - [red]market closed[/red]"
+                        f"[yellow]{params.symbol_obj.security}[/yellow] - [red]market closed[/red]"
                     )
                     continue
 
                 start = datetime.utcnow() - timedelta(hours=DATA_PX_REFETCH_BACKWARD_HOUR)
                 end = datetime.utcnow() + timedelta(minutes=2)
 
-                print_log(f"[TC Client] Re-fetching history of [yellow]{params.symbol_obj.symbol_complete}[/yellow]")
+                print_log(f"[TC Client] Re-fetching history of [yellow]{params.symbol_obj.security}[/yellow]")
 
                 if params.period_mins:
                     self.get_history(params.symbol_obj, "1K", start, end)

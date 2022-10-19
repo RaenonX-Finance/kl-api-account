@@ -31,7 +31,7 @@ class QuoteAPI(TCoreZMQ):
         return self._info[symbol_obj.symbol_complete]
 
     def subscribe_realtime(self, symbol: SymbolBaseType) -> SubscribeRealtimeMessage:
-        print_log(f"[TC Quote] Subscribing realtime data of [yellow]{symbol.symbol_complete}[/yellow]")
+        print_log(f"[TC Quote] Subscribing realtime data of [yellow]{symbol.security}[/yellow]")
 
         self._subscribing_realtime.add(symbol.symbol_complete)
 

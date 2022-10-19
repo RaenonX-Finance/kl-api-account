@@ -72,7 +72,7 @@ class TCoreZMQ:
         self.session_key_internal = None
 
     def query_instrument_info(self, symbol_obj: SymbolBaseType) -> QueryInstrumentMessage:
-        print_log(f"[ZMQ] Requesting instrument info of [yellow]{symbol_obj.symbol_complete}[/yellow]")
+        print_log(f"[ZMQ] Requesting instrument info of [yellow]{symbol_obj.security}[/yellow]")
 
         with self.lock:
             self.socket.send_string(QueryInstrumentRequest(

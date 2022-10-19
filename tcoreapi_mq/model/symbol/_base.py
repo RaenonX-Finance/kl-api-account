@@ -18,3 +18,9 @@ class SymbolBase(ABC):
             return False
 
         return hash(self) == hash(other)
+
+    def __str__(self):
+        return f"<{self.symbol_complete}>"
+
+    def __repr__(self):
+        return str(self)

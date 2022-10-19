@@ -5,7 +5,7 @@ from typing import Callable, Iterable, NamedTuple, TypeAlias
 
 from pandas import DataFrame
 
-from kl_site_common.utils import print_log, print_warning
+from kl_site_common.utils import DataCache, print_log, print_warning
 from kl_site_server.calc import (
     CachedDataTooOldError, calculate_indicators_full, calculate_indicators_last,
     calculate_indicators_partial,
@@ -27,16 +27,12 @@ class PeriodIntervalInfo(NamedTuple):
     max_period_num: int
 
 
-HistoryDataCacheKey: TypeAlias = tuple[SymbolBaseType, HistoryInterval]
-
-HistoryDataCache: TypeAlias = dict[HistoryDataCacheKey, list[PxHistoryDataEntry]]
-
-FuncGetHistoryData: TypeAlias = Callable[[SymbolBaseType, HistoryInterval, int], list[PxHistoryDataEntry]]
+FuncGetHistoryData: TypeAlias = Callable[[tuple[SymbolBaseType, HistoryInterval], int], list[PxHistoryDataEntry]]
 
 FuncGetCalculatedDataLookup: TypeAlias = Callable[[list[str], list[int]], CalculatedDataLookup]
 
 FuncSingleCalcDataUpdate: TypeAlias = Callable[
-    [SymbolBaseType, PeriodIntervalInfo, CalculatedDataLookup, HistoryDataCache],
+    [SymbolBaseType, PeriodIntervalInfo, CalculatedDataLookup, DataCache],
     StoreCalculatedDataArgs | None
 ]
 
@@ -80,7 +76,7 @@ class CalculatedDataManager:
         symbol_obj: SymbolBaseType,
         interval_info: PeriodIntervalInfo,
         calculated_data_lookup: CalculatedDataLookup,
-        history_data_cache: HistoryDataCache,
+        history_data_cache: DataCache,
     ) -> StoreCalculatedDataArgs | None:
         if not self._px_data_cache.is_all_ready_of_intervals(
                 [interval_info.interval],
@@ -93,7 +89,10 @@ class CalculatedDataManager:
         )
 
         cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
-        data_recs = history_data_cache[(symbol_obj, interval_info.interval)]
+        data_recs = history_data_cache.get_value(
+            (symbol_obj, interval_info.interval),
+            payload=interval_info.max_period_num
+        )
 
         if cached_calculated_df is None or not data_recs:
             print_warning(
@@ -123,7 +122,7 @@ class CalculatedDataManager:
         symbol_obj: SymbolBaseType,
         interval_info: PeriodIntervalInfo,
         calculated_data_lookup: CalculatedDataLookup,
-        history_data_cache: HistoryDataCache,
+        history_data_cache: DataCache,
     ) -> StoreCalculatedDataArgs | None:
         symbol_complete = symbol_obj.symbol_complete
 
@@ -139,7 +138,10 @@ class CalculatedDataManager:
         # Calculated data might not have newer bars
         if cached_calculated_df is not None:
             calculated_df = calculate_indicators_last(interval_info.period_min, cached_calculated_df)
-        elif data_recs := history_data_cache.get((symbol_obj, interval_info.interval)):
+        elif data_recs := history_data_cache.get_value(
+                (symbol_obj, interval_info.interval),
+                payload=interval_info.max_period_num
+        ):
             print_log(
                 "[TC Client] Calculating indicators of "
                 f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/yellow] on all data"
@@ -166,14 +168,7 @@ class CalculatedDataManager:
     ) -> None:
         interval_info_list = self._get_params_interval_info()
         store_calculated_args: list[StoreCalculatedDataArgs] = []
-        history_data_cache_keys: dict[HistoryDataCacheKey, int] = {
-            (symbol, interval_info.interval): interval_info.max_period_num
-            for symbol, interval_info in product(symbols, interval_info_list)
-        }
-        history_data_cache: HistoryDataCache = {
-            (symbol, interval): fn_get_history_data(symbol, interval, max_period_num)
-            for (symbol, interval), max_period_num in history_data_cache_keys.items()
-        }
+        history_data_cache: DataCache = DataCache(fn_get_history_data)
         calculated_data_lookup = fn_get_calculated_data_lookup(
             [symbol.symbol_complete for symbol in symbols],
             [interval_info.period_min for interval_info in interval_info_list]
@@ -219,8 +214,10 @@ class CalculatedDataManager:
 
     def update_calc_data_new_bar(self) -> None:
         def get_history_data(
-            symbol: SymbolBaseType, interval: HistoryInterval, max_period_num: int
+            key: tuple[SymbolBaseType, HistoryInterval], max_period_num: int
         ) -> list[PxHistoryDataEntry]:
+            symbol, interval = key
+
             data = get_history_data_from_db_limit_count(
                 symbol.symbol_complete,
                 interval,
@@ -246,9 +243,9 @@ class CalculatedDataManager:
         )
 
     def update_calc_data_last(self) -> None:
-        def get_history_data(
-            symbol: SymbolBaseType, interval: HistoryInterval, _: int
-        ) -> list[PxHistoryDataEntry]:
+        def get_history_data(key: tuple[SymbolBaseType, HistoryInterval], _: int) -> list[PxHistoryDataEntry]:
+            symbol, interval = key
+
             symbol_complete = symbol.symbol_complete
 
             last_entry = PxHistoryDataEntry.from_bar_data_dict(
@@ -278,9 +275,9 @@ class CalculatedDataManager:
         )
 
     def update_calc_data_full(self, symbol_obj: SymbolBaseType) -> None:
-        def get_history_data(
-            symbol: SymbolBaseType, interval: HistoryInterval, _: int
-        ) -> list[PxHistoryDataEntry]:
+        def get_history_data(key: tuple[SymbolBaseType, HistoryInterval], _: int) -> list[PxHistoryDataEntry]:
+            symbol, interval = key
+
             return get_history_data_from_db_full(symbol.symbol_complete, interval).data
 
         def get_calculated_data_lookup(

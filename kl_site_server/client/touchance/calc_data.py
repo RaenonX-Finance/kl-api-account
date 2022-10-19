@@ -38,28 +38,28 @@ FuncSingleCalcDataUpdate: TypeAlias = Callable[
 
 
 class CalculatedDataManager:
-    def __init__(self, px_data_cache: PxDataCache, px_request_params: dict[str, TouchancePxRequestParams]):
+    def __init__(self, px_data_cache: PxDataCache):
         self._px_data_cache: PxDataCache = px_data_cache
-        self._px_request_params: dict[str, TouchancePxRequestParams] = px_request_params
 
         self._update_calculated_data_lock: Lock = Lock()
         self._update_calculated_data_executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=8)
 
-    def _get_params_interval_info(self) -> set[PeriodIntervalInfo]:
+    @staticmethod
+    def _get_params_interval_info(params_list: Iterable[TouchancePxRequestParams]) -> set[PeriodIntervalInfo]:
         period_min_set = set()
 
         max_period_num: dict[HistoryInterval, int] = {
             "1K": max(
-                period_min for params in self._px_request_params.values()
+                period_min for params in params_list
                 for period_min in params.period_mins
             ),
             "DK": max(
-                period_day for params in self._px_request_params.values()
+                period_day for params in params_list
                 for period_day in params.period_days
             ),
         }
 
-        for params in self._px_request_params.values():
+        for params in params_list:
             period_min_set.update(
                 PeriodIntervalInfo(period_min, "1K", max_period_num["1K"])
                 for period_min in params.period_mins
@@ -79,8 +79,8 @@ class CalculatedDataManager:
         history_data_cache: DataCache,
     ) -> StoreCalculatedDataArgs | None:
         if not self._px_data_cache.is_all_ready_of_intervals(
-                [interval_info.interval],
-                symbol_obj.symbol_complete
+            [interval_info.interval],
+            symbol_obj.symbol_complete
         ):
             return None
 
@@ -164,14 +164,19 @@ class CalculatedDataManager:
         fn_get_history_data: FuncGetHistoryData,
         fn_get_calculated_data_lookup: FuncGetCalculatedDataLookup,
         fn_calc_update_single: FuncSingleCalcDataUpdate,
-        symbols: Iterable[SymbolBaseType]
+        symbols: Iterable[SymbolBaseType],
+        params_list: Iterable[TouchancePxRequestParams],
     ) -> None:
-        interval_info_list = self._get_params_interval_info()
+        if not params_list:
+            print_warning("No px request params available for updating calc data")
+            return
+
+        interval_info_set = self._get_params_interval_info(params_list)
         store_calculated_args: list[StoreCalculatedDataArgs] = []
         history_data_cache: DataCache = DataCache(fn_get_history_data)
         calculated_data_lookup = fn_get_calculated_data_lookup(
             [symbol.symbol_complete for symbol in symbols],
-            [interval_info.period_min for interval_info in interval_info_list]
+            [interval_info.period_min for interval_info in interval_info_set]
         )
 
         with ThreadPoolExecutor() as executor:
@@ -180,7 +185,7 @@ class CalculatedDataManager:
                     fn_calc_update_single,
                     symbol_obj, interval_info, calculated_data_lookup, history_data_cache
                 )
-                for symbol_obj, interval_info in product(symbols, interval_info_list)
+                for symbol_obj, interval_info in product(symbols, interval_info_set)
             ]):
                 if calc_args := future.result():
                     store_calculated_args.append(calc_args)
@@ -192,7 +197,9 @@ class CalculatedDataManager:
         fn_get_history_data: FuncGetHistoryData,
         fn_get_calculated_data_lookup: FuncGetCalculatedDataLookup,
         fn_calc_update_single: FuncSingleCalcDataUpdate,
-        symbols: Iterable[SymbolBaseType], *,
+        symbols: Iterable[SymbolBaseType],
+        params_list: Iterable[TouchancePxRequestParams],
+        *,
         skip_if_locked: bool,
         threaded: bool,
     ) -> None:
@@ -204,15 +211,15 @@ class CalculatedDataManager:
                 self._update_calculated_data_executor.submit(
                     self._calc_data_update,
                     fn_get_history_data, fn_get_calculated_data_lookup,
-                    fn_calc_update_single, symbols
+                    fn_calc_update_single, symbols, params_list
                 )
             else:
                 self._calc_data_update(
                     fn_get_history_data, fn_get_calculated_data_lookup,
-                    fn_calc_update_single, symbols
+                    fn_calc_update_single, symbols, params_list
                 )
 
-    def update_calc_data_new_bar(self) -> None:
+    def update_calc_data_new_bar(self, params_list: Iterable[TouchancePxRequestParams]) -> None:
         def get_history_data(
             key: tuple[SymbolBaseType, HistoryInterval], max_period_num: int
         ) -> list[PxHistoryDataEntry]:
@@ -239,10 +246,11 @@ class CalculatedDataManager:
             get_history_data,
             get_calculated_data_lookup,
             self._calc_data_update_single_new_bar,
-            self._px_data_cache.symbol_obj_in_use
+            self._px_data_cache.symbol_obj_in_use,
+            params_list,
         )
 
-    def update_calc_data_last(self) -> None:
+    def update_calc_data_last(self, params_list: Iterable[TouchancePxRequestParams]) -> None:
         def get_history_data(key: tuple[SymbolBaseType, HistoryInterval], _: int) -> list[PxHistoryDataEntry]:
             symbol, interval = key
 
@@ -270,11 +278,12 @@ class CalculatedDataManager:
             get_calculated_data_lookup,
             self._calc_data_update_single_common,
             self._px_data_cache.symbol_obj_in_use,
+            params_list,
             threaded=True,
             skip_if_locked=True,
         )
 
-    def update_calc_data_full(self, symbol_obj: SymbolBaseType) -> None:
+    def update_calc_data_full(self, symbol_obj: SymbolBaseType, params_list: list[TouchancePxRequestParams]) -> None:
         def get_history_data(key: tuple[SymbolBaseType, HistoryInterval], _: int) -> list[PxHistoryDataEntry]:
             symbol, interval = key
 
@@ -292,6 +301,7 @@ class CalculatedDataManager:
             get_calculated_data_lookup,
             self._calc_data_update_single_common,
             {symbol_obj},
+            params_list,
             threaded=False,
             skip_if_locked=False,
         )

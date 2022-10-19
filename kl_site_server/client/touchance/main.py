@@ -62,7 +62,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 # Ensure all history data requests are finished
                 # Not using context manager because sometimes it unlocked locked lock
                 self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
-                self._calc_data_manager.update_calc_data_full(params.symbol_obj)
+                self._calc_data_manager.update_calc_data_full(params.symbol_obj, [params])
                 if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
                     self.history_data_lock_dict[params.symbol_obj.symbol_complete].release()
 
@@ -133,7 +133,7 @@ class TouchanceDataClient(TouchanceApiClient):
         store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
-        self._calc_data_manager.update_calc_data_last()
+        self._calc_data_manager.update_calc_data_last(self._px_request_params.values())
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
@@ -165,13 +165,13 @@ class TouchanceDataClient(TouchanceApiClient):
                 f"Reason: [blue]{update_result.force_send_reason}[/blue]"
             )
 
-        self._calc_data_manager.update_calc_data_last()
+        self._calc_data_manager.update_calc_data_last(self._px_request_params.values())
         execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         securities_created = self._px_data_cache.make_new_bar(data)
 
-        self._calc_data_manager.update_calc_data_new_bar()
+        self._calc_data_manager.update_calc_data_new_bar(self._px_request_params.values())
 
         execute_async_function(
             asyncio.gather,

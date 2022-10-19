@@ -1,10 +1,9 @@
-from typing import Any
-
 from pandas import DataFrame
 
 from kl_site_common.const import INDICATOR_EMA_PERIODS
 from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val
 from kl_site_server.enums import PxDataCol
+from tcoreapi_mq.message import PxHistoryDataEntry
 from .candlestick import calc_candlestick_full, calc_candlestick_last, calc_candlestick_partial
 from .diff import calc_diff_full, calc_diff_last
 from .ema import calc_ema_full, calc_ema_last, calc_ema_partial
@@ -18,7 +17,7 @@ class CachedDataTooOldError(Exception):
 
 
 @df_fill_na_with_none
-def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> DataFrame:
+def calculate_indicators_full(period_min: int, data_recs: list[PxHistoryDataEntry]) -> DataFrame:
     df = DataFrame(data_recs)
 
     calc_set_epoch_index(df)
@@ -34,7 +33,9 @@ def calculate_indicators_full(period_min: int, data_recs: dict[str, Any]) -> Dat
 
 
 @df_fill_na_with_none
-def calculate_indicators_partial(period_min: int, data_recs: dict[str, Any], cached_calc_df: DataFrame) -> DataFrame:
+def calculate_indicators_partial(
+    period_min: int, data_recs: list[PxHistoryDataEntry], cached_calc_df: DataFrame
+) -> DataFrame:
     df = DataFrame(data_recs)
 
     df = aggregate_df(df, period_min)

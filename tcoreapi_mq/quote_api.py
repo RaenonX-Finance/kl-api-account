@@ -6,7 +6,8 @@ from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
 from kl_site_common.utils import print_log, print_warning
 from .core import TCoreZMQ
 from .message import (
-    CompletePxHistoryMessage, CompletePxHistoryRequest, GetPxHistoryMessage, GetPxHistoryRequest, HistoryInterval,
+    CompletePxHistoryMessage, CompletePxHistoryRequest, GetPxHistoryMessage, GetPxHistoryRequest, HistoryDataHandshake,
+    HistoryInterval,
     QueryInstrumentProduct, SubscribePxHistoryMessage, SubscribePxHistoryRequest,
     SubscribeRealtimeMessage, SubscribeRealtimeRequest, UnsubscribeRealtimeMessage, UnsubscribeRealtimeRequest,
 )
@@ -87,10 +88,7 @@ class QuoteAPI(TCoreZMQ):
 
             return SubscribePxHistoryMessage(message=self.socket.get_message())
 
-    def get_paged_history(
-        self, symbol_complete: str, interval: HistoryInterval,
-        start: str, end: str, query_idx: int = 0
-    ) -> GetPxHistoryMessage:
+    def get_paged_history(self, handshake: HistoryDataHandshake, query_idx: int = 0) -> GetPxHistoryMessage:
         """
         Usually this is called after receiving the subscription data after calling ``subscribe_history()``.
 
@@ -99,10 +97,10 @@ class QuoteAPI(TCoreZMQ):
         with self.lock:
             req = GetPxHistoryRequest(
                 session_key=self.session_key,
-                symbol_complete=symbol_complete,
-                interval=interval,
-                start_time_str=start,
-                end_time_str=end,
+                symbol_complete=handshake.symbol_complete,
+                interval=handshake.data_type,
+                start_time_str=handshake.start_time_str,
+                end_time_str=handshake.end_time_str,
                 query_idx=query_idx
             )
             self.socket.send_string(req.to_message())
@@ -113,7 +111,7 @@ class QuoteAPI(TCoreZMQ):
         self.history_data_lock_dict[symbol_complete].release()
         print_log(
             f"[TC Quote] History data fetching completed for [yellow]{symbol_complete}[/yellow] "
-            f"at [yellow]{interval}[/yellow] starting from {start} to {end}"
+            f"at [yellow]{interval}[/yellow] starting from {start_time_str} to {end_time_str}"
         )
 
         with self.lock:
@@ -121,8 +119,8 @@ class QuoteAPI(TCoreZMQ):
                 session_key=self.session_key,
                 symbol_complete=symbol_complete,
                 interval=interval,
-                start_time_str=start,
-                end_time_str=end
+                start_time_str=handshake.start_time_str,
+                end_time_str=handshake.end_time_str
             )
             self.socket.send_string(req.to_message())
 

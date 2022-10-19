@@ -73,10 +73,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     history_data_of_event: dict[datetime, PxHistoryDataEntry] = {}
 
                     while True:
-                        history_data_paged = self.get_paged_history(
-                            handshake.symbol_complete, handshake.data_type,
-                            handshake.start_time_str, handshake.end_time_str, query_idx
-                        )
+                        history_data_paged = self.get_paged_history(handshake, query_idx)
 
                         if not history_data_paged.data:
                             break
@@ -84,10 +81,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         history_data_of_event.update(history_data_paged.data)
                         query_idx = history_data_paged.last_query_idx
 
-                    self.complete_get_history(
-                        handshake.symbol_complete, handshake.data_type,
-                        handshake.start_time_str, handshake.end_time_str
-                    )
+                    self.complete_get_history(handshake)
 
                     if history_data_of_event:
                         self.on_received_history_data(HistoryData.from_socket_message(

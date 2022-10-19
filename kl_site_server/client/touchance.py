@@ -1,5 +1,6 @@
 import asyncio
 import time
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timedelta
 from itertools import product
 from threading import Lock, Thread
@@ -44,6 +45,7 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
         self._update_calculated_data_lock: Lock = Lock()
+        self._update_calculated_data_executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=2)
 
         Thread(target=self._history_data_refetcher).start()
 
@@ -282,7 +284,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 store_calculated_to_db(store_calculated_args)
 
         if use_thread:
-            Thread(target=update_calculated_data_exec).start()
+            self._update_calculated_data_executor.submit(update_calculated_data_exec).result()
         else:
             update_calculated_data_exec()
 

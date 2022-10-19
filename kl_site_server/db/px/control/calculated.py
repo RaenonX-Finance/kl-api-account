@@ -5,7 +5,6 @@ from typing import Iterable, NamedTuple
 
 import pymongo
 from pandas import DataFrame
-from pymongo.command_cursor import CommandCursor
 
 from kl_site_common.db import start_mongo_txn
 from kl_site_common.utils import print_log, split_chunks
@@ -22,33 +21,15 @@ class GetCalcDataArgs:
     offset: int | None = None
 
 
-def _get_calculated_data_single(args: GetCalcDataArgs) -> CommandCursor:
-    aggr_stages = [
-        {
-            "$match": {
-                "s": args.symbol_complete,
-                "p": args.period_min
-            }
-        },
-        {
-            "$sort": {
-                PxDataCol.EPOCH_SEC: pymongo.DESCENDING
-            }
-        },
-        {
-            "$limit": (args.count or 2000) + (args.offset or 0)
-        },
-        {
-            "$sort": {
-                PxDataCol.EPOCH_SEC: pymongo.ASCENDING
-            }
-        },
-    ]
+def _get_calculated_data_single(args: GetCalcDataArgs) -> Iterable[dict]:
+    cursor = px_data_calc_col.find({"s": args.symbol_complete, "p": args.period_min}) \
+        .sort(PxDataCol.EPOCH_SEC, pymongo.DESCENDING) \
+        .limit((args.count or 2000) + (args.offset or 0))
 
     if args.offset:
-        aggr_stages.append({"$skip": args.offset})
+        cursor = cursor.skip(args.offset)
 
-    return px_data_calc_col.aggregate(aggr_stages)
+    return reversed(list(cursor))
 
 
 class CalculatedDataLookup:

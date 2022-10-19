@@ -79,12 +79,12 @@ class PxDataCache:
             px_data_config_lookup.keys(),
             {config.period_min for configs in px_data_config_lookup.values() for config in configs},
             count_override={
-                (symbol_complete, FUTURES_SECURITY_TO_SYM_OBJ[px_config.security].symbol_complete): px_config.limit
+                (symbol_complete, px_config.period_min): px_config.limit
                 for symbol_complete, px_configs in px_data_config_lookup.items()
                 for px_config in px_configs
             },
             offset_override={
-                (symbol_complete, FUTURES_SECURITY_TO_SYM_OBJ[px_config.security].symbol_complete): px_config.offset
+                (symbol_complete, px_config.period_min): px_config.offset
                 for symbol_complete, px_configs in px_data_config_lookup.items()
                 for px_config in px_configs
             },

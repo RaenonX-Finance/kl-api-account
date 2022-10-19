@@ -25,7 +25,7 @@ def _print_console(rich_console: Console, level: LogLevels, message: str, *, tim
             return
 
     message = f"[{timestamp_color}]{_get_current_timestamp()}[/{timestamp_color}] " \
-              f"[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}: " \
+              f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}: " \
               f"{message}"
 
     if DEVELOPMENT_MODE:

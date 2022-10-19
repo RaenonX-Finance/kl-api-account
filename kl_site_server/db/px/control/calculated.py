@@ -54,7 +54,7 @@ def get_calculated_data_from_db(
     offset_override: dict[tuple[str, int], int] | None = None,
 ) -> CalculatedDataLookup:
     print_log(
-        f"[DB-Px] Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/yellow]"
+        f"Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/yellow]"
     )
 
     ret = CalculatedDataLookup()
@@ -103,7 +103,7 @@ def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
         all_recs_insert.extend(common_filter | rec for rec in recs)
 
     print_log(
-        f"[DB-Px] Storing [purple]{len(all_recs_insert)}[/purple] calculated data of "
+        f"Storing [purple]{len(all_recs_insert)}[/purple] calculated data of "
         f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/yellow]"
     )
 

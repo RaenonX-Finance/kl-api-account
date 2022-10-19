@@ -32,7 +32,7 @@ def get_history_data_from_db_timeframe(
     end: datetime,
 ) -> DbHistoryDataResult:
     print_log(
-        f"[DB-Px] Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
+        f"Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
         f"starting from {start} to {end}"
     )
 
@@ -55,7 +55,7 @@ def get_history_data_from_db_limit_count(
     count: int,
 ) -> DbHistoryDataResult:
     print_log(
-        f"[DB-Px] Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
+        f"Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
         f"- {count} bars"
     )
 
@@ -94,7 +94,7 @@ def get_history_data_from_db_full(
     interval: HistoryInterval,
 ) -> DbHistoryDataResult:
     print_log(
-        f"[DB-Px] Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
+        f"Requesting history data of [yellow]{symbol_complete}[/yellow] at [yellow]{interval}[/yellow] "
         "- All bars"
     )
 
@@ -131,7 +131,7 @@ def get_history_data_at_time_from_db(
 
 def store_history_to_db(data: HistoryData):
     print_log(
-        f"[DB-Px] Storing [purple]{data.data_len_as_str}[/purple] history data of "
+        f"Storing [purple]{data.data_len_as_str}[/purple] history data of "
         f"[yellow]{data.symbol_complete}[/yellow] at [yellow]{data.data_type}[/yellow]"
     )
 
@@ -145,7 +145,7 @@ def store_history_to_db(data: HistoryData):
 
 
 def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):
-    print_log(f"[DB-Px] Storing [purple]{len(entries)}[/purple] history data entries")
+    print_log(f"Storing [purple]{len(entries)}[/purple] history data entries")
 
     for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], chunk_size=1000):
         with start_mongo_txn() as session:

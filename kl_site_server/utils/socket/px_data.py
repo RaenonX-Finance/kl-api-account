@@ -94,7 +94,7 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
     }
 
     if not px_data.data:
-        print_warning(f"[Socket] Px data of `{px_data.unique_identifier}` does not contain any data")
+        print_warning(f"Px data of `{px_data.unique_identifier}` does not contain any data")
         return []
 
     return data_rename_col(px_data.data, columns)

@@ -47,7 +47,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     data = RealtimeData(message)
 
                     if not data.is_valid:
-                        print_warning(f"[Client] Received invalid (no trade) realtime data from {data.security}")
+                        print_warning(f"Received invalid (no trade) realtime data from {data.security}")
                         return
 
                     if not self.is_subscribing_realtime(data.symbol_complete):
@@ -64,7 +64,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     handshake = HistoryDataHandshake(message)
 
                     if not handshake.is_ready:
-                        print_warning(f"[Client] Status of history data handshake is not ready ({handshake.status})")
+                        print_warning(f"Status of history data handshake is not ready ({handshake.status})")
                         return
 
                     query_idx = 0
@@ -90,7 +90,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         ))
                     else:
                         print_error(
-                            f"[Client] No history data available for "
+                            f"No history data available for "
                             f"[bold]{handshake.symbol_complete}[/bold] ({handshake.data_type})",
                         )
                 case "PING" | "UNSUBQUOTE":
@@ -98,9 +98,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                 case "SYSTEMTIME":
                     self.on_system_time_min_change(SystemTimeData(message))
                 case _:
-                    print_warning(f"[TC API] Unknown message data type: {message.data_type}")
+                    print_warning(f"Unknown message data type: {message.data_type}")
         except Exception as e:
-            print_error(f"[TC API] Error occurred on message received: {message.body}")
+            print_error(f"Error occurred on message received: {message.body}")
             self.on_error(f"Error occurred on receiving message type: {message.data_type} ({e.args})")
             raise e
 

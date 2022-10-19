@@ -23,7 +23,7 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
-        print_log(f"[Server] Px MKT Updated ({e} - [red]No active rooms[/red])")
+        print_log(f"Px MKT Updated ({e} - [red]No active rooms[/red])")
         return
 
     tasks = []
@@ -40,13 +40,13 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
         tasks.append(socket_send_to_room(PxSocketEvent.UPDATED, message, namespace=namespace, room=room))
 
     if not tasks:
-        print_log(f"[Server] Px MKT Updated ({e} - [red]No active subs[/red])")
+        print_log(f"Px MKT Updated ({e} - [red]No active subs[/red])")
         return
 
     await asyncio.gather(*tasks)
 
     # `rooms` may contain rooms that are not handling market px update
-    print_log(f"[Server] Px MKT Updated ({e} - {len(tasks)} subs)")
+    print_log(f"Px MKT Updated ({e} - {len(tasks)} subs)")
 
 
 async def on_px_data_new_bar_created(
@@ -54,7 +54,7 @@ async def on_px_data_new_bar_created(
     securities_created: set[str]
 ):
     if not securities_created:
-        print_log("[Server] Px BAR Created ([red]No new bars created[/red])")
+        print_log("Px BAR Created ([red]No new bars created[/red])")
         return
 
     _start = time.time()
@@ -63,13 +63,13 @@ async def on_px_data_new_bar_created(
     rooms = fast_api_socket.manager.rooms.get(namespace)
 
     if not rooms:
-        print_log("[Server] Px BAR Created ([red]No active rooms[/red])")
+        print_log("Px BAR Created ([red]No active rooms[/red])")
         return
 
     identifiers = set(identifier for room in rooms for identifier in get_px_data_identifiers_from_room_name(room))
 
     if not identifiers:
-        print_log("[Server] Px BAR Created ([red]No active subs[/red])")
+        print_log("Px BAR Created ([red]No active subs[/red])")
         return
 
     px_data_dict: dict[str, PxData] = {
@@ -103,13 +103,13 @@ async def on_px_data_new_bar_created(
         ))
 
     if not tasks:
-        print_log("[Server] Px BAR Created ([red]No active rooms[/red])")
+        print_log("Px BAR Created ([red]No active rooms[/red])")
         return
 
     await asyncio.gather(*tasks)
 
     print_log(
-        f"[Server] Px BAR Created - {time.time() - _start:.3f} s "
+        f"Px BAR Created - {time.time() - _start:.3f} s "
         f"({len(px_data_dict)} / [blue]{', '.join(sorted(identifiers))}[/blue])"
     )
 
@@ -117,10 +117,10 @@ async def on_px_data_new_bar_created(
 async def on_system_time_min_change(data: SystemTimeData):
     namespace: SocketNamespace = "/px"
 
-    print_log(f"[Server] Server minute change to {data.timestamp} ({data.epoch_sec})")
+    print_log(f"Server minute change to {data.timestamp} ({data.epoch_sec})")
     await socket_send_to_all(PxSocketEvent.MIN_CHANGE, to_socket_min_change(data), namespace=namespace)
 
 
 async def on_error(e: OnErrorEvent):
-    print_error(f"[Server] Error ({e.message})")
+    print_error(f"Error ({e.message})")
     await socket_send_to_all(GeneralSocketEvent.ERROR, to_socket_message_error(e))

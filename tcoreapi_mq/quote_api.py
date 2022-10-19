@@ -31,7 +31,7 @@ class QuoteAPI(TCoreZMQ):
         return self._info[symbol_obj.symbol_complete]
 
     def subscribe_realtime(self, symbol: SymbolBaseType) -> SubscribeRealtimeMessage:
-        print_log(f"[TC Quote] Subscribing realtime data of [yellow]{symbol.security}[/yellow]")
+        print_log(f"Subscribing realtime data of [yellow]{symbol.security}[/yellow]")
 
         self._subscribing_realtime.add(symbol.symbol_complete)
 
@@ -45,7 +45,7 @@ class QuoteAPI(TCoreZMQ):
         return symbol_complete in self._subscribing_realtime
 
     def unsubscribe_realtime(self, symbol_complete: str) -> UnsubscribeRealtimeMessage:
-        print_log(f"[TC Quote] Unsubscribing realtime data from [yellow]{symbol_complete}[/yellow]")
+        print_log(f"Unsubscribing realtime data from [yellow]{symbol_complete}[/yellow]")
 
         if self.is_subscribing_realtime(symbol_complete):
             self._subscribing_realtime.remove(symbol_complete)
@@ -68,7 +68,7 @@ class QuoteAPI(TCoreZMQ):
         if not ignore_lock:
             self.history_data_lock_dict[symbol.symbol_complete].acquire()
         print_log(
-            f"[TC Quote] Request history data of "
+            f"Request history data of "
             f"[yellow]{symbol.security}[/yellow] at [yellow]{interval}[/yellow] "
             f"starting from {start} to {end}"
         )
@@ -85,7 +85,7 @@ class QuoteAPI(TCoreZMQ):
 
                 self.socket.send_string(req.to_message())
             except ValueError:
-                print_warning(f"[TC Quote] Omit history data request (Start = End, {start} ~ {end})")
+                print_warning(f"Omit history data request (Start = End, {start} ~ {end})")
                 return None
 
             return SubscribePxHistoryMessage(message=self.socket.get_message())
@@ -119,7 +119,7 @@ class QuoteAPI(TCoreZMQ):
             # Request from other session could trigger this, therefore using `locked()` to guard
             self.history_data_lock_dict[symbol_complete].release()
         print_log(
-            f"[TC Quote] History data fetching completed for [yellow]{symbol_complete}[/yellow] "
+            f"History data fetching completed for [yellow]{symbol_complete}[/yellow] "
             f"at [yellow]{interval}[/yellow] starting from {start_time_str} to {end_time_str}"
         )
 

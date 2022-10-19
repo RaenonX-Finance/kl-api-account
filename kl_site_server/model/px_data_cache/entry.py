@@ -32,7 +32,7 @@ class PxDataCacheEntry:
 
         if not is_ready:
             print_warning(
-                f"[Server] Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] not ready"
+                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] not ready"
             )
 
         return is_ready
@@ -41,7 +41,7 @@ class PxDataCacheEntry:
     def data_last_bar(self) -> BarDataDict | None:
         if not self.is_ready:
             print_warning(
-                f"[Server] Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] "
+                f"Px data cache entry of [bold]{self.security}@{self.interval_sec // 60}[/bold] "
                 "not ready - failed to request last bar from `data`"
             )
 
@@ -72,7 +72,7 @@ class PxDataCacheEntry:
         if self.data:
             self.latest_epoch_sec = max(self.data.keys())
         else:
-            print_warning("[Server] `PxDataCacheEntry.update_all()` called, but `bars` is empty")
+            print_warning("`PxDataCacheEntry.update_all()` called, but `bars` is empty")
 
     def update_latest_market(self, data: RealtimeData):
         """
@@ -82,7 +82,7 @@ class PxDataCacheEntry:
         """
         if self.security != data.security:
             print_warning(
-                f"[Server] `update_latest_market()` called at the wrong place - "
+                f"`update_latest_market()` called at the wrong place - "
                 f"symbol not match ({self.security} / {data.security})"
             )
             return

@@ -93,14 +93,14 @@ class TouchanceDataClient(TouchanceApiClient):
         while True:
             time.sleep(DATA_PX_REFETCH_INTERVAL_SEC)
             if not self._px_data_cache.is_all_px_data_ready():
-                print_warning("[TC Client] Skipped re-fetching history px data - not all px data are ready")
+                print_warning("Skipped re-fetching history px data - not all px data are ready")
                 continue
 
             # Create list to avoid size change during iteration error
             for params in list(self._px_request_params.values()):
                 if is_market_closed(params.symbol_obj.security):
                     print_log(
-                        f"[TC Client] Skipped re-fetching history of "
+                        f"Skipped re-fetching history of "
                         f"[yellow]{params.symbol_obj.security}[/yellow] - [red]market closed[/red]"
                     )
                     continue
@@ -108,7 +108,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 start = datetime.utcnow() - timedelta(hours=DATA_PX_REFETCH_BACKWARD_HOUR)
                 end = datetime.utcnow() + timedelta(minutes=2)
 
-                print_log(f"[TC Client] Re-fetching history of [yellow]{params.symbol_obj.security}[/yellow]")
+                print_log(f"Re-fetching history of [yellow]{params.symbol_obj.security}[/yellow]")
 
                 if params.period_mins:
                     self.get_history(params.symbol_obj, "1K", start, end, ignore_lock=True)
@@ -118,7 +118,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
     def on_received_history_data(self, data: HistoryData) -> None:
         print_log(
-            f"[TC Client] Received history data of [yellow]{data.symbol_complete}[/yellow] "
+            f"Received history data of [yellow]{data.symbol_complete}[/yellow] "
             f"at [yellow]{data.data_type}[/yellow]"
         )
 
@@ -130,7 +130,7 @@ class TouchanceDataClient(TouchanceApiClient):
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
             print_log(
-                f"[TC Client] [red]Ignoring[/red] market Px data of [yellow]{data.security}[/yellow] - "
+                f"[red]Ignoring[/red] market Px data of [yellow]{data.security}[/yellow] - "
                 f"outside market hours"
             )
             return
@@ -141,7 +141,7 @@ class TouchanceDataClient(TouchanceApiClient):
             params = self._px_request_params[data.symbol_complete]
 
             if params.should_re_request:
-                print_warning(f"[TC Client] Re-requesting Px data of {data.security}")
+                print_warning(f"Re-requesting Px data of {data.security}")
                 self.request_px_data(params, re_calc_data=False)
 
             return
@@ -153,7 +153,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         if update_result.is_force_send:
             print_log(
-                f"[TC Client] [yellow]Force-sending[/yellow] market Px - "
+                f"[yellow]Force-sending[/yellow] market Px - "
                 f"Reason: [blue]{update_result.force_send_reason}[/blue]"
             )
 

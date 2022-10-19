@@ -31,39 +31,47 @@ class TouchanceDataClient(TouchanceApiClient):
 
         Thread(target=self._history_data_refetcher).start()
 
-    def request_px_data(self, params: TouchancePxRequestParams, *, re_calc_data: bool) -> None:
-        if not params.period_mins and not params.period_days:
-            raise ValueError("Both `period_mins` or `period_days` in `params` cannot be 0 length at the same time")
+    def request_px_data(self, params_list: list[TouchancePxRequestParams], *, re_calc_data: bool) -> None:
+        for params in params_list:
+            if not params.period_mins and not params.period_days:
+                raise ValueError(
+                    "Both `period_mins` or `period_days` in `params` "
+                    "cannot be 0 length at the same time"
+                )
 
-        params.reset_request_timeout()
-        self._px_request_params[params.symbol_obj.symbol_complete] = params
+            params.reset_request_timeout()
 
-        instrument_info = self.get_symbol_info(params.symbol_obj)
+            instrument_info = self.get_symbol_info(params.symbol_obj)
 
-        self._px_data_cache.init_entry(
-            symbol_obj=params.symbol_obj,
-            min_tick=instrument_info.tick,
-            decimals=instrument_info.decimals,
-            period_mins=params.period_mins,
-            period_days=params.period_days
-        )
+            self._px_data_cache.init_entry(
+                symbol_obj=params.symbol_obj,
+                min_tick=instrument_info.tick,
+                decimals=instrument_info.decimals,
+                period_mins=params.period_mins,
+                period_days=params.period_days
+            )
 
-        if params.period_mins:
-            self.get_history_including_db(params.symbol_obj, "1K", *params.history_range_1k)
+            if params.period_mins:
+                self.get_history_including_db(params.symbol_obj, "1K", *params.history_range_1k)
 
-        if params.period_days:
-            self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
+            if params.period_days:
+                self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
 
-        # Needs to be placed before `subscribe_realtime`
-        if re_calc_data:
-            # Ensure all history data requests are finished
-            # Not using context manager because sometimes it unlocked locked lock
-            self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
-            self._calc_data_manager.update_calc_data_full(params.symbol_obj)
-            if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
-                self.history_data_lock_dict[params.symbol_obj.symbol_complete].release()
+            # Needs to be placed before `subscribe_realtime`
+            if re_calc_data:
+                # Ensure all history data requests are finished
+                # Not using context manager because sometimes it unlocked locked lock
+                self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
+                self._calc_data_manager.update_calc_data_full(params.symbol_obj)
+                if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
+                    self.history_data_lock_dict[params.symbol_obj.symbol_complete].release()
 
-        self.subscribe_realtime(params.symbol_obj)
+        # Those actions should only happen after complete data calculation
+        for params in params_list:
+            self.subscribe_realtime(params.symbol_obj)
+
+            # Params should be recorded only after all the calls are done
+            self._px_request_params[params.symbol_obj.symbol_complete] = params
 
     def get_history_including_db(
         self,
@@ -142,7 +150,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
             if params.should_re_request:
                 print_warning(f"Re-requesting Px data of {data.security}")
-                self.request_px_data(params, re_calc_data=False)
+                self.request_px_data([params], re_calc_data=False)
 
             return
 

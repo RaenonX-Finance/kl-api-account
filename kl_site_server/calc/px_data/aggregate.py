@@ -23,6 +23,10 @@ _AGGREGATE_IGNORE_COLUMNS: set[str] = {
     PxDataCol.EPOCH_SEC,  # Group basis, will be included
 }
 
+_AGGREGATE_NO_DROP_COLUMNS: set[str] = {
+    PxDataCol.EPOCH_SEC,  # Group basis, don't drop
+}
+
 
 def aggregate_df(df_1k: DataFrame, period_min: int) -> DataFrame:
     df = df_1k.copy()  # Avoid accidental data override
@@ -46,4 +50,7 @@ def aggregate_df(df_1k: DataFrame, period_min: int) -> DataFrame:
             f"  (Skipped): {sorted(skipped_columns)}"
         )
 
-    return df.groupby([PxDataCol.EPOCH_SEC]).agg(_AGGREGATE_DICT)
+    return df \
+        .groupby([PxDataCol.EPOCH_SEC]) \
+        .agg(_AGGREGATE_DICT) \
+        .drop(columns=_AGGREGATE_IGNORE_COLUMNS - _AGGREGATE_NO_DROP_COLUMNS, errors="ignore")

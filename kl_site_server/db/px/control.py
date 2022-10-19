@@ -25,7 +25,10 @@ def _get_history_data_result(fn_get_find_cursor: Callable[[], Cursor]) -> DbHist
         return DbHistoryDataResult(
             earliest=fn_get_find_cursor().sort("ts", pymongo.ASCENDING).limit(1).next()["ts"],
             latest=fn_get_find_cursor().sort("ts", pymongo.DESCENDING).limit(1).next()["ts"],
-            data=[PxHistoryDataEntry.from_mongo_doc(data) for data in fn_get_find_cursor()],
+            data=[
+                PxHistoryDataEntry.from_mongo_doc(data) for data
+                in fn_get_find_cursor().sort("ts", pymongo.ASCENDING)
+            ],
         )
     except StopIteration:
         return DbHistoryDataResult(earliest=None, latest=None, data=[])

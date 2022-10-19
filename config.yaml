@@ -84,7 +84,9 @@ data:
         name: '30'
       - min: 60
         name: '60'
-    day: []
+    day:
+      - day: 1
+        name: 'D'
   sr-level:
     custom: {}
 

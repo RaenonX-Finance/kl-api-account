@@ -114,7 +114,8 @@ class TouchanceDataClient(TouchanceApiClient):
             if not self._px_data_cache.is_all_px_data_ready():
                 continue
 
-            for params in self._px_request_params.values():
+            # Create list to avoid size change during iteration error
+            for params in list(self._px_request_params.values()):
                 if is_market_closed(params.symbol_obj.security):
                     continue
 

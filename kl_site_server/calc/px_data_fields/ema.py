@@ -38,12 +38,12 @@ def _ema_of_index(
 
 
 def calc_ema_partial(
-    df: DataFrame, cached_calc_df: DataFrame, close_match_rev_idx_on_df: int, periods: Iterable[int],
+    df: DataFrame, df_ema_base: DataFrame, close_match_rev_idx_on_df: int, periods: Iterable[int],
 ) -> DataFrame:
     for period in periods:
         ema_col_name = PxDataCol.get_ema_col_name(period)
 
-        df[ema_col_name] = cached_calc_df[ema_col_name].copy()
+        df[ema_col_name] = df_ema_base[ema_col_name].copy()
 
         nan_rev_index = df_get_last_non_nan_rev_index(df, [ema_col_name])
 

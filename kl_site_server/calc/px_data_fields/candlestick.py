@@ -40,26 +40,14 @@ def calc_candlestick_full(df: DataFrame) -> DataFrame:
     return df
 
 
-def _macd_of_index(df: DataFrame, df_ema_base: DataFrame, idx_curr: Any, idx_prev: Any) -> DataFrame:
+def _macd_of_index(df: DataFrame, idx_curr: Any, idx_prev: Any) -> DataFrame:
     cur_close = df.at[idx_curr, PxDataCol.CLOSE]
 
-    macd_fast = calc_ema_single(
-        cur_close,
-        df_ema_base.at[idx_prev, PxDataCol.get_ema_col_name(CANDLESTICK_DIR_MACD_FAST)],
-        CANDLESTICK_DIR_MACD_FAST
-    )
-    macd_slow = calc_ema_single(
-        cur_close,
-        df_ema_base.at[idx_prev, PxDataCol.get_ema_col_name(CANDLESTICK_DIR_MACD_SLOW)],
-        CANDLESTICK_DIR_MACD_SLOW
-    )
+    macd_fast = calc_ema_single(cur_close, df.at[idx_prev, _px_col_macd_fast], CANDLESTICK_DIR_MACD_FAST)
+    macd_slow = calc_ema_single(cur_close, df.at[idx_prev, _px_col_macd_slow], CANDLESTICK_DIR_MACD_SLOW)
 
     macd = macd_fast - macd_slow
-    sig = calc_ema_single(
-        macd,
-        df_ema_base.at[idx_prev, PxDataCol.MACD_SIGNAL],
-        CANDLESTICK_DIR_MACD_SIGNAL
-    )
+    sig = calc_ema_single(macd, df.at[idx_prev, PxDataCol.MACD_SIGNAL], CANDLESTICK_DIR_MACD_SIGNAL)
     hist = macd - sig
 
     df.at[idx_curr, _px_col_macd_fast] = macd_fast
@@ -80,10 +68,10 @@ def calc_candlestick_partial(df: DataFrame, cached_calc_df: DataFrame, close_mat
         df, [_px_col_macd_fast, _px_col_macd_slow, PxDataCol.MACD_SIGNAL, PxDataCol.CANDLESTICK_DIR]
     )
     for base_index in range(min(close_match_rev_idx_on_df, nan_rev_index or 0), 0):
-        df = _macd_of_index(df, cached_calc_df, df.index[base_index], df.index[base_index - 1])
+        df = _macd_of_index(df, df.index[base_index], df.index[base_index - 1])
 
     return df
 
 
 def calc_candlestick_last(df: DataFrame) -> DataFrame:
-    return _macd_of_index(df, df, df.index[-1], df.index[-2])
+    return _macd_of_index(df, df.index[-1], df.index[-2])

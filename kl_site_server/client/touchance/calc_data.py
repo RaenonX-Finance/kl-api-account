@@ -108,6 +108,7 @@ class CalculatedDataManager:
 
         try:
             calculated_df = calculate_indicators_partial(
+                symbol_obj.security,
                 interval_info.period_min,
                 data_recs,
                 cached_calculated_df
@@ -139,8 +140,8 @@ class CalculatedDataManager:
         if cached_calculated_df is not None:
             calculated_df = calculate_indicators_last(interval_info.period_min, cached_calculated_df)
         elif data_recs := history_data_cache.get_value(
-                (symbol_obj, interval_info.interval),
-                payload=interval_info.max_period_num
+            (symbol_obj, interval_info.interval),
+            payload=interval_info.max_period_num
         ):
             print_log(
                 "Calculating indicators of "

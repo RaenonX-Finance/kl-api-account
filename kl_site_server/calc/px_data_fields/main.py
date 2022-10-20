@@ -1,7 +1,7 @@
 from pandas import DataFrame
 
 from kl_site_common.const import INDICATOR_EMA_PERIODS
-from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val
+from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val, print_log
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.message import PxHistoryDataEntry
 from .candlestick import calc_candlestick_full, calc_candlestick_last, calc_candlestick_partial
@@ -34,7 +34,7 @@ def calculate_indicators_full(period_min: int, data_recs: list[PxHistoryDataEntr
 
 @df_fill_na_with_none
 def calculate_indicators_partial(
-    period_min: int, data_recs: list[PxHistoryDataEntry], cached_calc_df: DataFrame
+    security: str, period_min: int, data_recs: list[PxHistoryDataEntry], cached_calc_df: DataFrame
 ) -> DataFrame:
     df = DataFrame(data_recs)
 
@@ -52,6 +52,8 @@ def calculate_indicators_partial(
     close_match_idx_on_df = df_get_last_rev_index_of_matching_val(df, cached_calc_df, PxDataCol.CLOSE)
     if not close_match_idx_on_df:
         raise CachedDataTooOldError()
+
+    print_log(f"Closing Px match at {close_match_idx_on_df} for [yellow]{security}@{period_min}[/]")
 
     df = calc_tie_point_partial(df, cached_calc_df, close_match_idx_on_df, period_min)
 

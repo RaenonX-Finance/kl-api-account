@@ -22,7 +22,8 @@ class DataCache:
 
     def get_value(self, key: K, *, payload: P = _no_payload) -> V:
         with self._lock:
-            if value := self._body.get(key):
+            value = self._body.get(key)
+            if value is not None:
                 return value
 
             if payload is not _no_payload:

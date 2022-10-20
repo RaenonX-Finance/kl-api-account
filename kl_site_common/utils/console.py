@@ -18,16 +18,17 @@ def _get_current_timestamp() -> str:
 
 
 def _print_console(rich_console: Console, level: LogLevels, message: str, *, timestamp_color: str):
+    loc = inspect.getmodule(inspect.stack()[2][0]).__name__
+
     if LOG_TO_DIR:
-        log_message_to_file(level, Text.from_markup(message).plain)
+        log_message_to_file(level, f"{loc:45}: {Text.from_markup(message).plain}")
 
         if not DEVELOPMENT_MODE:
             return
 
     message = (
         f"[{timestamp_color}]{_get_current_timestamp()}[/] "
-        f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}: "  # noqa: W605
-        f"{message}"
+        f"\[{threading.get_ident():>6}] {loc:45}: {message}"  # noqa: W605
     )
 
     if DEVELOPMENT_MODE:

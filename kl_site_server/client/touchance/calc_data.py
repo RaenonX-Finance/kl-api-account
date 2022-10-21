@@ -157,40 +157,44 @@ class CalculatedDataManager:
             symbol_obj, interval_info.period_min, calculated_df, cached_calculated_data is None
         )
 
-    def _calc_data_update(
+    def _calc_data_update_inner(
         self,
         fn_get_history_data: FuncGetHistoryData,
         fn_get_calculated_data_lookup: FuncGetCalculatedDataLookup,
         fn_calc_update_single: FuncSingleCalcDataUpdate,
         symbols: Iterable[SymbolBaseType],
         params_list: Iterable[TouchancePxRequestParams],
+        skip_if_locked: bool,
     ) -> None:
         if not params_list:
             print_warning("No px request params available for updating calc data")
             return
+        elif skip_if_locked and self._update_calculated_data_lock.locked():
+            return
 
-        interval_info_set = self._get_params_interval_info(params_list)
-        store_calculated_args: list[StoreCalculatedDataArgs] = []
-        history_data_cache: DataCache = DataCache(fn_get_history_data)
-        calculated_data_lookup = fn_get_calculated_data_lookup(
-            [symbol.symbol_complete for symbol in symbols],
-            [interval_info.period_min for interval_info in interval_info_set]
-        )
+        with self._update_calculated_data_lock:
+            interval_info_set = self._get_params_interval_info(params_list)
+            store_calculated_args: list[StoreCalculatedDataArgs] = []
+            history_data_cache: DataCache = DataCache(fn_get_history_data)
+            calculated_data_lookup = fn_get_calculated_data_lookup(
+                [symbol.symbol_complete for symbol in symbols],
+                [interval_info.period_min for interval_info in interval_info_set]
+            )
 
-        with ThreadPoolExecutor() as executor:
-            for future in as_completed([
-                executor.submit(
-                    fn_calc_update_single,
-                    symbol_obj, interval_info, calculated_data_lookup, history_data_cache
-                )
-                for symbol_obj, interval_info in product(symbols, interval_info_set)
-            ]):
-                if calc_args := future.result():
-                    store_calculated_args.append(calc_args)
+            with ThreadPoolExecutor() as executor:
+                for future in as_completed([
+                    executor.submit(
+                        fn_calc_update_single,
+                        symbol_obj, interval_info, calculated_data_lookup, history_data_cache
+                    )
+                    for symbol_obj, interval_info in product(symbols, interval_info_set)
+                ]):
+                    if calc_args := future.result():
+                        store_calculated_args.append(calc_args)
 
-        store_calculated_to_db(store_calculated_args)
+            store_calculated_to_db(store_calculated_args)
 
-    def _calc_data_update_lockable(
+    def _calc_data_update(
         self,
         fn_get_history_data: FuncGetHistoryData,
         fn_get_calculated_data_lookup: FuncGetCalculatedDataLookup,
@@ -201,21 +205,17 @@ class CalculatedDataManager:
         skip_if_locked: bool,
         threaded: bool,
     ) -> None:
-        if skip_if_locked and self._update_calculated_data_lock.locked():
-            return
-
-        with self._update_calculated_data_lock:
-            if threaded:
-                self._update_calculated_data_executor.submit(
-                    self._calc_data_update,
-                    fn_get_history_data, fn_get_calculated_data_lookup,
-                    fn_calc_update_single, symbols, params_list
-                )
-            else:
-                self._calc_data_update(
-                    fn_get_history_data, fn_get_calculated_data_lookup,
-                    fn_calc_update_single, symbols, params_list
-                )
+        if threaded:
+            self._update_calculated_data_executor.submit(
+                self._calc_data_update_inner,
+                fn_get_history_data, fn_get_calculated_data_lookup,
+                fn_calc_update_single, symbols, params_list, skip_if_locked
+            )
+        else:
+            self._calc_data_update_inner(
+                fn_get_history_data, fn_get_calculated_data_lookup,
+                fn_calc_update_single, symbols, params_list, skip_if_locked
+            )
 
     def update_calc_data_new_bar(self, params_list: Iterable[TouchancePxRequestParams]) -> None:
         def get_history_data(key: tuple[SymbolBaseType, HistoryInterval], max_period_num: int) -> DataFrame:
@@ -246,6 +246,8 @@ class CalculatedDataManager:
             self._calc_data_update_single_new_bar,
             self._px_data_cache.symbol_obj_in_use,
             params_list,
+            skip_if_locked=False,
+            threaded=False,
         )
 
     def update_calc_data_last(self, params_list: Iterable[TouchancePxRequestParams]) -> None:
@@ -275,7 +277,7 @@ class CalculatedDataManager:
                 count=MAX_PERIOD
             )
 
-        self._calc_data_update_lockable(
+        self._calc_data_update(
             get_history_data,
             get_calculated_data_lookup,
             self._calc_data_update_single_common,
@@ -302,7 +304,7 @@ class CalculatedDataManager:
             return CalculatedDataLookup()
 
         print_log(f"[blue]Started data re-calculation of [yellow]{symbol_obj.security}[/]")
-        self._calc_data_update_lockable(
+        self._calc_data_update(
             get_history_data,
             get_calculated_data_lookup,
             self._calc_data_update_single_common,

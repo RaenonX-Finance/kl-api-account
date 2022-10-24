@@ -90,8 +90,8 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         ))
                     else:
                         print_error(
-                            f"No history data available for "
-                            f"[bold]{handshake.symbol_complete}[/] ({handshake.data_type})"
+                            f"No history data available for [bold]{handshake.symbol_complete}[/] "
+                            f"({handshake.data_type} / {handshake.start_time_str} ~ {handshake.end_time_str})"
                         )
                 case "PING" | "UNSUBQUOTE":
                     pass

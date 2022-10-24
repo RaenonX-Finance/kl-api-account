@@ -138,8 +138,10 @@ class TouchanceDataClient(TouchanceApiClient):
         execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
+        print_log("Server minute change - making new bar on cache")
         securities_created = self._px_data_cache.make_new_bar(data)
 
+        print_log("Server minute change - making new bar for calculated data")
         self._calc_data_manager.update_calc_data_new_bar(self._px_request_params.values())
 
         execute_async_function(

@@ -170,6 +170,7 @@ class CalculatedDataManager:
             print_warning("No px request params available for updating calc data")
             return
         elif skip_if_locked and self._update_calculated_data_lock.locked():
+            print_log("Skipped calculating px data - lock acquired")
             return
 
         with self._update_calculated_data_lock:

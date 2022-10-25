@@ -108,7 +108,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
         socket_sub = create_subscription_receiver_socket(sub_port, DATA_TIMEOUT_SEC * 1000)
 
         while True:
-            # Only care about the message after the first color (:)
+            # Only care about the message after the first colon (:)
             message = CommonData(socket_sub.get_message().split(":", 1)[1])
 
             self._quote_subscription_handle_message(message)

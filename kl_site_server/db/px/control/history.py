@@ -131,11 +131,11 @@ def get_history_data_at_time_from_db(
 
 def store_history_to_db(data: HistoryData):
     print_log(
-        f"Storing [purple]{data.data_len_as_str}[/] history data of "
+        f"Storing [purple]{data.data_len}[/] history data of "
         f"[yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/]"
     )
 
-    for chunk in split_chunks(list(data.to_db_entries()), chunk_size=1000):
+    for chunk in split_chunks(data.to_db_entries(), chunk_size=1000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},

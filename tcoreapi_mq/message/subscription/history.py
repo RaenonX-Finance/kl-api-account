@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Iterator, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
 from ._base import SubscriptionDataBase
 
@@ -36,8 +36,7 @@ class HistoryDataHandshake(SubscriptionDataBase):
 
 @dataclass(kw_only=True)
 class HistoryData:
-    data_iter: Iterator["PxHistoryDataEntry"]
-    data_len: int | None
+    data_list: list["PxHistoryDataEntry"]
     data_type: "DataType"
     symbol_complete: str
 
@@ -47,8 +46,7 @@ class HistoryData:
         handshake: HistoryDataHandshake
     ) -> "HistoryData":
         return HistoryData(
-            data_iter=history_data,
-            data_len=len(history_data),
+            data_list=history_data,
             data_type=handshake.data_type,
             symbol_complete=handshake.symbol_complete,
         )
@@ -60,14 +58,13 @@ class HistoryData:
         result: "DbHistoryDataResult"
     ) -> "HistoryData":
         return HistoryData(
-            data_iter=result.data,
-            data_len=None,
+            data_list=result.data,
             data_type=data_type,
             symbol_complete=symbol_complete,
         )
 
-    def to_db_entries(self) -> Iterator["PxHistoryDataMongoModel"]:
-        return iter(data.to_mongo_doc() for data in self.data_iter)
+    def to_db_entries(self) -> list["PxHistoryDataMongoModel"]:
+        return [data.to_mongo_doc() for data in self.data_list]
 
     @property
     def is_1k(self) -> bool:
@@ -78,8 +75,5 @@ class HistoryData:
         return self.data_type == "DK"
 
     @property
-    def data_len_as_str(self) -> str:
-        if self.data_len is None:
-            return "(?)"
-
-        return str(self.data_len)
+    def data_len(self) -> int:
+        return len(self.data_list)

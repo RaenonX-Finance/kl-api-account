@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 from typing import Callable
 
 from kl_site_common.const import DATA_PX_REFETCH_BACKWARD_HOUR
-from kl_site_common.utils import print_log, print_warning
+from kl_site_common.utils import print_error, print_log
 from kl_site_server.model import PxDataCache, TouchancePxRequestParams
 from tcoreapi_mq.message import HistoryInterval
 from tcoreapi_mq.model import SymbolBaseType
@@ -21,7 +21,7 @@ class HistoryDataSubscriber:
 
     def start(self):
         if not self._px_data_cache.is_all_px_data_ready():
-            print_warning("Skipped subscribing history px data - not all px data are ready")
+            print_error("Skipped subscribing history px data - not all px data are ready")
 
         # Create list to avoid size change during iteration error
         for params in list(self._px_request_params.values()):

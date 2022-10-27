@@ -24,9 +24,12 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
+        self._requesting_px_data: bool = False
         self._calc_data_manager: CalculatedDataManager = CalculatedDataManager(self._px_data_cache)
 
     def request_px_data(self, params_list: list[TouchancePxRequestParams], *, re_calc_data: bool) -> None:
+        self._requesting_px_data = True
+
         for params in params_list:
             if not params.period_mins and not params.period_days:
                 raise ValueError(
@@ -79,6 +82,8 @@ class TouchanceDataClient(TouchanceApiClient):
 
         HistoryDataSubscriber(self._px_data_cache, self._px_request_params, get_history_data).start()
 
+        self._requesting_px_data = False
+
     def get_history_including_db(
         self,
         symbol: SymbolBaseType,
@@ -110,7 +115,7 @@ class TouchanceDataClient(TouchanceApiClient):
             f"({data.data_len})"
         )
 
-        store_history_to_db(data, DATA_PX_REFETCH_STORE_LIMIT)
+        store_history_to_db(data, None if self._requesting_px_data else DATA_PX_REFETCH_STORE_LIMIT)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
         self._calc_data_manager.update_calc_data_last(self._px_request_params.values())

@@ -129,9 +129,9 @@ def get_history_data_at_time_from_db(
     return _get_history_data_result(get_find_cursor)
 
 
-def store_history_to_db(data: HistoryData, limit: int):
+def store_history_to_db(data: HistoryData, limit: int | None):
     print_log(
-        f"Storing [purple]{min(data.data_len, limit)}[/] history data of "
+        f"Storing [purple]{min(data.data_len, limit or float('inf'))}[/] history data of "
         f"[yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/]"
     )
 

@@ -50,14 +50,10 @@ class TouchanceDataClient(TouchanceApiClient):
             )
 
             if params.period_mins:
-                self.get_history_including_db(
-                    params.symbol_obj, "1K", *params.history_range_1k, unsub_after_complete=True
-                )
+                self.get_history_including_db(params.symbol_obj, "1K", *params.history_range_1k, subscribe=False)
 
             if params.period_days:
-                self.get_history_including_db(
-                    params.symbol_obj, "DK", *params.history_range_dk, unsub_after_complete=True
-                )
+                self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk, subscribe=False)
 
             # Needs to be placed before `subscribe_realtime`
             if re_calc_data:
@@ -90,7 +86,7 @@ class TouchanceDataClient(TouchanceApiClient):
         interval: HistoryInterval,
         start: datetime,
         end: datetime, *,
-        unsub_after_complete: bool,
+        subscribe: bool,
     ):
         symbol_complete = symbol.symbol_complete
 
@@ -101,10 +97,10 @@ class TouchanceDataClient(TouchanceApiClient):
         ))
 
         if not result.earliest and not result.latest:
-            self.get_history(symbol, interval, start, end, unsub_after_complete=unsub_after_complete)
+            self.get_history(symbol, interval, start, end, subscribe=subscribe)
         else:
-            self.get_history(symbol, interval, start, result.earliest, unsub_after_complete=unsub_after_complete)
-            self.get_history(symbol, interval, result.latest, end, unsub_after_complete=unsub_after_complete)
+            self.get_history(symbol, interval, start, result.earliest, subscribe=subscribe)
+            self.get_history(symbol, interval, result.latest, end, subscribe=subscribe)
 
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
         return self._px_data_cache.get_px_data(px_data_configs)

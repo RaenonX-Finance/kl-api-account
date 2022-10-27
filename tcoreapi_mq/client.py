@@ -75,6 +75,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     while True:
                         history_data_paged = self.get_paged_history(handshake, query_idx)
 
+                        if not history_data_paged:
+                            return
+
                         if not history_data_paged.data:
                             break
 

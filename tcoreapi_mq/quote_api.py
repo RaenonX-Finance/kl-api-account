@@ -1,6 +1,7 @@
 from collections import defaultdict
 from datetime import datetime
 from threading import Lock
+from typing import TypeAlias
 
 from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
 from kl_site_common.utils import print_log, print_warning
@@ -13,6 +14,8 @@ from .message import (
 )
 from .model import SymbolBaseType
 
+UnsubHistQueueKey: TypeAlias = tuple[str, str, str]  # Symbol complete, start ts str, end ts str
+
 
 class QuoteAPI(TCoreZMQ):
     def __init__(self):
@@ -20,6 +23,7 @@ class QuoteAPI(TCoreZMQ):
 
         self._info: dict[str, QueryInstrumentProduct] = {}
         self._subscribing_realtime: set[str] = set()
+        self._unsub_hist_after_complete: set[UnsubHistQueueKey] = set()
         self.history_data_lock_dict: defaultdict[str, Lock] = defaultdict(Lock)
 
     def get_symbol_info(self, symbol_obj: SymbolBaseType) -> QueryInstrumentProduct:
@@ -56,13 +60,18 @@ class QuoteAPI(TCoreZMQ):
 
             return UnsubscribeRealtimeMessage(message=self.socket.get_message())
 
+    @staticmethod
+    def _make_unsub_queue_key(symbol_complete: str, start_ts_str: str, end_ts_str: str) -> UnsubHistQueueKey:
+        return symbol_complete, start_ts_str, end_ts_str
+
     def get_history(
         self,
         symbol: SymbolBaseType,
         interval: HistoryInterval,
         start: datetime,
         end: datetime, *,
-        ignore_lock: bool = False
+        ignore_lock: bool = False,
+        unsub_after_complete: bool = False,
     ) -> SubscribePxHistoryMessage | None:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         if not ignore_lock:
@@ -81,6 +90,11 @@ class QuoteAPI(TCoreZMQ):
                     start_time=start,
                     end_time=end
                 )
+
+                if unsub_after_complete:
+                    self._unsub_hist_after_complete.add(self._make_unsub_queue_key(
+                        symbol.symbol_complete, req.start_ts_str, req.end_ts_str
+                    ))
 
                 self.socket.send_string(req.to_message())
             except ValueError:
@@ -110,15 +124,26 @@ class QuoteAPI(TCoreZMQ):
 
     def complete_get_history(self, handshake: HistoryDataHandshake):
         symbol_complete = handshake.symbol_complete
-        interval = handshake.data_type
-        start_time_str = handshake.start_time_str
-        end_time_str = handshake.end_time_str
 
         if self.history_data_lock_dict[symbol_complete].locked():
             # Request from other session could trigger this, therefore using `locked()` to guard
             self.history_data_lock_dict[symbol_complete].release()
+
+        unsub_key = self._make_unsub_queue_key(symbol_complete, handshake.start_time_str, handshake.end_time_str)
+        if unsub_key in self._unsub_hist_after_complete:
+            self.unsubscribe_history(handshake, do_not_execute_complete=True)
+
+    def unsubscribe_history(self, handshake: HistoryDataHandshake, *, do_not_execute_complete: bool = False):
+        symbol_complete = handshake.symbol_complete
+        interval = handshake.data_type
+        start_time_str = handshake.start_time_str
+        end_time_str = handshake.end_time_str
+
+        if not do_not_execute_complete:
+            self.complete_get_history(handshake)
+
         print_log(
-            f"History data fetching completed for [yellow]{symbol_complete}[/] "
+            f"Unsubscribing history data of [yellow]{symbol_complete}[/] "
             f"at [yellow]{interval}[/] starting from {start_time_str} to {end_time_str}"
         )
 

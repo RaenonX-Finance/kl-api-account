@@ -14,7 +14,7 @@ from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import SymbolBaseType
 from .calc_data import CalculatedDataManager
-from .refetch import HistoryDataRefetcher
+from .subscribe import HistoryDataSubscriber
 
 
 class TouchanceDataClient(TouchanceApiClient):
@@ -24,17 +24,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
         self._calc_data_manager: CalculatedDataManager = CalculatedDataManager(self._px_data_cache)
-
-        def refetch_history_data(
-            symbol_obj: SymbolBaseType, interval: HistoryInterval, start: datetime, end: datetime
-        ):
-            self.get_history(symbol_obj, interval, start, end, ignore_lock=True)
-
-        HistoryDataRefetcher(
-            self._px_data_cache,
-            self._px_request_params,
-            refetch_history_data,
-        ).start()
 
     def request_px_data(self, params_list: list[TouchancePxRequestParams], *, re_calc_data: bool) -> None:
         for params in params_list:
@@ -57,10 +46,14 @@ class TouchanceDataClient(TouchanceApiClient):
             )
 
             if params.period_mins:
-                self.get_history_including_db(params.symbol_obj, "1K", *params.history_range_1k)
+                self.get_history_including_db(
+                    params.symbol_obj, "1K", *params.history_range_1k, unsub_after_complete=True
+                )
 
             if params.period_days:
-                self.get_history_including_db(params.symbol_obj, "DK", *params.history_range_dk)
+                self.get_history_including_db(
+                    params.symbol_obj, "DK", *params.history_range_dk, unsub_after_complete=True
+                )
 
             # Needs to be placed before `subscribe_realtime`
             if re_calc_data:
@@ -78,12 +71,20 @@ class TouchanceDataClient(TouchanceApiClient):
             # Params should be recorded only after all the calls are done
             self._px_request_params[params.symbol_obj.symbol_complete] = params
 
+        def get_history_data(
+            symbol_obj: SymbolBaseType, interval: HistoryInterval, start: datetime, end: datetime
+        ):
+            self.get_history(symbol_obj, interval, start, end, ignore_lock=True)
+
+        HistoryDataSubscriber(self._px_data_cache, self._px_request_params, get_history_data).start()
+
     def get_history_including_db(
         self,
         symbol: SymbolBaseType,
         interval: HistoryInterval,
         start: datetime,
-        end: datetime
+        end: datetime, *,
+        unsub_after_complete: bool,
     ):
         symbol_complete = symbol.symbol_complete
 
@@ -94,16 +95,19 @@ class TouchanceDataClient(TouchanceApiClient):
         ))
 
         if not result.earliest and not result.latest:
-            self.get_history(symbol, interval, start, end)
+            self.get_history(symbol, interval, start, end, unsub_after_complete=unsub_after_complete)
         else:
-            self.get_history(symbol, interval, start, result.earliest)
-            self.get_history(symbol, interval, result.latest, end)
+            self.get_history(symbol, interval, start, result.earliest, unsub_after_complete=unsub_after_complete)
+            self.get_history(symbol, interval, result.latest, end, unsub_after_complete=unsub_after_complete)
 
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
         return self._px_data_cache.get_px_data(px_data_configs)
 
     def on_received_history_data(self, data: HistoryData) -> None:
-        print_log(f"Received history data of [yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/]")
+        print_log(
+            f"Received history data of [yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/] "
+            f"({data.data_len})"
+        )
 
         store_history_to_db(data)
         self._px_data_cache.update_complete_data_of_symbol(data)

@@ -96,10 +96,8 @@ class TouchanceApiClient(QuoteAPI, ABC):
                             f"No history data available for [bold]{handshake.symbol_complete}[/] "
                             f"({handshake.data_type} / {handshake.start_time_str} ~ {handshake.end_time_str})"
                         )
-                case "PING" | "UNSUBQUOTE":
+                case "PING" | "UNSUBQUOTE" | "SYSTEMTIME":
                     pass
-                case "SYSTEMTIME":
-                    self.on_system_time_min_change(SystemTimeData(message))
                 case _:
                     print_warning(f"Unknown message data type: {message.data_type}")
         except Exception as e:

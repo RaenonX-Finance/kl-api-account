@@ -26,6 +26,7 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
         self._requesting_px_data: bool = False
         self._calc_data_manager: CalculatedDataManager = CalculatedDataManager(self._px_data_cache)
+        self._last_data_min: int = datetime.utcnow().minute
 
     def request_px_data(self, params_list: list[TouchancePxRequestParams], *, re_calc_data: bool) -> None:
         self._requesting_px_data = True
@@ -105,6 +106,13 @@ class TouchanceDataClient(TouchanceApiClient):
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
         return self._px_data_cache.get_px_data(px_data_configs)
 
+    def _trigger_minute_change_if_needed(self, timestamp: datetime):
+        prev_min = self._last_data_min
+        self._last_data_min = timestamp.minute
+
+        if prev_min != self._last_data_min:
+            self.on_system_time_min_change(SystemTimeData.from_datetime(timestamp))
+
     def on_received_history_data(self, data: HistoryData) -> None:
         print_log(
             f"Received history data of [yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/] "
@@ -115,6 +123,9 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_data_cache.update_complete_data_of_symbol(data)
 
         self._calc_data_manager.update_calc_data_last(self._px_request_params.values())
+
+        if not self._requesting_px_data:
+            self._trigger_minute_change_if_needed(data.data_list[-1].timestamp)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40

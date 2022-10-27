@@ -63,8 +63,8 @@ class HistoryData:
             symbol_complete=symbol_complete,
         )
 
-    def to_db_entries(self) -> list["PxHistoryDataMongoModel"]:
-        return [data.to_mongo_doc() for data in self.data_list]
+    def to_db_entries(self, limit: int) -> list["PxHistoryDataMongoModel"]:
+        return [data.to_mongo_doc() for data in self.data_list[-limit:]]
 
     @property
     def is_1k(self) -> bool:

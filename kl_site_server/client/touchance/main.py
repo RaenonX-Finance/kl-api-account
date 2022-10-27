@@ -1,6 +1,7 @@
 import asyncio
 from datetime import datetime
 
+from kl_site_common.const import DATA_PX_REFETCH_STORE_LIMIT
 from kl_site_common.utils import execute_async_function, print_log, print_warning
 from kl_site_server.app import (
     on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
@@ -109,7 +110,7 @@ class TouchanceDataClient(TouchanceApiClient):
             f"({data.data_len})"
         )
 
-        store_history_to_db(data)
+        store_history_to_db(data, DATA_PX_REFETCH_STORE_LIMIT)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
         self._calc_data_manager.update_calc_data_last(self._px_request_params.values())

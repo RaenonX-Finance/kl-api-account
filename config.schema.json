@@ -161,10 +161,16 @@
               "type": "object",
               "description": "Px data refetching related settings.",
               "required": [
+                "limit",
                 "backward-hour"
               ],
               "additionalProperties": false,
               "properties": {
+                "limit": {
+                  "type": "integer",
+                  "description": "Maximum count of data bar to store upon receiving the subscribed history data.",
+                  "exclusiveMinimum": 0
+                },
                 "backward-hour": {
                   "type": "integer",
                   "description": "Data duration to fetch in hour counting backward. A value of 2 means each refetch grabs the data up to 2 hours before.",

@@ -17,6 +17,7 @@ data:
     px-update:
       market-time-gate-sec: 0.075
     px-history-refetch:
+      limit: 50
       backward-hour: 2
   source:
     - type: Futures

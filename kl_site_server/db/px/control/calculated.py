@@ -66,7 +66,8 @@ class CalculatedDataLookup:
 
 def get_calculated_data_from_db(
     symbol_complete_list: list[str], period_mins: list[int], *,
-    count: int | None = None, offset: int | None = None,
+    count: int | None = None,
+    offset: int | None = None,
     count_override: dict[tuple[str, int], int] | None = None,
     offset_override: dict[tuple[str, int], int] | None = None,
 ) -> CalculatedDataLookup:
@@ -74,12 +75,8 @@ def get_calculated_data_from_db(
 
     ret = CalculatedDataLookup()
 
-    max_count = max([*(count_override or {}).values(), count or 2000])
-    max_offset = max([*(offset_override or {}).values(), offset or 0])
-
     cursor = px_data_calc_col.find({"s": {"$in": symbol_complete_list}, "p": {"$in": period_mins}}) \
-        .sort(PxDataCol.EPOCH_SEC, pymongo.DESCENDING) \
-        .limit(max_count + max_offset)
+        .sort(PxDataCol.EPOCH_SEC, pymongo.DESCENDING)
     data: defaultdict[tuple[str, int], list] = defaultdict(list)  # K = (complete symbol, period min)
 
     for entry in cursor:
@@ -90,7 +87,9 @@ def get_calculated_data_from_db(
 
         data_list = data[key]
 
-        if len(data_list) > ((count_override or {}).get(key) or count or 2000):
+        max_count = ((count_override or {}).get(key) or count or 2000)
+        max_offset = ((offset_override or {}).get(key) or offset or 0)
+        if len(data_list) > max_count + max_offset:
             continue
 
         data_list.append(entry)

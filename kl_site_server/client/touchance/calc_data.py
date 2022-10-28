@@ -15,7 +15,7 @@ from kl_site_server.db import (
     get_history_data_from_db_limit_count,
     store_calculated_to_db,
 )
-from kl_site_server.model import PxDataCache, TouchancePxRequestParams
+from kl_site_server.model import BarDataDict, PxDataCache, TouchancePxRequestParams
 from kl_site_server.utils import MAX_PERIOD, MAX_PERIOD_NO_EMA
 from tcoreapi_mq.message import HistoryInterval, PxHistoryDataEntry
 from tcoreapi_mq.model import SymbolBaseType
@@ -273,10 +273,15 @@ class CalculatedDataManager:
             symbol_complete_list: list[str],
             period_mins: list[int],
         ) -> CalculatedDataLookup:
+            last_bar_dict: dict[str, BarDataDict] = {
+                symbol_complete: self._px_data_cache.get_cache_entry_of_interval("1K", symbol_complete).data_last_bar
+                for symbol_complete in symbol_complete_list
+            }
+
             return get_calculated_data_from_db(
                 symbol_complete_list, period_mins,
                 count=MAX_PERIOD
-            )
+            ).update_last_bar(last_bar_dict)
 
         self._calc_data_update(
             get_history_data,

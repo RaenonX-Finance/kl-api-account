@@ -76,17 +76,19 @@ class PxDataCache:
         px_data_list = []
 
         calculated_data_lookup = get_calculated_data_from_db(
-            px_data_config_lookup.keys(),
-            {config.period_min for configs in px_data_config_lookup.values() for config in configs},
+            list(px_data_config_lookup.keys()),
+            list({config.period_min for configs in px_data_config_lookup.values() for config in configs}),
             count_override={
                 (symbol_complete, px_config.period_min): px_config.limit
                 for symbol_complete, px_configs in px_data_config_lookup.items()
                 for px_config in px_configs
+                if px_config.limit is not None
             },
             offset_override={
                 (symbol_complete, px_config.period_min): px_config.offset
                 for symbol_complete, px_configs in px_data_config_lookup.items()
                 for px_config in px_configs
+                if px_config.offset is not None
             },
         )
 

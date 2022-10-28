@@ -107,7 +107,7 @@ def get_sr_level_pairs(
 ) -> list[list[float]]:
     df = DataFrame(get_history_data_at_time_from_db(
         symbol_complete,
-        [key_time_pair.open_time_sec, key_time_pair.close_time_sec],
+        (key_time_pair.open_time_sec, key_time_pair.close_time_sec),
         count=12
     ).data)
     df = _calc_key_time(df, key_time_pair)

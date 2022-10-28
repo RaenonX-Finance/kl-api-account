@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Callable
 
 import pymongo
+from cachetools.func import ttl_cache
 from pymongo.cursor import Cursor
 
 from kl_site_common.db import start_mongo_txn
@@ -114,9 +115,10 @@ def get_history_data_close_px_from_db(
     return [entry.close for entry in get_history_data_from_db_limit_count(symbol_complete, "1K", count).data]
 
 
+@ttl_cache(ttl=20)  # No need to re-fetch for every SR level calculation
 def get_history_data_at_time_from_db(
     symbol_complete: str,
-    epoch_time_secs: list[int], *,
+    epoch_time_secs: tuple[int, ...], *,
     count: int,
 ) -> DbHistoryDataResult:
     def get_find_cursor():

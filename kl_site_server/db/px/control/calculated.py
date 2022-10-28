@@ -98,7 +98,11 @@ def get_calculated_data_from_db(
     for key, data_list in data.items():
         symbol_complete, period_min = key
 
-        ret.add_data(symbol_complete, period_min, data_list[(offset_override or {}).get(key) or offset:][::-1])
+        ret.add_data(
+            symbol_complete,
+            period_min,
+            data_list[(offset_override or {}).get(key) or offset:][::-1]  # noqa: E231
+        )
 
     return ret
 

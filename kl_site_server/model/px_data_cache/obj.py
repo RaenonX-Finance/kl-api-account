@@ -4,7 +4,7 @@ from dataclasses import dataclass, field
 from typing import DefaultDict, Iterable
 
 from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
-from kl_site_common.utils import ExecTimer, print_log, print_warning
+from kl_site_common.utils import print_log, print_warning
 from kl_site_server.calc import CALC_STRENGTH_BARS_NEEDED, calc_strength
 from kl_site_server.db import get_calculated_data_from_db, is_market_closed, store_history_to_db_from_entries
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData

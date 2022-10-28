@@ -35,7 +35,7 @@ def _get_calculated_data_single(args: GetCalcDataArgs) -> Iterable[dict]:
 
 class CalculatedDataLookup:
     def __init__(self):
-        self._data: dict[tuple[str, int], list[dict]] = {}
+        self._data: dict[tuple[str, int], list[dict]] = {}  # K = (symbol complete, period min); V = list of data
 
     @staticmethod
     def _make_key(symbol_complete: str, period_min: int) -> tuple[str, int]:

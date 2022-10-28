@@ -18,7 +18,7 @@ def _get_current_timestamp() -> str:
 
 
 def _print_console(rich_console: Console, level: LogLevels, message: str, *, timestamp_color: str):
-    info = f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}"
+    info = f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}"  # noqa: W605
 
     if LOG_TO_DIR:
         log_message_to_file(level, Text.from_markup(f"{info}: {message}").plain)
@@ -26,7 +26,7 @@ def _print_console(rich_console: Console, level: LogLevels, message: str, *, tim
         if not DEVELOPMENT_MODE:
             return
 
-    message = f"[{timestamp_color}]{_get_current_timestamp()}[/] {info}: {message}"  # noqa: W605
+    message = f"[{timestamp_color}]{_get_current_timestamp()}[/] {info}: {message}"
 
     if DEVELOPMENT_MODE:
         message = f"[bold yellow]-DEV-[/] {message}"

@@ -2,15 +2,10 @@ import asyncio
 from datetime import datetime
 
 from kl_site_common.const import DATA_PX_REFETCH_STORE_LIMIT
-from kl_site_common.utils import execute_async_function, print_log, print_warning
-from kl_site_server.app import (
-    on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
-)
-from kl_site_server.db import get_history_data_from_db_timeframe, is_market_closed, store_history_to_db
-from kl_site_server.model import (
-    OnErrorEvent, OnMarketDataReceivedEvent,
-    PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams,
-)
+from kl_site_common.utils import execute_async_function, print_log
+from kl_site_server.app import on_error, on_px_data_new_bar_created, on_system_time_min_change
+from kl_site_server.db import get_history_data_from_db_timeframe, store_history_to_db
+from kl_site_server.model import OnErrorEvent, PxData, PxDataCache, PxDataConfig, TouchancePxRequestParams
 from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
 from tcoreapi_mq.model import SymbolBaseType
@@ -128,31 +123,33 @@ class TouchanceDataClient(TouchanceApiClient):
             self._trigger_minute_change_if_needed(data.data_list[-1].timestamp)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
-        if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
-            print_log(f"[red]Ignoring[/] market Px data of [yellow]{data.security}[/] - outside market hours")
-            return
-
-        self._px_data_cache.update_latest_market_data_of_symbol(data)
-
-        if not self._px_data_cache.is_all_ready_of_intervals(["1K", "DK"], data.symbol_complete):
-            params = self._px_request_params[data.symbol_complete]
-
-            if params.should_re_request:
-                print_warning(f"Re-requesting Px data of {data.security}")
-                self.request_px_data([params], re_calc_data=False)
-
-            return
-
-        update_result = self._px_data_cache.update_market_data_of_symbol(data)
-
-        if not update_result.allow_send:
-            return
-
-        if update_result.is_force_send:
-            print_log(f"[yellow]Force-sending[/] market Px - Reason: [blue]{update_result.force_send_reason}[/]")
-
-        self._calc_data_manager.update_calc_data_last(self._px_request_params.values())
-        execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
+        pass
+        # FIXME: Cleanup
+        # if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
+        #     print_log(f"[red]Ignoring[/] market Px data of [yellow]{data.security}[/] - outside market hours")
+        #     return
+        #
+        # self._px_data_cache.update_latest_market_data_of_symbol(data)
+        #
+        # if not self._px_data_cache.is_all_ready_of_intervals(["1K", "DK"], data.symbol_complete):
+        #     params = self._px_request_params[data.symbol_complete]
+        #
+        #     if params.should_re_request:
+        #         print_warning(f"Re-requesting Px data of {data.security}")
+        #         self.request_px_data([params], re_calc_data=False)
+        #
+        #     return
+        #
+        # update_result = self._px_data_cache.update_market_data_of_symbol(data)
+        #
+        # if not update_result.allow_send:
+        #     return
+        #
+        # if update_result.is_force_send:
+        #     print_log(f"[yellow]Force-sending[/] market Px - Reason: [blue]{update_result.force_send_reason}[/]")
+        #
+        # self._calc_data_manager.update_calc_data_last(self._px_request_params.values())
+        # execute_async_function(on_px_data_updated_market, OnMarketDataReceivedEvent(result=update_result))
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         print_log("Server minute change - making new bar on cache")

@@ -63,7 +63,6 @@ class CalculatedDataLookup:
         return self
 
 
-
 def get_calculated_data_from_db(
     symbol_complete_list: Iterable[str], period_mins: Iterable[int], *,
     count: int | None = None, offset: int | None = None,

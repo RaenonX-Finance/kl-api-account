@@ -75,6 +75,9 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     while True:
                         history_data_paged = self.get_paged_history(handshake, query_idx)
 
+                        if not history_data_paged:
+                            return
+
                         if not history_data_paged.data:
                             break
 
@@ -90,13 +93,11 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         ))
                     else:
                         print_error(
-                            f"No history data available for "
-                            f"[bold]{handshake.symbol_complete}[/] ({handshake.data_type})"
+                            f"No history data available for [bold]{handshake.symbol_complete}[/] "
+                            f"({handshake.data_type} / {handshake.start_time_str} ~ {handshake.end_time_str})"
                         )
-                case "PING" | "UNSUBQUOTE":
+                case "PING" | "UNSUBQUOTE" | "SYSTEMTIME":
                     pass
-                case "SYSTEMTIME":
-                    self.on_system_time_min_change(SystemTimeData(message))
                 case _:
                     print_warning(f"Unknown message data type: {message.data_type}")
         except Exception as e:
@@ -108,7 +109,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
         socket_sub = create_subscription_receiver_socket(sub_port, DATA_TIMEOUT_SEC * 1000)
 
         while True:
-            # Only care about the message after the first color (:)
+            # Only care about the message after the first colon (:)
             message = CommonData(socket_sub.get_message().split(":", 1)[1])
 
             self._quote_subscription_handle_message(message)

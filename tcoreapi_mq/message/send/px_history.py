@@ -65,7 +65,7 @@ class GetPxHistoryRequest(RequestBase):
 
 
 @dataclass(kw_only=True)
-class CompletePxHistoryRequest(RequestBase):
+class UnsubscribePxHistoryRequest(RequestBase):
     session_key: str
     symbol_complete: str
     interval: HistoryInterval

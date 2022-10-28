@@ -17,8 +17,8 @@ data:
     px-update:
       market-time-gate-sec: 0.075
     px-history-refetch:
-      interval-sec: 10
-      backward-hour: 1
+      limit: 50
+      backward-hour: 2
   source:
     - type: Futures
       type-market-date: US Index Futures

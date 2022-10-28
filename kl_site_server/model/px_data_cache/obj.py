@@ -107,7 +107,7 @@ class PxDataCache:
         symbol_complete = data.symbol_complete
 
         print_log(
-            f"Updating [purple]{data.data_len_as_str}[/] Px data bars "
+            f"Updating [purple]{data.data_len}[/] Px data bars "
             f"to [yellow]{symbol_complete}[/] at [yellow]{data.data_type}[/]"
         )
         if data.is_1k:
@@ -119,7 +119,7 @@ class PxDataCache:
                 )
                 return
 
-            self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_iter)
+            self.data_1k[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_list)
         elif data.is_dk:
             if symbol_complete not in self.data_dk:
                 print_warning(
@@ -129,7 +129,7 @@ class PxDataCache:
                 )
                 return
 
-            self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_iter)
+            self.data_dk[symbol_complete].update_all(to_bar_data_dict_tcoreapi(bar) for bar in data.data_list)
         else:
             raise ValueError(
                 f"No data update as the history data is not either 1K or DK - {symbol_complete} @ {data.data_type}"

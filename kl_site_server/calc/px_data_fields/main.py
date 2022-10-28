@@ -1,9 +1,8 @@
 from pandas import DataFrame
 
 from kl_site_common.const import INDICATOR_EMA_PERIODS
-from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val
+from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val, print_log
 from kl_site_server.enums import PxDataCol
-from tcoreapi_mq.message import PxHistoryDataEntry
 from .candlestick import calc_candlestick_full, calc_candlestick_last, calc_candlestick_partial
 from .diff import calc_diff_full, calc_diff_last
 from .ema import calc_ema_full, calc_ema_last, calc_ema_partial
@@ -17,10 +16,7 @@ class CachedDataTooOldError(Exception):
 
 
 @df_fill_na_with_none
-def calculate_indicators_full(period_min: int, data_recs: list[PxHistoryDataEntry]) -> DataFrame:
-    df = DataFrame(data_recs)
-
-    calc_set_epoch_index(df)
+def calculate_indicators_full(period_min: int, df: DataFrame) -> DataFrame:
     df = aggregate_df(df, period_min)
 
     df = calc_diff_full(df)
@@ -34,10 +30,8 @@ def calculate_indicators_full(period_min: int, data_recs: list[PxHistoryDataEntr
 
 @df_fill_na_with_none
 def calculate_indicators_partial(
-    period_min: int, data_recs: list[PxHistoryDataEntry], cached_calc_df: DataFrame
+    security: str, period_min: int, df: DataFrame, cached_calc_df: DataFrame
 ) -> DataFrame:
-    df = DataFrame(data_recs)
-
     df = aggregate_df(df, period_min)
     calc_set_epoch_index(df)
     calc_set_epoch_index(cached_calc_df)
@@ -53,6 +47,8 @@ def calculate_indicators_partial(
     if not close_match_idx_on_df:
         raise CachedDataTooOldError()
 
+    print_log(f"Closing Px match at {close_match_idx_on_df} for [yellow]{security}@{period_min}[/]")
+
     df = calc_tie_point_partial(df, cached_calc_df, close_match_idx_on_df, period_min)
 
     df = calc_candlestick_partial(df, cached_calc_df, close_match_idx_on_df)
@@ -61,6 +57,9 @@ def calculate_indicators_partial(
     # Partial only calculate until the last of `cached_calc_df`
     # Aggregated `df` could have new timestamp that `cached_calc_df` doesn't have
     df = calculate_indicators_last(period_min, df)
+
+    # Only return "possibly changed" data
+    df = df.iloc[close_match_idx_on_df - 1:]
 
     return df
 

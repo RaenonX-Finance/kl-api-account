@@ -1,17 +1,19 @@
 from collections import defaultdict
 from datetime import datetime
 from threading import Lock
+from typing import TypeAlias
 
 from kl_site_common.const import SYS_APP_ID, SYS_SERVICE_KEY
 from kl_site_common.utils import print_log, print_warning
 from .core import TCoreZMQ
 from .message import (
-    CompletePxHistoryMessage, CompletePxHistoryRequest, GetPxHistoryMessage, GetPxHistoryRequest, HistoryDataHandshake,
-    HistoryInterval,
-    QueryInstrumentProduct, SubscribePxHistoryMessage, SubscribePxHistoryRequest,
-    SubscribeRealtimeMessage, SubscribeRealtimeRequest, UnsubscribeRealtimeMessage, UnsubscribeRealtimeRequest,
+    CompletePxHistoryMessage, GetPxHistoryMessage, GetPxHistoryRequest, HistoryDataHandshake, HistoryInterval,
+    QueryInstrumentProduct, SubscribePxHistoryMessage, SubscribePxHistoryRequest, SubscribeRealtimeMessage,
+    SubscribeRealtimeRequest, UnsubscribePxHistoryRequest, UnsubscribeRealtimeMessage, UnsubscribeRealtimeRequest,
 )
 from .model import SymbolBaseType
+
+SubscribingHistoryKey: TypeAlias = tuple[str, str, str]  # Symbol complete, start ts str, end ts str
 
 
 class QuoteAPI(TCoreZMQ):
@@ -20,6 +22,7 @@ class QuoteAPI(TCoreZMQ):
 
         self._info: dict[str, QueryInstrumentProduct] = {}
         self._subscribing_realtime: set[str] = set()
+        self._subscribing_history: dict[SubscribingHistoryKey, bool] = {}
         self.history_data_lock_dict: defaultdict[str, Lock] = defaultdict(Lock)
 
     def get_symbol_info(self, symbol_obj: SymbolBaseType) -> QueryInstrumentProduct:
@@ -56,13 +59,18 @@ class QuoteAPI(TCoreZMQ):
 
             return UnsubscribeRealtimeMessage(message=self.socket.get_message())
 
+    @staticmethod
+    def _make_hist_sub_key(symbol_complete: str, start_ts_str: str, end_ts_str: str) -> SubscribingHistoryKey:
+        return symbol_complete, start_ts_str, end_ts_str
+
     def get_history(
         self,
         symbol: SymbolBaseType,
         interval: HistoryInterval,
         start: datetime,
         end: datetime, *,
-        ignore_lock: bool = False
+        ignore_lock: bool = False,
+        subscribe: bool = True,
     ) -> SubscribePxHistoryMessage | None:
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         if not ignore_lock:
@@ -82,6 +90,10 @@ class QuoteAPI(TCoreZMQ):
                     end_time=end
                 )
 
+                self._subscribing_history[self._make_hist_sub_key(
+                    symbol.symbol_complete, req.start_ts_str, req.end_ts_str
+                )] = subscribe
+
                 self.socket.send_string(req.to_message())
             except ValueError:
                 print_warning(f"Omit history data request (Start = End, {start} ~ {end})")
@@ -89,19 +101,33 @@ class QuoteAPI(TCoreZMQ):
 
             return SubscribePxHistoryMessage(message=self.socket.get_message())
 
-    def get_paged_history(self, handshake: HistoryDataHandshake, query_idx: int = 0) -> GetPxHistoryMessage:
+    def get_paged_history(self, handshake: HistoryDataHandshake, query_idx: int = 0) -> GetPxHistoryMessage | None:
         """
         Usually this is called after receiving the subscription data after calling ``subscribe_history()``.
 
         Parameters originated from the subscription data of ``subscribe_history()``.
         """
+        symbol_complete = handshake.symbol_complete
+        interval = handshake.data_type
+        start_time_str = handshake.start_time_str
+        end_time_str = handshake.end_time_str
+
+        sub_key = self._make_hist_sub_key(symbol_complete, start_time_str, end_time_str)
+        if sub_key not in self._subscribing_history:  # History handshake not requested
+            print_log(
+                "[red]Clearing dangling history data subscription[/] "
+                f"([yellow]{symbol_complete} at {interval}[/] from {start_time_str} to {end_time_str})"
+            )
+            self.unsubscribe_history(handshake, do_not_execute_complete=True)
+            return None
+
         with self.lock:
             req = GetPxHistoryRequest(
                 session_key=self.session_key,
-                symbol_complete=handshake.symbol_complete,
-                interval=handshake.data_type,
-                start_time_str=handshake.start_time_str,
-                end_time_str=handshake.end_time_str,
+                symbol_complete=symbol_complete,
+                interval=interval,
+                start_time_str=start_time_str,
+                end_time_str=end_time_str,
                 query_idx=query_idx
             )
             self.socket.send_string(req.to_message())
@@ -110,20 +136,33 @@ class QuoteAPI(TCoreZMQ):
 
     def complete_get_history(self, handshake: HistoryDataHandshake):
         symbol_complete = handshake.symbol_complete
-        interval = handshake.data_type
-        start_time_str = handshake.start_time_str
-        end_time_str = handshake.end_time_str
 
         if self.history_data_lock_dict[symbol_complete].locked():
             # Request from other session could trigger this, therefore using `locked()` to guard
             self.history_data_lock_dict[symbol_complete].release()
+
+        sub_key = self._make_hist_sub_key(symbol_complete, handshake.start_time_str, handshake.end_time_str)
+        if not self._subscribing_history.get(sub_key, False):
+            self.unsubscribe_history(handshake, do_not_execute_complete=True)
+
+    def unsubscribe_history(self, handshake: HistoryDataHandshake, *, do_not_execute_complete: bool = False):
+        symbol_complete = handshake.symbol_complete
+        interval = handshake.data_type
+        start_time_str = handshake.start_time_str
+        end_time_str = handshake.end_time_str
+
+        if not do_not_execute_complete:
+            self.complete_get_history(handshake)
+
+        self._subscribing_history.pop(self._make_hist_sub_key(symbol_complete, start_time_str, end_time_str), None)
+
         print_log(
-            f"History data fetching completed for [yellow]{symbol_complete}[/] "
+            f"Unsubscribing history data of [yellow]{symbol_complete}[/] "
             f"at [yellow]{interval}[/] starting from {start_time_str} to {end_time_str}"
         )
 
         with self.lock:
-            req = CompletePxHistoryRequest(
+            req = UnsubscribePxHistoryRequest(
                 session_key=self.session_key,
                 symbol_complete=symbol_complete,
                 interval=interval,

@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from itertools import product
-from typing import Iterable, NamedTuple
+from typing import Iterable, NamedTuple, TYPE_CHECKING
 
 import pymongo
 from pandas import DataFrame
@@ -11,6 +11,9 @@ from kl_site_common.utils import print_log, split_chunks
 from kl_site_server.enums import PxDataCol
 from tcoreapi_mq.model import SymbolBaseType
 from ..const import px_data_calc_col
+
+if TYPE_CHECKING:
+    from kl_site_server.model import BarDataDict
 
 
 @dataclass(kw_only=True)
@@ -34,7 +37,7 @@ def _get_calculated_data_single(args: GetCalcDataArgs) -> Iterable[dict]:
 
 class CalculatedDataLookup:
     def __init__(self):
-        self._data: dict[tuple[str, int], list[dict]] = {}
+        self._data: dict[tuple[str, int], list[dict]] = {}  # K = (symbol complete, period min); V = list of data
 
     @staticmethod
     def _make_key(symbol_complete: str, period_min: int) -> tuple[str, int]:
@@ -45,6 +48,21 @@ class CalculatedDataLookup:
 
     def get_calculated_data(self, symbol_complete: str, period_min: int) -> list[dict] | None:
         return self._data.get(self._make_key(symbol_complete, period_min))
+
+    def update_last_bar(self, last_bar_dict: dict[str, "BarDataDict"]) -> "CalculatedDataLookup":
+        for key in self._data.keys():
+            symbol_complete, _ = key
+
+            if not (last_bar := last_bar_dict.get(symbol_complete)):
+                continue
+
+            # self._data[key][-1][PxDataCol.OPEN] = last_bar[PxDataCol.OPEN]
+            self._data[key][-1][PxDataCol.HIGH] = max(self._data[key][-1][PxDataCol.HIGH], last_bar[PxDataCol.HIGH])
+            self._data[key][-1][PxDataCol.LOW] = min(self._data[key][-1][PxDataCol.LOW], last_bar[PxDataCol.LOW])
+            self._data[key][-1][PxDataCol.CLOSE] = last_bar[PxDataCol.CLOSE]
+            # self._data[key][-1][PxDataCol.VOLUME] = last_bar[PxDataCol.VOLUME]
+
+        return self
 
 
 def get_calculated_data_from_db(

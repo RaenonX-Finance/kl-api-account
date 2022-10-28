@@ -22,5 +22,5 @@ def test_calc_candlestick_partial():
 
     assert df_calc[PxDataCol.CANDLESTICK_DIR].to_list() == [-1, -1, -1, -1, -1, -1]
     assert df_calc[PxDataCol.MACD_SIGNAL].to_list() == pytest.approx(
-        [6.3, 5.278, 4.387, 3.633, 2.988, 2.367], abs=1E-3
+        [6.3, 5.278, 4.387, 3.633, 3.007, 2.413], abs=1E-3
     )

@@ -161,14 +161,14 @@
               "type": "object",
               "description": "Px data refetching related settings.",
               "required": [
-                "interval-sec",
+                "limit",
                 "backward-hour"
               ],
               "additionalProperties": false,
               "properties": {
-                "interval-sec": {
-                  "type": "number",
-                  "description": "Px data refetching frequency in seconds.",
+                "limit": {
+                  "type": "integer",
+                  "description": "Maximum count of data bar to store upon receiving the subscribed history data.",
                   "exclusiveMinimum": 0
                 },
                 "backward-hour": {

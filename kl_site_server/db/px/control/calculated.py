@@ -1,7 +1,7 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass
 from itertools import product
-from typing import Iterable, NamedTuple
+from typing import Iterable, NamedTuple, TYPE_CHECKING
 
 import pymongo
 from pandas import DataFrame
@@ -9,9 +9,11 @@ from pandas import DataFrame
 from kl_site_common.db import start_mongo_txn
 from kl_site_common.utils import print_log, split_chunks
 from kl_site_server.enums import PxDataCol
-from kl_site_server.model import BarDataDict
 from tcoreapi_mq.model import SymbolBaseType
 from ..const import px_data_calc_col
+
+if TYPE_CHECKING:
+    from kl_site_server.model import BarDataDict
 
 
 @dataclass(kw_only=True)
@@ -47,7 +49,7 @@ class CalculatedDataLookup:
     def get_calculated_data(self, symbol_complete: str, period_min: int) -> list[dict] | None:
         return self._data.get(self._make_key(symbol_complete, period_min))
 
-    def update_last_bar(self, last_bar_dict: dict[str, BarDataDict]) -> "CalculatedDataLookup":
+    def update_last_bar(self, last_bar_dict: dict[str, "BarDataDict"]) -> "CalculatedDataLookup":
         for key in self._data.keys():
             symbol_complete, _ = key
 

@@ -1,6 +1,9 @@
 # Data API
 zmq
 
+# Caching
+cachetools
+
 # Data processing
 # -- Significant performance issue for `calc_support_resistance_levels()`
 pandas==1.4.4

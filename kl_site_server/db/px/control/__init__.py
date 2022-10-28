@@ -1,5 +1,5 @@
 from .calculated import (
-    CalculatedDataLookup, GetCalcDataArgs, StoreCalculatedDataArgs, _get_calculated_data_single,
+    CalculatedDataLookup, GetCalcDataArgs, StoreCalculatedDataArgs,
     get_calculated_data_from_db, store_calculated_to_db,
 )
 from .history import (

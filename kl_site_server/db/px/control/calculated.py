@@ -1,6 +1,5 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from collections import defaultdict
 from dataclasses import dataclass
-from itertools import product
 from typing import Iterable, NamedTuple, TYPE_CHECKING
 
 import pymongo
@@ -66,7 +65,7 @@ class CalculatedDataLookup:
 
 
 def get_calculated_data_from_db(
-    symbol_complete_list: Iterable[str], period_mins: Iterable[int], *,
+    symbol_complete_list: list[str], period_mins: list[int], *,
     count: int | None = None, offset: int | None = None,
     count_override: dict[tuple[str, int], int] | None = None,
     offset_override: dict[tuple[str, int], int] | None = None,
@@ -75,22 +74,31 @@ def get_calculated_data_from_db(
 
     ret = CalculatedDataLookup()
 
-    with ThreadPoolExecutor() as executor:
-        future_to_args = {
-            executor.submit(
-                _get_calculated_data_single,
-                GetCalcDataArgs(
-                    symbol_complete=symbol_complete, period_min=period_min,
-                    count=(count_override or {}).get((symbol_complete, period_min)) or count,
-                    offset=(offset_override or {}).get((symbol_complete, period_min)) or offset,
-                )
-            ): (symbol_complete, period_min)
-            for symbol_complete, period_min in product(symbol_complete_list, period_mins)
-        }
-        for future in as_completed(future_to_args):
-            symbol_complete, period_min = future_to_args[future]
+    max_count = max([*(count_override or {}).values(), count or 2000])
+    max_offset = max([*(offset_override or {}).values(), offset or 0])
 
-            ret.add_data(symbol_complete, period_min, list(future.result()))
+    cursor = px_data_calc_col.find({"s": {"$in": symbol_complete_list}, "p": {"$in": period_mins}}) \
+        .sort(PxDataCol.EPOCH_SEC, pymongo.DESCENDING) \
+        .limit(max_count + max_offset)
+    data: defaultdict[tuple[str, int], list] = defaultdict(list)  # K = (complete symbol, period min)
+
+    for entry in cursor:
+        symbol_complete = entry["s"]
+        period_min = entry["p"]
+
+        key = (symbol_complete, period_min)
+
+        data_list = data[key]
+
+        if len(data_list) > ((count_override or {}).get(key) or count or 2000):
+            continue
+
+        data_list.append(entry)
+
+    for key, data_list in data.items():
+        symbol_complete, period_min = key
+
+        ret.add_data(symbol_complete, period_min, data_list[(offset_override or {}).get(key) or offset:][::-1])
 
     return ret
 

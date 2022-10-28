@@ -42,7 +42,7 @@ class CalculatedDataManager:
         self._px_data_cache: PxDataCache = px_data_cache
 
         self._update_calculated_data_lock: Lock = Lock()
-        self._update_calculated_data_executor: ThreadPoolExecutor = ThreadPoolExecutor(max_workers=8)
+        self._update_calculated_data_executor: ThreadPoolExecutor = ThreadPoolExecutor()
 
     @staticmethod
     def _get_params_interval_info(params_list: Iterable[TouchancePxRequestParams]) -> set[PeriodIntervalInfo]:

@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import NamedTuple, TYPE_CHECKING
+from typing import NamedTuple, TYPE_CHECKING, TypeAlias
 
 import pymongo
 from pandas import DataFrame
@@ -25,35 +25,40 @@ class GetCalcDataArgs:
 DEFAULT_CALCULATED_DATA_COUNT = 2000
 DEFAULT_CALCULATED_DATA_OFFSET = 0
 
+CalcDataLookupInternal: TypeAlias = dict[tuple[str, int], list[dict]]
+
 
 class CalculatedDataLookup:
-    def __init__(self):
-        self._data: dict[tuple[str, int], list[dict]] = {}  # K = (symbol complete, period min); V = list of data
+    def __init__(self, data: CalcDataLookupInternal | None = None):
+        self.data: CalcDataLookupInternal = data or {}  # K = (symbol complete, period min); V = list of data
 
     @staticmethod
     def _make_key(symbol_complete: str, period_min: int) -> tuple[str, int]:
         return symbol_complete, period_min
 
     def add_data(self, symbol_complete: str, period_min: int, data: list[dict]):
-        self._data[self._make_key(symbol_complete, period_min)] = data
+        self.data[self._make_key(symbol_complete, period_min)] = data
 
     def get_calculated_data(self, symbol_complete: str, period_min: int) -> list[dict] | None:
-        return self._data.get(self._make_key(symbol_complete, period_min))
+        return self.data.get(self._make_key(symbol_complete, period_min))
 
     def update_last_bar(self, last_bar_dict: dict[str, "BarDataDict"]) -> "CalculatedDataLookup":
-        for key in self._data.keys():
+        for key in self.data.keys():
             symbol_complete, _ = key
 
             if not (last_bar := last_bar_dict.get(symbol_complete)):
                 continue
 
             # self._data[key][-1][PxDataCol.OPEN] = last_bar[PxDataCol.OPEN]
-            self._data[key][-1][PxDataCol.HIGH] = max(self._data[key][-1][PxDataCol.HIGH], last_bar[PxDataCol.HIGH])
-            self._data[key][-1][PxDataCol.LOW] = min(self._data[key][-1][PxDataCol.LOW], last_bar[PxDataCol.LOW])
-            self._data[key][-1][PxDataCol.CLOSE] = last_bar[PxDataCol.CLOSE]
+            self.data[key][-1][PxDataCol.HIGH] = max(self.data[key][-1][PxDataCol.HIGH], last_bar[PxDataCol.HIGH])
+            self.data[key][-1][PxDataCol.LOW] = min(self.data[key][-1][PxDataCol.LOW], last_bar[PxDataCol.LOW])
+            self.data[key][-1][PxDataCol.CLOSE] = last_bar[PxDataCol.CLOSE]
             # self._data[key][-1][PxDataCol.VOLUME] = last_bar[PxDataCol.VOLUME]
 
         return self
+
+    def merge(self, calc_data_lookup: "CalculatedDataLookup") -> "CalculatedDataLookup":
+        return CalculatedDataLookup(data=self.data | calc_data_lookup.data)
 
 
 def get_calculated_data_from_db(

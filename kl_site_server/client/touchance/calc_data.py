@@ -179,7 +179,7 @@ class CalculatedDataManager:
             history_data_cache: DataCache = DataCache(fn_get_history_data)
             calculated_data_lookup = fn_get_calculated_data_lookup(
                 [symbol.symbol_complete for symbol in symbols],
-                [interval_info.period_min for interval_info in interval_info_set]
+                [interval_info.period_min for interval_info in interval_info_set],
             )
 
             with ThreadPoolExecutor() as executor:
@@ -236,10 +236,17 @@ class CalculatedDataManager:
             symbol_complete_list: list[str],
             period_mins: list[int],
         ) -> CalculatedDataLookup:
-            return get_calculated_data_from_db(
-                symbol_complete_list, period_mins,
-                count=MAX_PERIOD_NO_EMA
+            # Splitting period mins to reduce to number of total bars needed to fetch
+            # This should be removed after `get_calculated_data_from_db()`
+            # optimization for guaranteeing the bars count
+            data_lt_1440 = get_calculated_data_from_db(
+                symbol_complete_list, [period_min for period_min in period_mins if period_min < 1440],
             )
+            data_gte_1440 = get_calculated_data_from_db(
+                symbol_complete_list, [period_min for period_min in period_mins if period_min >= 1440],
+            )
+
+            return data_lt_1440.merge(data_gte_1440)
 
         self._calc_data_update(
             get_history_data,

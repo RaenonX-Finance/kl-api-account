@@ -106,12 +106,15 @@ class TouchanceDataClient(TouchanceApiClient):
         self._last_data_min = timestamp.minute
 
         if prev_min != self._last_data_min:
+            print_log(f"Server minute change - changing from {prev_min} to {self._last_data_min}")
             self.on_system_time_min_change(SystemTimeData.from_datetime(timestamp))
 
     def on_received_history_data(self, data: HistoryData) -> None:
+        last_bar = data.data_list[-1]
+
         print_log(
             f"Received history data of [yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/] "
-            f"({data.data_len})"
+            f"({data.data_len} - {last_bar.close} @ {last_bar.timestamp})"
         )
 
         store_history_to_db(data, None if self._requesting_px_data else DATA_PX_REFETCH_STORE_LIMIT)

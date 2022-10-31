@@ -126,6 +126,7 @@ class StoreCalculatedDataArgs(NamedTuple):
 
 def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
     if not args:
+        print_log("Skipped storing calculated data to db - no data to store")
         return
 
     all_del_conditions = []

@@ -1,4 +1,4 @@
-from concurrent.futures import ThreadPoolExecutor, as_completed
+from concurrent.futures import ThreadPoolExecutor
 from itertools import product
 from threading import Lock
 from typing import Callable, Iterable, NamedTuple, TypeAlias
@@ -16,7 +16,7 @@ from kl_site_server.db import (
     store_calculated_to_db,
 )
 from kl_site_server.model import BarDataDict, PxDataCache, TouchancePxRequestParams
-from kl_site_server.utils import MAX_PERIOD, MAX_PERIOD_NO_EMA
+from kl_site_server.utils import MAX_PERIOD_NO_EMA
 from tcoreapi_mq.message import HistoryInterval, PxHistoryDataEntry
 from tcoreapi_mq.model import SymbolBaseType
 
@@ -179,19 +179,22 @@ class CalculatedDataManager:
             history_data_cache: DataCache = DataCache(fn_get_history_data)
             calculated_data_lookup = fn_get_calculated_data_lookup(
                 [symbol.symbol_complete for symbol in symbols],
-                [interval_info.period_min for interval_info in interval_info_set]
+                [interval_info.period_min for interval_info in interval_info_set],
             )
 
-            with ThreadPoolExecutor() as executor:
-                for future in as_completed([
-                    executor.submit(
-                        fn_calc_update_single,
-                        symbol_obj, interval_info, calculated_data_lookup, history_data_cache
+            for idx, (symbol_obj, interval_info) in enumerate(product(symbols, interval_info_set)):
+                calc_args = fn_calc_update_single(
+                    symbol_obj, interval_info, calculated_data_lookup, history_data_cache
+                )
+
+                if calc_args is None:
+                    print_log(
+                        f"Skipped storing calculated data of {symbol_obj.symbol_complete}@{interval_info.period_min} "
+                        "- no calculated data returned"
                     )
-                    for symbol_obj, interval_info in product(symbols, interval_info_set)
-                ]):
-                    if calc_args := future.result():
-                        store_calculated_args.append(calc_args)
+                    continue
+
+                store_calculated_args.append(calc_args)
 
             store_calculated_to_db(store_calculated_args)
 
@@ -236,10 +239,17 @@ class CalculatedDataManager:
             symbol_complete_list: list[str],
             period_mins: list[int],
         ) -> CalculatedDataLookup:
-            return get_calculated_data_from_db(
-                symbol_complete_list, period_mins,
-                count=MAX_PERIOD_NO_EMA
+            # Splitting period mins to reduce to number of total bars needed to fetch
+            # This should be removed after `get_calculated_data_from_db()`
+            # optimization for guaranteeing the bars count
+            data_lt_1440 = get_calculated_data_from_db(
+                symbol_complete_list, [period_min for period_min in period_mins if period_min < 1440],
             )
+            data_gte_1440 = get_calculated_data_from_db(
+                symbol_complete_list, [period_min for period_min in period_mins if period_min >= 1440],
+            )
+
+            return data_lt_1440.merge(data_gte_1440)
 
         self._calc_data_update(
             get_history_data,
@@ -251,7 +261,11 @@ class CalculatedDataManager:
             threaded=False,
         )
 
-    def update_calc_data_last(self, params_list: Iterable[TouchancePxRequestParams]) -> None:
+    def update_calc_data_last(
+        self,
+        params_list: Iterable[TouchancePxRequestParams],
+        symbol_complete_to_use: set[str],
+    ) -> None:
         def get_history_data(key: tuple[SymbolBaseType, HistoryInterval], _: int) -> DataFrame:
             symbol, interval = key
 
@@ -277,17 +291,26 @@ class CalculatedDataManager:
                 symbol_complete: self._px_data_cache.get_cache_entry_of_interval("1K", symbol_complete).data_last_bar
                 for symbol_complete in symbol_complete_list
             }
+            # Splitting period mins to reduce to number of total bars needed to fetch
+            # This should be removed after `get_calculated_data_from_db()`
+            # optimization for guaranteeing the bars count
+            data_lt_1440 = get_calculated_data_from_db(
+                symbol_complete_list, [period_min for period_min in period_mins if period_min < 1440],
+            )
+            data_gte_1440 = get_calculated_data_from_db(
+                symbol_complete_list, [period_min for period_min in period_mins if period_min >= 1440],
+            )
 
-            return get_calculated_data_from_db(
-                symbol_complete_list, period_mins,
-                count=MAX_PERIOD
-            ).update_last_bar(last_bar_dict)
+            return data_lt_1440.merge(data_gte_1440).update_last_bar(last_bar_dict)
 
         self._calc_data_update(
             get_history_data,
             get_calculated_data_lookup,
             self._calc_data_update_single_common,
-            self._px_data_cache.symbol_obj_in_use,
+            {
+                symbol_obj for symbol_obj in self._px_data_cache.symbol_obj_in_use
+                if symbol_obj.symbol_complete in symbol_complete_to_use
+            },
             params_list,
             threaded=True,
             skip_if_locked=True,

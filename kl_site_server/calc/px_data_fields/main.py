@@ -41,6 +41,12 @@ def calculate_indicators_partial(
     # Removing this creates incorrect `NaN`s in many columns
     df = df[cached_calc_df.index[0]:]
 
+    if len(df) < 2:
+        raise ValueError(
+            f"`{security}@{period_min}` does not have enough data to do partial calculation - "
+            f"Base: {df.index[0]} ~ {df.index[-1]} / Cached: {cached_calc_df.index[0]} ~ {cached_calc_df.index[-1]}"
+        )
+
     df = calc_diff_full(df)
 
     close_match_idx_on_df = df_get_last_rev_index_of_matching_val(df, cached_calc_df, PxDataCol.CLOSE)

@@ -1,6 +1,5 @@
-from collections import defaultdict
 from dataclasses import dataclass
-from typing import Iterable, NamedTuple, TYPE_CHECKING
+from typing import NamedTuple, TYPE_CHECKING, TypeAlias
 
 import pymongo
 from pandas import DataFrame
@@ -23,45 +22,43 @@ class GetCalcDataArgs:
     offset: int | None = None
 
 
-def _get_calculated_data_single(args: GetCalcDataArgs) -> Iterable[dict]:
-    cursor = px_data_calc_col.find({"s": args.symbol_complete, "p": args.period_min}) \
-        .sort(PxDataCol.EPOCH_SEC, pymongo.DESCENDING) \
-        .limit((args.count or 2000) + (args.offset or 0))
+DEFAULT_CALCULATED_DATA_COUNT = 2000
+DEFAULT_CALCULATED_DATA_OFFSET = 0
 
-    if args.offset:
-        cursor = cursor.skip(args.offset)
-
-    return reversed(list(cursor))
+CalcDataLookupInternal: TypeAlias = dict[tuple[str, int], list[dict]]
 
 
 class CalculatedDataLookup:
-    def __init__(self):
-        self._data: dict[tuple[str, int], list[dict]] = {}  # K = (symbol complete, period min); V = list of data
+    def __init__(self, data: CalcDataLookupInternal | None = None):
+        self.data: CalcDataLookupInternal = data or {}  # K = (symbol complete, period min); V = list of data
 
     @staticmethod
     def _make_key(symbol_complete: str, period_min: int) -> tuple[str, int]:
         return symbol_complete, period_min
 
     def add_data(self, symbol_complete: str, period_min: int, data: list[dict]):
-        self._data[self._make_key(symbol_complete, period_min)] = data
+        self.data[self._make_key(symbol_complete, period_min)] = data
 
     def get_calculated_data(self, symbol_complete: str, period_min: int) -> list[dict] | None:
-        return self._data.get(self._make_key(symbol_complete, period_min))
+        return self.data.get(self._make_key(symbol_complete, period_min))
 
     def update_last_bar(self, last_bar_dict: dict[str, "BarDataDict"]) -> "CalculatedDataLookup":
-        for key in self._data.keys():
+        for key in self.data.keys():
             symbol_complete, _ = key
 
             if not (last_bar := last_bar_dict.get(symbol_complete)):
                 continue
 
             # self._data[key][-1][PxDataCol.OPEN] = last_bar[PxDataCol.OPEN]
-            self._data[key][-1][PxDataCol.HIGH] = max(self._data[key][-1][PxDataCol.HIGH], last_bar[PxDataCol.HIGH])
-            self._data[key][-1][PxDataCol.LOW] = min(self._data[key][-1][PxDataCol.LOW], last_bar[PxDataCol.LOW])
-            self._data[key][-1][PxDataCol.CLOSE] = last_bar[PxDataCol.CLOSE]
+            self.data[key][-1][PxDataCol.HIGH] = max(self.data[key][-1][PxDataCol.HIGH], last_bar[PxDataCol.HIGH])
+            self.data[key][-1][PxDataCol.LOW] = min(self.data[key][-1][PxDataCol.LOW], last_bar[PxDataCol.LOW])
+            self.data[key][-1][PxDataCol.CLOSE] = last_bar[PxDataCol.CLOSE]
             # self._data[key][-1][PxDataCol.VOLUME] = last_bar[PxDataCol.VOLUME]
 
         return self
+
+    def merge(self, calc_data_lookup: "CalculatedDataLookup") -> "CalculatedDataLookup":
+        return CalculatedDataLookup(data=self.data | calc_data_lookup.data)
 
 
 def get_calculated_data_from_db(
@@ -71,36 +68,57 @@ def get_calculated_data_from_db(
     count_override: dict[tuple[str, int], int] | None = None,
     offset_override: dict[tuple[str, int], int] | None = None,
 ) -> CalculatedDataLookup:
-    print_log(f"Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/]")
-
     ret = CalculatedDataLookup()
 
-    cursor = px_data_calc_col.find({"s": {"$in": symbol_complete_list}, "p": {"$in": period_mins}}) \
-        .sort(PxDataCol.EPOCH_SEC, pymongo.DESCENDING)
-    data: defaultdict[tuple[str, int], list] = defaultdict(list)  # K = (complete symbol, period min)
+    if not symbol_complete_list:
+        print_log("Skipped getting calculated data - empty symbol list")
+        return ret
+    elif not period_mins:
+        print_log("Skipped getting calculated data - empty period min list")
+        return ret
 
-    for entry in cursor:
-        symbol_complete = entry["s"]
-        period_min = entry["p"]
+    print_log(f"Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/]")
 
+    max_count = max([*(count_override or {}).values(), count or DEFAULT_CALCULATED_DATA_COUNT])
+    max_offset = max([*(offset_override or {}).values(), offset or DEFAULT_CALCULATED_DATA_OFFSET])
+
+    aggr_pipeline = [
+        {
+            "$match": {
+                "s": {"$in": symbol_complete_list},
+                "p": {"$in": period_mins}
+            }
+        },
+        {
+            "$sort": {"epoch_sec": pymongo.DESCENDING}
+        },
+        {
+            "$limit": max_count + max_offset
+        },
+        {
+            "$group": {
+                "_id": {
+                    "s": "$s",
+                    "p": "$p"
+                },
+                "data": {"$push": "$$ROOT"}
+            }
+        }
+    ]
+
+    for aggr_result in px_data_calc_col.aggregate(aggr_pipeline):
+        aggr_result_key = aggr_result["_id"]
+        symbol_complete = aggr_result_key["s"]
+        period_min = aggr_result_key["p"]
         key = (symbol_complete, period_min)
 
-        data_list = data[key]
-
-        max_count = ((count_override or {}).get(key) or count or 2000)
-        max_offset = ((offset_override or {}).get(key) or offset or 0)
-        if len(data_list) > max_count + max_offset:
-            continue
-
-        data_list.append(entry)
-
-    for key, data_list in data.items():
-        symbol_complete, period_min = key
+        count = (count_override or {}).get(key) or count or DEFAULT_CALCULATED_DATA_COUNT
+        offset = (offset_override or {}).get(key) or offset or DEFAULT_CALCULATED_DATA_OFFSET
 
         ret.add_data(
             symbol_complete,
             period_min,
-            data_list[(offset_override or {}).get(key) or offset:][::-1]  # noqa: E231
+            list(reversed(aggr_result["data"][offset:offset + count]))  # noqa: E231
         )
 
     return ret
@@ -115,6 +133,7 @@ class StoreCalculatedDataArgs(NamedTuple):
 
 def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
     if not args:
+        print_log("Skipped storing calculated data to db - no data to store")
         return
 
     all_del_conditions = []

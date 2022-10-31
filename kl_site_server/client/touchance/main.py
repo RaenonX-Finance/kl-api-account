@@ -14,7 +14,7 @@ from kl_site_server.model import (
 )
 from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryInterval, RealtimeData, SystemTimeData
-from tcoreapi_mq.model import SymbolBaseType
+from tcoreapi_mq.model import FUTURES_SYMBOL_TO_SYM_OBJ, SymbolBaseType
 from .calc_data import CalculatedDataManager
 from .subscribe import HistoryDataSubscriber
 
@@ -116,6 +116,13 @@ class TouchanceDataClient(TouchanceApiClient):
             self.on_system_time_min_change(SystemTimeData.from_datetime(timestamp))
 
     def on_received_history_data(self, data: HistoryData) -> None:
+        symbol_obj = FUTURES_SYMBOL_TO_SYM_OBJ.get(data.symbol_complete)  # Might receive dangling history data
+
+        # https://github.com/RaenonX-Finance/kl-site-back/issues/40
+        if symbol_obj and is_market_closed(symbol_obj.security):
+            print_log(f"[red]Ignoring[/] history Px data of [yellow]{symbol_obj.security}[/] - outside market hours")
+            return
+
         last_bar = data.data_list[-1]
 
         print_log(

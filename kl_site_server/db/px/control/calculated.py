@@ -68,6 +68,15 @@ def get_calculated_data_from_db(
     count_override: dict[tuple[str, int], int] | None = None,
     offset_override: dict[tuple[str, int], int] | None = None,
 ) -> CalculatedDataLookup:
+    ret = CalculatedDataLookup()
+
+    if not symbol_complete_list:
+        print_log("Skipped getting calculated data - empty symbol list")
+        return ret
+    elif not period_mins:
+        print_log("Skipped getting calculated data - empty period min list")
+        return ret
+
     print_log(f"Getting calculated data of [yellow]{sorted(symbol_complete_list)} @ {sorted(period_mins)}[/]")
 
     max_count = max([*(count_override or {}).values(), count or DEFAULT_CALCULATED_DATA_COUNT])
@@ -96,8 +105,6 @@ def get_calculated_data_from_db(
             }
         }
     ]
-
-    ret = CalculatedDataLookup()
 
     for aggr_result in px_data_calc_col.aggregate(aggr_pipeline):
         aggr_result_key = aggr_result["_id"]

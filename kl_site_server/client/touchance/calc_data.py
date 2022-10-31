@@ -183,9 +183,18 @@ class CalculatedDataManager:
             )
 
             for idx, (symbol_obj, interval_info) in enumerate(product(symbols, interval_info_set)):
-                store_calculated_args.append(fn_calc_update_single(
+                calc_args = fn_calc_update_single(
                     symbol_obj, interval_info, calculated_data_lookup, history_data_cache
-                ))
+                )
+
+                if calc_args is None:
+                    print_log(
+                        f"Skipped storing calculated data of {symbol_obj.symbol_complete}@{interval_info.period_min} "
+                        "- no calculated data returned"
+                    )
+                    continue
+
+                store_calculated_args.append(calc_args)
 
             store_calculated_to_db(store_calculated_args)
 

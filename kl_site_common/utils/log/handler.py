@@ -71,6 +71,9 @@ class ParallelTimedRotatingFileHandler(TimedRotatingFileHandler):
 
         self.rolloverAt = self.computeRollover(current_time)
 
+    def computeRollover(self, current_time: int) -> int:
+        return int(current_time - current_time % self.interval)
+
     def calc_file_name(self, current_time):
         if self.utc:
             time_tuple = time.gmtime(current_time)

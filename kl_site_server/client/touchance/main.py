@@ -143,6 +143,8 @@ class TouchanceDataClient(TouchanceApiClient):
             print_log(f"[red]Ignoring[/] market Px data of [yellow]{data.security}[/] - outside market hours")
             return
 
+        self._px_data_cache.update_latest_market_data_of_symbol(data)
+
         if not self._px_data_cache.is_all_ready_of_intervals(["1K", "DK"], data.symbol_complete):
             params = self._px_request_params[data.symbol_complete]
 

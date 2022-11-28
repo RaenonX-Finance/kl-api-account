@@ -23,6 +23,20 @@ data:
     - type: Futures
       type-market-date: US Index Futures
       exchange: CME
+      symbol: ES
+      expiry: HOT
+      name: SP 500
+      session:
+        - weekdays: [6, 0, 1, 2, 3]
+          start: '22:00'
+          end: '21:00'
+      sr-level:
+        group:
+          open: '13:30'
+          close: '20:00'
+    - type: Futures
+      type-market-date: US Index Futures
+      exchange: CME
       symbol: NQ
       expiry: HOT
       name: 小那指

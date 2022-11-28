@@ -22,6 +22,7 @@ environs
 fastapi[all]
 fastapi-socketio
 uvicorn[standard]
+aiortc
 
 # Database
 # > Do NOT install `bson` here as `pymongo` installs its own `bson`.

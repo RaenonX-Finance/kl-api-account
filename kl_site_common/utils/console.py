@@ -45,6 +45,10 @@ def print_warning(message: str, *, force: bool = False):
     _print_console(console, "WARNING", f"[yellow]{message}[/]", timestamp_color="yellow")
 
 
+def print_debug(message: str):
+    _print_console(console, "DEBUG", f"[grey50]{message}[/]", timestamp_color="grey50")
+
+
 def print_error(message: str):
     _print_console(console_error, "ERROR", message, timestamp_color="red")
 

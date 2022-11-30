@@ -51,8 +51,7 @@ class QuoteAPI(TCoreZMQ):
     def unsubscribe_realtime(self, symbol_complete: str) -> UnsubscribeRealtimeMessage:
         print_log(f"Unsubscribing realtime data from [yellow]{symbol_complete}[/]")
 
-        if self.is_subscribing_realtime(symbol_complete):
-            self._subscribing_realtime.remove(symbol_complete)
+        self._subscribing_realtime -= {symbol_complete}
 
         with self.lock:
             req = UnsubscribeRealtimeRequest(session_key=self.session_key, symbol_complete=symbol_complete)

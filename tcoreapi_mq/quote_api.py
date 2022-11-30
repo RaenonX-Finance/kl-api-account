@@ -13,7 +13,8 @@ from .message import (
 )
 from .model import SymbolBaseType
 
-SubscribingHistoryKey: TypeAlias = tuple[str, str, str]  # Symbol complete, start ts str, end ts str
+# Interval, Symbol complete, start ts str, end ts str
+SubscribingHistoryKey: TypeAlias = tuple[HistoryInterval, str, str, str]
 
 
 class QuoteAPI(TCoreZMQ):
@@ -60,8 +61,20 @@ class QuoteAPI(TCoreZMQ):
             return UnsubscribeRealtimeMessage(message=self.socket.get_message())
 
     @staticmethod
-    def _make_hist_sub_key(symbol_complete: str, start_ts_str: str, end_ts_str: str) -> SubscribingHistoryKey:
-        return symbol_complete, start_ts_str, end_ts_str
+    def _make_hist_sub_key(
+        interval: HistoryInterval, symbol_complete: str, start_ts_str: str, end_ts_str: str
+    ) -> SubscribingHistoryKey:
+        return interval, symbol_complete, start_ts_str, end_ts_str
+
+    def is_handshake_subscribed(self, handshake: HistoryDataHandshake) -> bool:
+        key = self._make_hist_sub_key(
+            handshake.data_type,
+            handshake.symbol_complete,
+            handshake.start_time_str,
+            handshake.end_time_str
+        )
+
+        return key in self._subscribing_history
 
     def get_history(
         self,
@@ -91,7 +104,7 @@ class QuoteAPI(TCoreZMQ):
                 )
 
                 self._subscribing_history[self._make_hist_sub_key(
-                    symbol.symbol_complete, req.start_ts_str, req.end_ts_str
+                    interval, symbol.symbol_complete, req.start_ts_str, req.end_ts_str
                 )] = subscribe
 
                 self.socket.send_string(req.to_message())
@@ -112,13 +125,13 @@ class QuoteAPI(TCoreZMQ):
         start_time_str = handshake.start_time_str
         end_time_str = handshake.end_time_str
 
-        sub_key = self._make_hist_sub_key(symbol_complete, start_time_str, end_time_str)
+        sub_key = self._make_hist_sub_key(interval, symbol_complete, start_time_str, end_time_str)
         if sub_key not in self._subscribing_history:  # History handshake not requested
             print_log(
                 "[red]Clearing dangling history data subscription[/] "
                 f"([yellow]{symbol_complete} at {interval}[/] from {start_time_str} to {end_time_str})"
             )
-            self.unsubscribe_history(handshake, do_not_execute_complete=True)
+            self.unsubscribe_history(handshake)
             return None
 
         with self.lock:
@@ -141,20 +154,18 @@ class QuoteAPI(TCoreZMQ):
             # Request from other session could trigger this, therefore using `locked()` to guard
             self.history_data_lock_dict[symbol_complete].release()
 
-        sub_key = self._make_hist_sub_key(symbol_complete, handshake.start_time_str, handshake.end_time_str)
-        if not self._subscribing_history.get(sub_key, False):
-            self.unsubscribe_history(handshake, do_not_execute_complete=True)
-
-    def unsubscribe_history(self, handshake: HistoryDataHandshake, *, do_not_execute_complete: bool = False):
+    def unsubscribe_history(self, handshake: HistoryDataHandshake):
         symbol_complete = handshake.symbol_complete
         interval = handshake.data_type
         start_time_str = handshake.start_time_str
         end_time_str = handshake.end_time_str
 
-        if not do_not_execute_complete:
-            self.complete_get_history(handshake)
+        self.complete_get_history(handshake)
 
-        self._subscribing_history.pop(self._make_hist_sub_key(symbol_complete, start_time_str, end_time_str), None)
+        self._subscribing_history.pop(
+            self._make_hist_sub_key(interval, symbol_complete, start_time_str, end_time_str),
+            None
+        )
 
         print_log(
             f"Unsubscribing history data of [yellow]{symbol_complete}[/] "

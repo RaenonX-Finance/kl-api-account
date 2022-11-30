@@ -3,7 +3,7 @@ from datetime import datetime
 from threading import Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
-from kl_site_common.utils import print_error, print_warning
+from kl_site_common.utils import print_debug, print_error, print_warning
 from .message import CommonData, HistoryData, HistoryDataHandshake, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from .quote_api import QuoteAPI
 from .utils import create_subscription_receiver_socket
@@ -65,6 +65,10 @@ class TouchanceApiClient(QuoteAPI, ABC):
 
                     if not handshake.is_ready:
                         print_warning(f"Status of history data handshake is not ready ({handshake.status})")
+                        return
+
+                    if not self.is_handshake_subscribed(handshake):
+                        print_debug("Received not subscribed history data handshake")
                         return
 
                     query_idx = 0

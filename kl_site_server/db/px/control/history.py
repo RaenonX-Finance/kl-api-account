@@ -4,6 +4,7 @@ from typing import Callable
 import pymongo
 from cachetools.func import ttl_cache
 from pymongo.cursor import Cursor
+from pymongo.errors import OperationFailure
 
 from kl_site_common.db import start_mongo_txn
 from kl_site_common.utils import print_log, split_chunks
@@ -137,13 +138,17 @@ def store_history_to_db(data: HistoryData, limit: int | None):
         f"[yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/]"
     )
 
-    for chunk in split_chunks(data.to_db_entries(limit), chunk_size=1000):
-        with start_mongo_txn() as session:
-            px_data_col.delete_many(
-                {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
-                session=session
-            )
-            px_data_col.insert_many(chunk, session=session)
+    try:
+        for chunk in split_chunks(data.to_db_entries(limit), chunk_size=1000):
+            with start_mongo_txn() as session:
+                px_data_col.delete_many(
+                    {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
+                    session=session
+                )
+                px_data_col.insert_many(chunk, session=session)
+    except OperationFailure:
+        # Retry database ops as sometimes it just fail
+        store_history_to_db(data, limit)
 
 
 def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):

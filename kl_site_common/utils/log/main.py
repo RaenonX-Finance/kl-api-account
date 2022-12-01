@@ -3,6 +3,7 @@ import os.path
 from typing import Callable, Literal, TypeAlias
 
 from kl_site_common.const import LOG_TO_DIR
+from kl_site_common.env import APP_NAME
 from .handler import ParallelTimedRotatingFileHandler
 
 LogLevels: TypeAlias = Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
@@ -19,7 +20,7 @@ _log_func_map: dict[LogLevels, Callable[[str], None]] = {
 
 if LOG_TO_DIR:
     _handler = ParallelTimedRotatingFileHandler(
-        filename=os.path.join(LOG_TO_DIR, "server"),
+        filename=os.path.join(LOG_TO_DIR, APP_NAME),
         encoding="utf-8",
         when="D",
         backup_count=14,

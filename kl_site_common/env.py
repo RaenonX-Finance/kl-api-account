@@ -1,8 +1,19 @@
 from environs import Env
 from jose.constants import Algorithms
 
+from .type import AppName, VALID_APP_NAMES
+
 env = Env(expand_vars=True)
 env.read_env()
+
+
+@env.parser_for("app_name")
+def choice_parser(value):
+    if value not in VALID_APP_NAMES:
+        raise ValueError(f"`{value}` is not a valid app name (valid ones: {VALID_APP_NAMES})")
+
+    return value
+
 
 with env.prefixed("FASTAPI_"):
     with env.prefixed("AUTH_"):
@@ -14,3 +25,5 @@ with env.prefixed("FASTAPI_"):
 MONGO_URL: str = env.str("MONGO_URL")
 
 DEVELOPMENT_MODE: bool = env.bool("DEV", False)
+
+APP_NAME: AppName = env.app_name("APP_NAME")

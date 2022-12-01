@@ -27,7 +27,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
         self._requesting_px_data: bool = False
         self._calc_data_manager: CalculatedDataManager = CalculatedDataManager(self._px_data_cache)
-        self._last_data_min: int = datetime.utcnow().minute
 
     def request_px_data(self, params_list: list[TouchancePxRequestParams], *, re_calc_data: bool) -> None:
         self._requesting_px_data = True
@@ -60,7 +59,7 @@ class TouchanceDataClient(TouchanceApiClient):
             # Needs to be placed before `subscribe_realtime`
             if re_calc_data:
                 # Ensure all history data requests are finished
-                # Not using context manager because sometimes it unlocked locked lock
+                # Not using context manager because sometimes it unlocks locked lock
                 self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
                 self._calc_data_manager.update_calc_data_full(params.symbol_obj, [params])
                 if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
@@ -107,14 +106,6 @@ class TouchanceDataClient(TouchanceApiClient):
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
         return self._px_data_cache.get_px_data(px_data_configs)
 
-    def _trigger_minute_change_if_needed(self, timestamp: datetime):
-        prev_min = self._last_data_min
-        self._last_data_min = timestamp.minute
-
-        if prev_min != self._last_data_min:
-            print_log(f"Server minute change - changing from {prev_min} to {self._last_data_min} on {timestamp}")
-            self.on_system_time_min_change(SystemTimeData.from_datetime(timestamp))
-
     def on_received_history_data(self, data: HistoryData) -> None:
         symbol_obj = FUTURES_SYMBOL_TO_SYM_OBJ.get(data.symbol_complete)  # Might receive dangling history data
 
@@ -136,7 +127,7 @@ class TouchanceDataClient(TouchanceApiClient):
         self._calc_data_manager.update_calc_data_last(self._px_request_params.values(), {data.symbol_complete})
 
         if not self._requesting_px_data:
-            self._trigger_minute_change_if_needed(data.data_list[-1].timestamp)
+            self.test_minute_change(data.data_list[-1].timestamp)
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40

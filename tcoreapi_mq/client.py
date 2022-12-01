@@ -3,13 +3,18 @@ from datetime import datetime
 from threading import Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
-from kl_site_common.utils import print_debug, print_error, print_warning
+from kl_site_common.utils import print_debug, print_error, print_log, print_warning
 from .message import CommonData, HistoryData, HistoryDataHandshake, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from .quote_api import QuoteAPI
 from .utils import create_subscription_receiver_socket
 
 
 class TouchanceApiClient(QuoteAPI, ABC):
+    def __init__(self):
+        super().__init__()
+
+        self._last_data_min: int = datetime.utcnow().minute
+
     def start(self):
         login_result = self.connect(SYS_PORT_QUOTE)
 
@@ -39,6 +44,14 @@ class TouchanceApiClient(QuoteAPI, ABC):
     @abstractmethod
     def on_error(self, message: str) -> None:
         raise NotImplementedError()
+
+    def test_minute_change(self, timestamp: datetime):
+        prev_min = self._last_data_min
+        self._last_data_min = timestamp.minute
+
+        if prev_min != self._last_data_min:
+            print_log(f"Server minute change - changing from {prev_min} to {self._last_data_min} on {timestamp}")
+            self.on_system_time_min_change(SystemTimeData.from_datetime(timestamp))
 
     def _quote_subscription_handle_message(self, message: CommonData):
         try:

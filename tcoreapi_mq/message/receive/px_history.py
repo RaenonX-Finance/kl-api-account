@@ -203,7 +203,7 @@ class GetPxHistoryMessage:
         body = json.loads(data)
 
         self.interval = body["DataType"]
-        self.last_query_idx = body["HisData"][-1]["QryIndex"] if body["HisData"] else None
+        self.last_query_idx = int(body["HisData"][-1]["QryIndex"]) if body["HisData"] else None
 
         self.data = {}
         for data in body["HisData"]:

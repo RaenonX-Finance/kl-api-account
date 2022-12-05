@@ -91,6 +91,12 @@ class TouchanceApiClient(QuoteAPI, ABC):
 
                     while True:
                         history_data_paged = self.get_paged_history(handshake, query_idx)
+                        if query_idx % 3000 == 0:
+                            print_log(
+                                "Received history data of "
+                                f"[yellow]{handshake.symbol_complete}[/] @ [yellow]{handshake.data_type}[/] "
+                                f"at index #{query_idx}"
+                            )
 
                         if not history_data_paged:
                             return

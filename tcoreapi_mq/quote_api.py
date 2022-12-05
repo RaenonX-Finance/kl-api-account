@@ -124,13 +124,11 @@ class QuoteAPI(TCoreZMQ):
         start_time_str = handshake.start_time_str
         end_time_str = handshake.end_time_str
 
-        sub_key = self._make_hist_sub_key(interval, symbol_complete, start_time_str, end_time_str)
-        if sub_key not in self._subscribing_history:  # History handshake not requested
+        if not self.is_handshake_subscribed(handshake):  # History handshake not requested
             print_log(
-                "[red]Clearing dangling history data subscription[/] "
+                "[red]Skipped processing not subscribed history data of "
                 f"([yellow]{symbol_complete} at {interval}[/] from {start_time_str} to {end_time_str})"
             )
-            self.unsubscribe_history(handshake)
             return None
 
         with self.lock:
@@ -153,18 +151,28 @@ class QuoteAPI(TCoreZMQ):
             # Request from other session could trigger this, therefore using `locked()` to guard
             self.history_data_lock_dict[symbol_complete].release()
 
+        if not self.is_handshake_subscribed(handshake):
+            print_log(
+                f"Done history data request of [yellow]{handshake.symbol_complete}[/] @ "
+                f"[yellow]{handshake.data_type}[/]"
+            )
+            self._subscribing_history.pop(
+                self._make_hist_sub_key(
+                    handshake.data_type,
+                    symbol_complete,
+                    handshake.start_time_str,
+                    handshake.end_time_str
+                ),
+                None
+            )
+
+            self.unsubscribe_history(handshake)
+
     def unsubscribe_history(self, handshake: HistoryDataHandshake):
         symbol_complete = handshake.symbol_complete
         interval = handshake.data_type
         start_time_str = handshake.start_time_str
         end_time_str = handshake.end_time_str
-
-        self.complete_get_history(handshake)
-
-        self._subscribing_history.pop(
-            self._make_hist_sub_key(interval, symbol_complete, start_time_str, end_time_str),
-            None
-        )
 
         print_log(
             f"Unsubscribing history data of [yellow]{symbol_complete}[/] "

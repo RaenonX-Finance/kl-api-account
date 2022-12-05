@@ -80,8 +80,13 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         print_warning(f"Status of history data handshake is not ready ({handshake.status})")
                         return
 
-                    if not self.is_handshake_subscribed(handshake):
-                        print_debug("Received not subscribed history data handshake")
+                    if not self.is_handshake_valid_request(handshake):
+                        print_debug(
+                            "Received not subscribed history data handshake - "
+                            f"[yellow]{handshake.symbol_complete}[/] @ "
+                            f"[yellow]{handshake.data_type}[/] "
+                            f"({handshake.start_time_str} ~ {handshake.end_time_str})"
+                        )
                         return
 
                     query_idx = 0

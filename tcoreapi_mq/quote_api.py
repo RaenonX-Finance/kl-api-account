@@ -65,7 +65,17 @@ class QuoteAPI(TCoreZMQ):
     ) -> SubscribingHistoryKey:
         return interval, symbol_complete, start_ts_str, end_ts_str
 
-    def is_handshake_subscribed(self, handshake: HistoryDataHandshake) -> bool:
+    def is_handshake_subscribing(self, handshake: HistoryDataHandshake) -> bool:
+        key = self._make_hist_sub_key(
+            handshake.data_type,
+            handshake.symbol_complete,
+            handshake.start_time_str,
+            handshake.end_time_str
+        )
+
+        return self._subscribing_history.get(key, False)
+
+    def is_handshake_valid_request(self, handshake: HistoryDataHandshake) -> bool:
         key = self._make_hist_sub_key(
             handshake.data_type,
             handshake.symbol_complete,
@@ -74,6 +84,15 @@ class QuoteAPI(TCoreZMQ):
         )
 
         return key in self._subscribing_history
+
+    def _unmark_handshake_subscription(self, handshake: HistoryDataHandshake) -> None:
+        key = self._make_hist_sub_key(
+            handshake.data_type,
+            handshake.symbol_complete,
+            handshake.start_time_str,
+            handshake.end_time_str
+        )
+        self._subscribing_history.pop(key, None)
 
     def get_history(
         self,
@@ -124,7 +143,7 @@ class QuoteAPI(TCoreZMQ):
         start_time_str = handshake.start_time_str
         end_time_str = handshake.end_time_str
 
-        if not self.is_handshake_subscribed(handshake):  # History handshake not requested
+        if not self.is_handshake_valid_request(handshake):  # History handshake not requested
             print_log(
                 "[red]Skipped processing not subscribed history data of "
                 f"([yellow]{symbol_complete} at {interval}[/] from {start_time_str} to {end_time_str})"
@@ -151,20 +170,12 @@ class QuoteAPI(TCoreZMQ):
             # Request from other session could trigger this, therefore using `locked()` to guard
             self.history_data_lock_dict[symbol_complete].release()
 
-        if not self.is_handshake_subscribed(handshake):
+        if not self.is_handshake_subscribing(handshake):
             print_log(
                 f"Done history data request of [yellow]{handshake.symbol_complete}[/] @ "
                 f"[yellow]{handshake.data_type}[/]"
             )
-            self._subscribing_history.pop(
-                self._make_hist_sub_key(
-                    handshake.data_type,
-                    symbol_complete,
-                    handshake.start_time_str,
-                    handshake.end_time_str
-                ),
-                None
-            )
+            self._unmark_handshake_subscription(handshake)
 
             self.unsubscribe_history(handshake)
 

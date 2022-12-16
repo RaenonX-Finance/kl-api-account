@@ -18,6 +18,9 @@ def _get_current_timestamp() -> str:
 
 
 def _print_console(rich_console: Console, level: LogLevels, message: str, *, timestamp_color: str):
+    if level == "DEBUG" and not DEVELOPMENT_MODE:
+        return
+
     info = f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}"  # noqa: W605
 
     if LOG_TO_DIR:

@@ -1,6 +1,6 @@
 from typing import Literal, TypeAlias, get_args
 
-AppName: TypeAlias = Literal["web-rtc", "app"]
+AppName: TypeAlias = Literal["app"]
 
 ENV_VAR_APP_NAME: str = "APP_NAME"
 

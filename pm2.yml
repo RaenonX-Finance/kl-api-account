@@ -5,7 +5,8 @@ apps:
     # Execution configs
     exec_mode: 'fork'
     # Environments
-    env: {}
+    env:
+      APP_NAME: app
     env_production: {}
     # Others
     interpreter: py

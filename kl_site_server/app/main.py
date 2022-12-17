@@ -43,5 +43,5 @@ def start_server_app(
     )
     client.request_px_data(params_list, re_calc_data=True)
 
-    register_handlers(client)
-    register_api_routes()
+    register_handlers()
+    register_api_routes(client)

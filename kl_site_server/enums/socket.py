@@ -9,8 +9,6 @@ class GeneralSocketEvent:
 
 
 class PxSocketEvent:
-    PX_INIT = "pxInit"
-    UPDATED = "updated"
     REQUEST = "request"
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"

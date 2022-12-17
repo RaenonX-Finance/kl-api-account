@@ -14,6 +14,7 @@ fast_api = FastAPI(
 # Set `cors_allowed_origins` to `None` and let `CORSMiddleware` handle CORS things
 # > Calling ``SocketManager`` patches `fast_api` with attribute `sio`
 SocketManager(app=fast_api, cors_allowed_origins=[])
+# noinspection PyUnresolvedReferences
 fast_api_socket: socketio.AsyncServer = fast_api.sio
 
 

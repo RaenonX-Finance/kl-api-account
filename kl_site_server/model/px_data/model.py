@@ -8,6 +8,7 @@ from pandas.tseries.offsets import BDay
 if TYPE_CHECKING:
     from kl_site_server.db import UserConfigModel
     from kl_site_server.model import BarDataDict, PxDataCommon, RequestPxMessageSingle
+    from kl_site_server.endpoints import RequestPxMessageSingle as RequestPxMessageSingleModel
 
 
 @dataclass(kw_only=True, frozen=True)
@@ -33,6 +34,20 @@ class PxDataConfig:
             identifier = request["identifier"]
             offset = request.get("offset")
             limit = request.get("limit")
+
+            security, period_min = identifier.split("@", 1)
+            ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=offset, limit=limit))
+
+        return ret
+
+    @staticmethod
+    def from_request_px_message_model(requests: Iterable["RequestPxMessageSingleModel"]) -> set["PxDataConfig"]:
+        ret = set()
+
+        for request in requests:
+            identifier = request.identifier
+            offset = request.offset
+            limit = request.limit
 
             security, period_min = identifier.split("@", 1)
             ret.add(PxDataConfig(security=security, period_min=int(period_min), offset=offset, limit=limit))

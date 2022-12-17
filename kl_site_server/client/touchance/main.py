@@ -93,9 +93,11 @@ class TouchanceDataClient(TouchanceApiClient):
 
         result = get_history_data_from_db_timeframe(symbol_complete, interval, start, end)
 
-        self._px_data_cache.update_complete_data_of_symbol(HistoryData.from_db_fetch(
-            symbol_complete, interval, result
-        ))
+        history_data = HistoryData.from_db_fetch(symbol_complete, interval, result)
+        if history_data.data_list:
+            self._px_data_cache.update_complete_data_of_symbol(history_data)
+        else:
+            print_log(f"History data of [yellow]{symbol_complete}[/] from {start} to {end} @ {interval} unavailable")
 
         if not result.earliest and not result.latest:
             self.get_history(symbol, interval, start, end, subscribe=subscribe)

@@ -2,8 +2,6 @@ from abc import ABC
 
 from pydantic import BaseModel, Field
 
-from kl_site_server.utils import PxDataDict
-
 
 class PxRequestParams(BaseModel, ABC):
     """Base model of px data request params."""

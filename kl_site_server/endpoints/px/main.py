@@ -33,12 +33,12 @@ def generate_px_router(client: "TouchanceDataClient") -> APIRouter:
         # Ensure the `token` is valid and the user is active
         get_active_user_by_oauth2_token(token)
 
-        px_data_config = PxDataConfig.from_unique_identifiers(identifiers)
-        px_data_list = to_api_response_px_data_list(client.get_px_data(px_data_config))
+        px_data_configs = PxDataConfig.from_unique_identifiers(identifiers)
+        px_data_list = to_api_response_px_data_list(client.get_px_data(px_data_configs))
 
         print_log(
             "Sending Px initialization data of "
-            f"({' / '.join(f'[yellow]{config}[/]' for config in px_data_config)} - {time.time() - _start:.3f} s)"
+            f"({' / '.join(f'[yellow]{config}[/]' for config in px_data_configs)} - {time.time() - _start:.3f} s)"
         )
 
         return px_data_list
@@ -56,8 +56,14 @@ def generate_px_router(client: "TouchanceDataClient") -> APIRouter:
 
         get_active_user_by_oauth2_token(token)
 
-        return to_api_response_px_data_list(client.get_px_data(
-            PxDataConfig.from_request_px_message_model(requests)
-        ))
+        px_data_configs = PxDataConfig.from_request_px_message_model(requests)
+        px_data_list = to_api_response_px_data_list(client.get_px_data(px_data_configs))
+
+        print_log(
+            "Sending Px data of "
+            f"({' / '.join(f'[yellow]{config}[/]' for config in px_data_configs)} - {time.time() - _start:.3f} s)"
+        )
+
+        return px_data_list
 
     return px_router

@@ -30,8 +30,12 @@ class HistoryDataHandshake(SubscriptionDataBase):
         return self.data.body["Status"]
 
     @property
-    def is_ready(self):
+    def is_ready(self) -> bool:
         return self.status == "Ready"
+
+    @property
+    def request_identifier(self) -> str:
+        return f"{self.start_time_str}-{self.end_time_str}"
 
 
 @dataclass(kw_only=True)

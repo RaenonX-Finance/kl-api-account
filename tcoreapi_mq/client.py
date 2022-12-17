@@ -100,7 +100,8 @@ class TouchanceApiClient(QuoteAPI, ABC):
                             print_log(
                                 "Received history data of "
                                 f"[yellow]{handshake.symbol_complete}[/] @ [yellow]{handshake.data_type}[/] "
-                                f"at index #{query_idx}"
+                                f"at index #{query_idx} "
+                                f"({handshake.request_identifier} / {len(history_data_paged.data)})"
                             )
 
                         if not history_data_paged:

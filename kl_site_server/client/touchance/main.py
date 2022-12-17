@@ -13,7 +13,7 @@ from kl_site_server.model import (
 )
 from tcoreapi_mq.client import TouchanceApiClient
 from tcoreapi_mq.message import HistoryData, HistoryDataHandshake, HistoryInterval, RealtimeData, SystemTimeData
-from tcoreapi_mq.model import SymbolBaseType
+from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .calc_data import CalculatedDataManager
 from .subscribe import HistoryDataSubscriber
 
@@ -105,7 +105,10 @@ class TouchanceDataClient(TouchanceApiClient):
             self.get_history(symbol, interval, result.latest, end, subscribe=subscribe)
 
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
-        return self._px_data_cache.get_px_data(px_data_configs)
+        return self._px_data_cache.get_px_data({
+            px_data_config for px_data_config in px_data_configs
+            if px_data_config.security in FUTURES_SECURITY_TO_SYM_OBJ
+        })
 
     def on_received_history_data(self, data: HistoryData, handshake: HistoryDataHandshake) -> None:
         if not self.is_handshake_subscribing(handshake):

@@ -20,6 +20,7 @@ Sample history data entry:
 import json
 from dataclasses import InitVar, dataclass, field
 from datetime import datetime, timezone
+from functools import total_ordering
 from typing import TYPE_CHECKING, TypedDict
 
 from kl_site_server.enums import PxDataCol
@@ -56,6 +57,7 @@ class PxHistoryDataMongoModel(TypedDict):
     m: datetime
 
 
+@total_ordering
 @dataclass(kw_only=True)
 class PxHistoryDataEntry:
     # Some names are synced with the value of `PxDataCol`
@@ -73,6 +75,18 @@ class PxHistoryDataEntry:
     epoch_sec: float
     epoch_sec_time: float
     market_date: datetime
+
+    def __eq__(self, other):
+        if not isinstance(other, PxHistoryDataEntry):
+            return ValueError(f"Cannot compare {type(other)} with {PxHistoryDataEntry}")
+
+        return self.timestamp == other.timestamp
+
+    def __lt__(self, other):
+        if not isinstance(other, PxHistoryDataEntry):
+            return ValueError(f"Cannot compare {type(other)} with {PxHistoryDataEntry}")
+
+        return self.timestamp < other.timestamp
 
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:

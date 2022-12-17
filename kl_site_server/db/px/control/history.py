@@ -13,15 +13,26 @@ from ..const import px_data_col
 from ..model import DbHistoryDataResult
 
 
-def _get_history_data_result(fn_get_find_cursor: Callable[[], Cursor]) -> DbHistoryDataResult:
+def _get_history_data_result(
+    fn_get_find_cursor: Callable[[], Cursor], *,
+    use_native_data_sort: bool = False
+) -> DbHistoryDataResult:
     try:
+        if use_native_data_sort:
+            data = sorted([
+                PxHistoryDataEntry.from_mongo_doc(data) for data
+                in fn_get_find_cursor()
+            ])
+        else:
+            data = [
+                PxHistoryDataEntry.from_mongo_doc(data) for data
+                in fn_get_find_cursor().sort("ts", pymongo.ASCENDING)
+            ]
+
         return DbHistoryDataResult(
             earliest=fn_get_find_cursor().sort("ts", pymongo.ASCENDING).limit(1).next()["ts"],
             latest=fn_get_find_cursor().sort("ts", pymongo.DESCENDING).limit(1).next()["ts"],
-            data=[
-                PxHistoryDataEntry.from_mongo_doc(data) for data
-                in fn_get_find_cursor().sort("ts", pymongo.ASCENDING)
-            ],
+            data=data,
         )
     except StopIteration:
         return DbHistoryDataResult(earliest=None, latest=None, data=[])
@@ -129,7 +140,7 @@ def get_history_data_at_time_from_db(
             "et": {"$in": epoch_time_secs}
         }).sort("ts", pymongo.DESCENDING).limit(count)
 
-    return _get_history_data_result(get_find_cursor)
+    return _get_history_data_result(get_find_cursor, use_native_data_sort=True)
 
 
 def store_history_to_db(data: HistoryData, limit: int | None):

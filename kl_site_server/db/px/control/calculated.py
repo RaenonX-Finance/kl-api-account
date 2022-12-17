@@ -3,6 +3,7 @@ from typing import NamedTuple, TYPE_CHECKING, TypeAlias
 
 import pymongo
 from pandas import DataFrame
+from pymongo.errors import OperationFailure
 
 from kl_site_common.db import start_mongo_txn
 from kl_site_common.utils import print_log, split_chunks
@@ -131,6 +132,12 @@ class StoreCalculatedDataArgs(NamedTuple):
     full: bool
 
 
+def _update_px_data_calc(del_conditions: dict, recs_insert: list[dict]):
+    with start_mongo_txn() as session:
+        px_data_calc_col.delete_many({"$or": del_conditions}, session=session)
+        px_data_calc_col.insert_many(recs_insert, session=session)
+
+
 def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
     if not args:
         print_log("Skipped storing calculated data to db - no data to store")
@@ -154,6 +161,7 @@ def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
     )
 
     for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=1000):
-        with start_mongo_txn() as session:
-            px_data_calc_col.delete_many({"$or": del_conditions}, session=session)
-            px_data_calc_col.insert_many(recs_insert, session=session)
+        try:
+            _update_px_data_calc(del_conditions, recs_insert)
+        except OperationFailure:
+            _update_px_data_calc(del_conditions, recs_insert)

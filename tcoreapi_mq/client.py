@@ -28,7 +28,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def on_received_history_data(self, data: HistoryData) -> None:
+    def on_received_history_data(self, data: HistoryData, handshake: HistoryDataHandshake) -> None:
         """
         Method to be called after calling ``get_history()``.
 
@@ -115,10 +115,10 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     self.complete_get_history(handshake)
 
                     if history_data_of_event:
-                        self.on_received_history_data(HistoryData.from_socket_message(
-                            list(history_data_of_event.values()),
+                        self.on_received_history_data(
+                            HistoryData.from_socket_message(list(history_data_of_event.values()), handshake),
                             handshake
-                        ))
+                        )
                     else:
                         print_error(
                             f"No history data available for [bold]{handshake.symbol_complete}[/] "

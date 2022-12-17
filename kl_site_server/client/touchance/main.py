@@ -2,10 +2,9 @@ import asyncio
 from datetime import datetime
 
 from kl_site_common.const import DATA_PX_REFETCH_STORE_LIMIT
-from kl_site_common.utils import execute_async_function, print_log, print_warning
+from kl_site_common.utils import execute_async_function, print_debug, print_log, print_warning
 from kl_site_server.app import (
-    on_error, on_px_data_new_bar_created, on_px_data_updated_market,
-    on_system_time_min_change,
+    on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )
 from kl_site_server.db import get_history_data_from_db_timeframe, is_market_closed, store_history_to_db
 from kl_site_server.model import (
@@ -108,12 +107,9 @@ class TouchanceDataClient(TouchanceApiClient):
     def get_px_data(self, px_data_configs: set[PxDataConfig]) -> list[PxData]:
         return self._px_data_cache.get_px_data(px_data_configs)
 
-    def on_received_history_data(self, data: HistoryData) -> None:
-        symbol_obj = FUTURES_SYMBOL_TO_SYM_OBJ.get(data.symbol_complete)  # Might receive dangling history data
-
-        # https://github.com/RaenonX-Finance/kl-site-back/issues/40
-        if symbol_obj and is_market_closed(symbol_obj.security):
-            print_log(f"[red]Ignoring[/] history Px data of [yellow]{symbol_obj.security}[/] - outside market hours")
+    def on_received_history_data(self, data: HistoryData, handshake: HistoryDataHandshake) -> None:
+        if not self.is_handshake_subscribing(handshake):
+            print_debug(f"[red]Ignoring[/] history Px data of [yellow]{data.symbol_complete}[/] - not subscribed")
             return
 
         last_bar = data.data_list[-1]

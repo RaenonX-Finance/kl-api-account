@@ -37,7 +37,7 @@ async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
         if not (message := to_socket_message_px_data_market(e, room_securities)):
             continue
 
-        tasks.append(socket_send_to_room(PxSocketEvent.UPDATED, message, namespace=namespace, room=room))
+        tasks.append(socket_send_to_room(PxSocketEvent.MKT_UPDATED, message, namespace=namespace, room=room))
 
     if not tasks:
         print_log(f"Px MKT Updated ({e} - [red]No active subs[/])")

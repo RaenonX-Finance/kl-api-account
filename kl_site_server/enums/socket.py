@@ -10,6 +10,7 @@ class GeneralSocketEvent:
 
 class PxSocketEvent:
     REQUEST = "request"
+    MKT_UPDATED = "market"
     SUBSCRIBE = "subscribe"
     UNSUBSCRIBE = "unsubscribe"
     MIN_CHANGE = "minChange"

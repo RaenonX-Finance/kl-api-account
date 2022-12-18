@@ -160,7 +160,7 @@ def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
         f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/]"
     )
 
-    for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=1000):
+    for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=3000):
         try:
             _update_px_data_calc(del_conditions, recs_insert)
         except OperationFailure:

@@ -150,7 +150,7 @@ def store_history_to_db(data: HistoryData, limit: int | None):
     )
 
     try:
-        for chunk in split_chunks(data.to_db_entries(limit), chunk_size=1000):
+        for chunk in split_chunks(data.to_db_entries(limit), chunk_size=3000):
             with start_mongo_txn() as session:
                 px_data_col.delete_many(
                     {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},
@@ -165,7 +165,7 @@ def store_history_to_db(data: HistoryData, limit: int | None):
 def store_history_to_db_from_entries(entries: list[PxHistoryDataEntry]):
     print_log(f"Storing [purple]{len(entries)}[/] history data entries")
 
-    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], chunk_size=1000):
+    for chunk in split_chunks([entry.to_mongo_doc() for entry in entries], chunk_size=3000):
         with start_mongo_txn() as session:
             px_data_col.delete_many(
                 {"$or": [{"ts": entry["ts"], "s": entry["s"], "i": entry["i"]} for entry in chunk]},

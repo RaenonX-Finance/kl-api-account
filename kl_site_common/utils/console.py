@@ -27,7 +27,7 @@ def _print_console(
     info = f"\[{threading.get_ident():>6}] {inspect.getmodule(inspect.stack()[2][0]).__name__:45}"  # noqa: W605
 
     if identifier:
-        message = f"\[{identifier}] {message}"
+        message = f"\[{identifier}] {message}"  # noqa: W605
 
     if LOG_TO_DIR:
         log_message_to_file(level, Text.from_markup(f"{info}: {message}").plain)

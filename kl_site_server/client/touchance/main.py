@@ -2,7 +2,7 @@ import asyncio
 from datetime import datetime
 
 from kl_site_common.const import DATA_PX_REFETCH_STORE_LIMIT
-from kl_site_common.utils import execute_async_function, print_debug, print_log, print_warning
+from kl_site_common.utils import execute_async_function, print_log, print_warning
 from kl_site_server.app import (
     on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )

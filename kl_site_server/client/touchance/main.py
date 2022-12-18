@@ -111,13 +111,6 @@ class TouchanceDataClient(TouchanceApiClient):
         })
 
     def on_received_history_data(self, data: HistoryData, handshake: HistoryDataHandshake) -> None:
-        if not self.is_handshake_subscribing(handshake):
-            print_debug(
-                f"[red]Ignoring[/] history Px data of [yellow]{data.symbol_complete}[/] "
-                f"({handshake.request_identifier}) - not subscribed"
-            )
-            return
-
         last_bar = data.data_list[-1]
 
         print_log(

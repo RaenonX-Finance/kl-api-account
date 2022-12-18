@@ -1,11 +1,12 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from ._base import SubscriptionDataBase
 
 if TYPE_CHECKING:
     from kl_site_server.db import DbHistoryDataResult
-    from tcoreapi_mq.message import DataType, PxHistoryDataEntry, PxHistoryDataMongoModel
+    from tcoreapi_mq.message import DataType, HistoryInterval, PxHistoryDataEntry, PxHistoryDataMongoModel
 
 
 class HistoryDataHandshake(SubscriptionDataBase):
@@ -35,7 +36,20 @@ class HistoryDataHandshake(SubscriptionDataBase):
 
     @property
     def request_identifier(self) -> str:
-        return f"{self.start_time_str}-{self.end_time_str}"
+        return (
+            f"HS1-[yellow]{self.symbol_complete}[/]-[yellow]{self.data_type}[/]-"
+            f"{self.start_time_str}-{self.end_time_str}"
+        )
+
+    @staticmethod
+    def make_request_identifier_for_log(
+        symbol_complete: str, interval: "HistoryInterval",
+        start: datetime, end: datetime
+    ):
+        return (
+            f"HS2-[yellow]{symbol_complete}[/]-[yellow]{interval}[/]-"
+            f"{start.strftime('%Y%m%d%H')}-{end.strftime('%Y%m%d%H')}"
+        )
 
 
 @dataclass(kw_only=True)

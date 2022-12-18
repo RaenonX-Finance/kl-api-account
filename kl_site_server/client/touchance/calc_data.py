@@ -332,7 +332,7 @@ class CalculatedDataManager:
         ) -> CalculatedDataLookup:
             return CalculatedDataLookup()
 
-        print_log(f"[blue]Started data re-calculation of [yellow]{symbol_obj.security}[/]")
+        print_log(f"Started [blue]data re-calculation[/] of [yellow]{symbol_obj.symbol_complete}[/]")
         self._calc_data_update(
             get_history_data,
             get_calculated_data_lookup,
@@ -342,4 +342,4 @@ class CalculatedDataManager:
             threaded=False,
             skip_if_locked=False,
         )
-        print_log(f"[blue]Completed data re-calculation of [yellow]{symbol_obj.security}[/]")
+        print_log(f"Completed [blue]data re-calculation[/] of [yellow]{symbol_obj.symbol_complete}[/]")

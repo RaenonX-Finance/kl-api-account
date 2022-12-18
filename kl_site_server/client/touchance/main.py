@@ -96,7 +96,11 @@ class TouchanceDataClient(TouchanceApiClient):
         if history_data.data_list:
             self._px_data_cache.update_complete_data_of_symbol(history_data)
         else:
-            print_log(f"History data of [yellow]{symbol_complete}[/] from {start} to {end} @ {interval} unavailable")
+            identifier = HistoryDataHandshake.make_request_identifier_for_log(
+                symbol.symbol_complete, interval, start, end
+            )
+
+            print_log("History data unavailable in DB", identifier=identifier)
 
         if not result.earliest and not result.latest:
             self.get_history(symbol, interval, start, end, subscribe=subscribe)
@@ -114,8 +118,8 @@ class TouchanceDataClient(TouchanceApiClient):
         last_bar = data.data_list[-1]
 
         print_log(
-            f"Received history data of [yellow]{data.symbol_complete}[/] at [yellow]{data.data_type}[/] "
-            f"({data.data_len} - {last_bar.close} @ {last_bar.timestamp})"
+            f"Received history data (#{data.data_len} / {last_bar.close} @ {last_bar.timestamp})",
+            identifier=handshake.request_identifier,
         )
 
         store_history_to_db(data, None if self._requesting_px_data else DATA_PX_REFETCH_STORE_LIMIT)
@@ -128,7 +132,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
     def on_received_realtime_data(self, data: RealtimeData) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
-            print_log(f"[red]Ignoring[/] market Px data of [yellow]{data.security}[/] - outside market hours")
+            print_log(f"[red]Ignored[/] market Px data of [yellow]{data.security}[/] - outside market hours")
             return
 
         self._px_data_cache.update_latest_market_data_of_symbol(data)

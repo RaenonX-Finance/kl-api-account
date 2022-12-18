@@ -106,10 +106,11 @@ class QuoteAPI(TCoreZMQ):
         """Get the history data. Does NOT automatically update upon new candlestick/data generation."""
         if not ignore_lock:
             self.history_data_lock_dict[symbol.symbol_complete].acquire()
-        print_log(
-            f"Request history data of [yellow]{symbol.security}[/] at [yellow]{interval}[/] "
-            f"starting from {start} to {end}"
+
+        identifier = HistoryDataHandshake.make_request_identifier_for_log(
+            symbol.symbol_complete, interval, start, end
         )
+        print_log("[blue]Requesting[/] history data", identifier=identifier)
 
         with self.lock:
             try:
@@ -144,10 +145,7 @@ class QuoteAPI(TCoreZMQ):
         end_time_str = handshake.end_time_str
 
         if not self.is_handshake_valid_request(handshake):  # History handshake not requested
-            print_log(
-                "[red]Skipped processing not subscribed history data of "
-                f"([yellow]{symbol_complete} at {interval}[/] from {start_time_str} to {end_time_str})"
-            )
+            print_log("[red]Skipped processing not subscribed history data", identifier=handshake.request_identifier)
             return None
 
         with self.lock:
@@ -171,30 +169,19 @@ class QuoteAPI(TCoreZMQ):
             self.history_data_lock_dict[symbol_complete].release()
 
         if not self.is_handshake_subscribing(handshake):
-            print_log(
-                f"Done history data request of [yellow]{handshake.symbol_complete}[/] @ "
-                f"[yellow]{handshake.data_type}[/]"
-            )
             self._unmark_handshake_subscription(handshake)
-
             self.unsubscribe_history(handshake)
 
-    def unsubscribe_history(self, handshake: HistoryDataHandshake):
-        symbol_complete = handshake.symbol_complete
-        interval = handshake.data_type
-        start_time_str = handshake.start_time_str
-        end_time_str = handshake.end_time_str
+            print_log("[blue]Completed[/blue] history data request", identifier=handshake.request_identifier)
 
-        print_log(
-            f"Unsubscribing history data of [yellow]{symbol_complete}[/] "
-            f"at [yellow]{interval}[/] starting from {start_time_str} to {end_time_str}"
-        )
+    def unsubscribe_history(self, handshake: HistoryDataHandshake):
+        print_log("[blue]Unsubscribing[/] history data", identifier=handshake.request_identifier)
 
         with self.lock:
             req = UnsubscribePxHistoryRequest(
                 session_key=self.session_key,
-                symbol_complete=symbol_complete,
-                interval=interval,
+                symbol_complete=handshake.symbol_complete,
+                interval=handshake.data_type,
                 start_time_str=handshake.start_time_str,
                 end_time_str=handshake.end_time_str
             )

@@ -77,15 +77,16 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     handshake = HistoryDataHandshake(message)
 
                     if not handshake.is_ready:
-                        print_warning(f"Status of history data handshake is not ready ({handshake.status})")
+                        print_warning(
+                            f"Status of history data handshake is not ready ({handshake.status})",
+                            identifier=handshake.request_identifier,
+                        )
                         return
 
                     if not self.is_handshake_valid_request(handshake):
                         print_debug(
-                            "Received not subscribed history data handshake - "
-                            f"[yellow]{handshake.symbol_complete}[/] @ "
-                            f"[yellow]{handshake.data_type}[/] "
-                            f"({handshake.start_time_str} ~ {handshake.end_time_str})"
+                            "Received not subscribed history data handshake",
+                            identifier=handshake.request_identifier,
                         )
                         return
 
@@ -98,10 +99,8 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         history_data_paged = self.get_paged_history(handshake, query_idx)
                         if query_idx % 3000 == 0:
                             print_log(
-                                "Received history data of "
-                                f"[yellow]{handshake.symbol_complete}[/] @ [yellow]{handshake.data_type}[/] "
-                                f"at index #{query_idx} "
-                                f"({handshake.request_identifier} / {len(history_data_paged.data)})"
+                                f"Received history data at index #{query_idx} ({len(history_data_paged.data)})",
+                                identifier=handshake.request_identifier,
                             )
 
                         if not history_data_paged:
@@ -113,6 +112,11 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         history_data_of_event.update(history_data_paged.data)
                         query_idx = history_data_paged.last_query_idx
 
+                    print_log(
+                        f"Received {len(history_data_of_event)} history data",
+                        identifier=handshake.request_identifier,
+                    )
+
                     self.complete_get_history(handshake)
 
                     if history_data_of_event:
@@ -121,10 +125,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                             handshake
                         )
                     else:
-                        print_error(
-                            f"No history data available for [bold]{handshake.symbol_complete}[/] "
-                            f"({handshake.data_type} / {handshake.start_time_str} ~ {handshake.end_time_str})"
-                        )
+                        print_error("No history data available", identifier=handshake.request_identifier)
                 case "PING" | "UNSUBQUOTE" | "SYSTEMTIME":
                     pass
                 case _:

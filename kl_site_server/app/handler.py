@@ -8,10 +8,9 @@ from kl_site_server.enums import GeneralSocketEvent, PxSocketEvent
 from kl_site_server.model import OnErrorEvent, OnMarketDataReceivedEvent, PxData, PxDataConfig
 from kl_site_server.socket import SocketNamespace, socket_send_to_all, socket_send_to_room
 from kl_site_server.utils import (
-    get_px_data_identifiers_from_room_name, to_socket_message_error,
+    get_px_data_identifiers_from_room_name, get_px_sub_securities_from_room_name, to_socket_message_error,
     to_socket_message_px_data_list, to_socket_message_px_data_market, to_socket_min_change,
 )
-from kl_site_server.webrtc import ChannelLabelNames, web_rtc_manager
 from tcoreapi_mq.message import SystemTimeData
 
 if TYPE_CHECKING:
@@ -19,11 +18,35 @@ if TYPE_CHECKING:
 
 
 async def on_px_data_updated_market(e: OnMarketDataReceivedEvent):
-    print_log(f"Px MKT Updated ({e})")
-    await web_rtc_manager.send_data_to_channels(
-        ChannelLabelNames.MARKET_PX,
-        to_socket_message_px_data_market(e, e.data.keys())
-    )
+    namespace: SocketNamespace = "/px"
+    # Cache `rooms` so the later iterations on it won't crash
+    rooms = fast_api_socket.manager.rooms.get(namespace)
+
+    if not rooms:
+        print_log(f"Px MKT Updated ({e} - [red]No active rooms[/])")
+        return
+
+    tasks = []
+    # Cache `rooms` so the later iterations on it won't crash
+    for room in list(rooms):
+        room_securities = get_px_sub_securities_from_room_name(room)
+
+        if not room_securities:
+            continue
+
+        if not (message := to_socket_message_px_data_market(e, room_securities)):
+            continue
+
+        tasks.append(socket_send_to_room(PxSocketEvent.UPDATED, message, namespace=namespace, room=room))
+
+    if not tasks:
+        print_log(f"Px MKT Updated ({e} - [red]No active subs[/])")
+        return
+
+    await asyncio.gather(*tasks)
+
+    # `rooms` may contain rooms that are not handling market px update
+    print_log(f"Px MKT Updated ({e} - {len(tasks)} subs)")
 
 
 async def on_px_data_new_bar_created(

@@ -63,6 +63,11 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         print_warning(f"Received invalid (no trade) realtime data from {data.security}")
                         return
 
+                    print_log(
+                        f"Last: {data.last_px} / Close: {data.close} / Change: {data.change_val}",
+                        identifier=f"RTM-[yellow]{data.symbol_complete}[/]"
+                    )
+
                     if not self.is_subscribing_realtime(data.symbol_complete):
                         # Subscription is not actively terminated even if the app is exited
                         # Therefore, it is possible to receive realtime data even if it's not subscribed

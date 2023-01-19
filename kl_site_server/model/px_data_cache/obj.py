@@ -154,14 +154,18 @@ class PxDataCache:
 
         now = time.time()
         market_px_data = self.buffer_mkt_px | {data.security: data}
+
+        strength = {}
+        for security in market_px_data.keys():
+            last_n_of_close = self.get_last_n_of_close_px(security, CALC_STRENGTH_BARS_NEEDED)
+
+            strength[security] = calc_strength(last_n_of_close)
+
         result = MarketPxUpdateResult(
             allow_send=reason or now - self.last_market_send > MARKET_PX_TIME_GATE_SEC,
             force_send_reason=reason,
             data=market_px_data,
-            strength={
-                security: calc_strength(self.get_last_n_of_close_px(security, CALC_STRENGTH_BARS_NEEDED))
-                for security in market_px_data.keys()
-            }
+            strength=strength
         )
 
         if result.allow_send:

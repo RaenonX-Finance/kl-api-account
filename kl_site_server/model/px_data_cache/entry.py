@@ -1,5 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from itertools import islice
 from typing import Iterable
 
 from kl_site_common.utils import print_warning
@@ -20,11 +21,17 @@ class PxDataCacheEntry:
     interval_sec: int
 
     latest_market: RealtimeData | None = field(init=False, default=None)
-    # Storing instead of using `@property` to save performance on request
-    latest_epoch_sec: int | None = field(init=False)
+    data_keys_sorted: list[int] = field(init=False)
 
     def __post_init__(self):
-        self.latest_epoch_sec = max(self.data.keys()) if self.data else None
+        self.data_keys_sorted = sorted(self.data.keys()) if self.data else []
+
+    @property
+    def latest_epoch_sec(self) -> int | None:
+        if not self.data:
+            return None
+
+        return self.data_keys_sorted[-1]
 
     @property
     def is_ready(self) -> bool:
@@ -52,14 +59,15 @@ class PxDataCacheEntry:
 
     def get_last_n_of_close_px(self, count: int) -> list[float]:
         return [
-            data[PxDataCol.CLOSE] for epoch_sec, data
-            in sorted(self.data.items(), key=lambda item: item[0])[-count:]
+            self.data[epoch_sec][PxDataCol.CLOSE] for epoch_sec
+            in islice(reversed(self.data_keys_sorted), 0, count)
         ]
 
     def remove_oldest(self):
         # Only remove the oldest if there's >1 data
         if len(self.data) > 1:
             self.data.pop(min(self.data.keys()))
+            self.data_keys_sorted.pop(0)
 
     def update_all(self, bars: Iterable[BarDataDict]):
         # `update_all` might be used for partial update,
@@ -69,7 +77,7 @@ class PxDataCacheEntry:
 
         # This method could be called with empty `bars`
         if self.data:
-            self.latest_epoch_sec = max(self.data.keys())
+            self.data_keys_sorted = sorted(self.data.keys())
         else:
             print_warning("`PxDataCacheEntry.update_all()` called, but `bars` is empty")
 
@@ -136,7 +144,7 @@ class PxDataCacheEntry:
             ),
             PxDataCol.VOLUME: 0,
         }
-        self.latest_epoch_sec = epoch_int
+        self.data_keys_sorted.append(epoch_int)
         self.remove_oldest()
 
         return last_px

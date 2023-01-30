@@ -96,6 +96,9 @@ Sample realtime data return:
   }
 }
 """
+from datetime import time
+
+from kl_site_common.utils import time_hhmmss_to_utc_time
 from ._base import SubscriptionDataBase
 from .common import CommonData
 
@@ -152,3 +155,7 @@ class RealtimeData(SubscriptionDataBase):
     @property
     def change_pct(self) -> float:
         return self.change_val / self.open * 100
+
+    @property
+    def filled_time(self) -> time:
+        return time_hhmmss_to_utc_time(self.quote["FilledTime"])

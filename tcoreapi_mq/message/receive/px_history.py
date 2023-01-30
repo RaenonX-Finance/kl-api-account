@@ -23,6 +23,8 @@ from datetime import datetime, timezone
 from functools import total_ordering
 from typing import TYPE_CHECKING, TypedDict
 
+from pandas import DataFrame, to_datetime
+
 from kl_site_server.enums import PxDataCol
 from .calc import calc_interval_to_timedelta_offset, calc_market_date
 from ..send import HistoryInterval
@@ -87,6 +89,30 @@ class PxHistoryDataEntry:
             return ValueError(f"Cannot compare {type(other)} with {PxHistoryDataEntry}")
 
         return self.timestamp < other.timestamp
+
+    @staticmethod
+    def entries_to_dataframe(entries: list["PxHistoryDataEntry"]) -> DataFrame:
+        df = DataFrame.from_records([
+            {
+                "timestamp": entry.timestamp.isoformat(),
+                "open": entry.open,
+                "high": entry.high,
+                "low": entry.low,
+                "close": entry.close,
+                "volume": entry.volume,
+                "symbol_complete": entry.symbol_complete,
+                "interval": entry.interval,
+                "epoch_sec": entry.epoch_sec,
+                "epoch_sec_time": entry.epoch_sec_time,
+                "market_date": entry.market_date.isoformat(),
+            }
+            for entry in entries
+        ])
+
+        df["timestamp"] = to_datetime(df["timestamp"])
+        df["market_date"] = to_datetime(df["market_date"])
+
+        return df
 
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:

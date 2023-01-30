@@ -2,6 +2,7 @@ import time
 from typing import TYPE_CHECKING
 
 from fastapi import APIRouter, Body
+from fastapi.responses import JSONResponse
 
 from kl_site_common.utils import print_log
 from kl_site_server.model import PxDataConfig
@@ -19,9 +20,9 @@ def generate_px_router(client: "TouchanceDataClient") -> APIRouter:
     @px_router.post(
         "/init",
         description="Get the px data for frontend initialization.",
-        response_model=list[PxDataDict],
+        # Not using `response_model` here as it filters out `ema*` keys in `PxDataBar`
     )
-    async def get_init_px_data(body: PxInitParams = Body(...)) -> list[PxDataDict]:
+    async def get_init_px_data(body: PxInitParams = Body(...)) -> JSONResponse:
         _start = time.time()
 
         token = body.token
@@ -41,14 +42,14 @@ def generate_px_router(client: "TouchanceDataClient") -> APIRouter:
             f"({' / '.join(f'[yellow]{config}[/]' for config in px_data_configs)} - {time.time() - _start:.3f} s)"
         )
 
-        return px_data_list
+        return JSONResponse(content=px_data_list)
 
     @px_router.post(
         "/request",
         description="Request history px data.",
-        response_model=list[PxDataDict],
+        # Not using `response_model` here as it filters out `ema*` keys in `PxDataBar`
     )
-    async def handle_px_data_request(body: RequestPxParams = Body(...)) -> list[PxDataDict]:
+    async def handle_px_data_request(body: RequestPxParams = Body(...)) -> JSONResponse:
         _start = time.time()
 
         token = body.token
@@ -64,6 +65,6 @@ def generate_px_router(client: "TouchanceDataClient") -> APIRouter:
             f"({' / '.join(f'[yellow]{config}[/]' for config in px_data_configs)} - {time.time() - _start:.3f} s)"
         )
 
-        return px_data_list
+        return JSONResponse(content=px_data_list)
 
     return px_router

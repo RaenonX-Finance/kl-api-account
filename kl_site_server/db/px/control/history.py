@@ -95,6 +95,9 @@ def get_history_data_from_db_limit_count(
     ])
     data = [PxHistoryDataEntry.from_mongo_doc(entry) for entry in aggr_cursor]
 
+    if not data:
+        raise RuntimeError(f"`{symbol_complete}` @ {interval} (limit {count}) does not have any data")
+
     return DbHistoryDataResult(
         earliest=data[0].timestamp,
         latest=data[-1].timestamp,

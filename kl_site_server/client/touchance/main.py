@@ -159,18 +159,19 @@ class TouchanceDataClient(TouchanceApiClient):
 
     def on_system_time_min_change(self, data: SystemTimeData) -> None:
         _time = time.time()
-        print_log("Server minute change - making new bar on cache")
+        print_log(f"{time.time() - _time:.3f} s: Making new bar on cache", identifier="NBR")
         securities_created = self._px_data_cache.make_new_bar(data)
 
-        print_log("Server minute change - making new bar for calculated data")
+        print_log(f"{time.time() - _time:.3f} s: Making new bar for calculated data", identifier="NBR")
         self._calc_data_manager.update_calc_data_new_bar(self._px_request_params.values())
 
+        print_log(f"{time.time() - _time:.3f} s: Triggering new bar creation events", identifier="NBR")
         execute_async_function(
             asyncio.gather,
             on_system_time_min_change(data),
             on_px_data_new_bar_created(self, securities_created)
         )
-        print_log(f"[MC] {time.time() - _time}")
+        print_log(f"{time.time() - _time:.3f} s: Done creating new bar", identifier="NBR")
 
     def on_error(self, message: str) -> None:
         execute_async_function(on_error, OnErrorEvent(message=message))

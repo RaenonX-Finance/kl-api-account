@@ -41,3 +41,14 @@ def test_data_cache_no_store():
     assert fn_get_value.call_count == 1
     cache.get_value(3)
     assert fn_get_value.call_count == 2
+
+
+def test_data_cache_default_body():
+    def get_value(key: int):
+        return -key
+
+    cache = DataCache(get_value, default_body={5: 5})
+
+    assert cache.get_value(3) == -3
+    assert cache.get_value(7) == -7
+    assert cache.get_value(5) == 5

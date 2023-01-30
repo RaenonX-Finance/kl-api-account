@@ -14,8 +14,13 @@ class FuncGetValue(Protocol):
 
 
 class DataCache:
-    def __init__(self, fn_get_value: FuncGetValue, fn_no_store: Callable[[V], bool] | None = None):
-        self._body: dict[K, V] = {}
+    def __init__(
+        self,
+        fn_get_value: FuncGetValue,
+        fn_no_store: Callable[[V], bool] | None = None,
+        default_body: dict[K, V] | None = None,
+    ):
+        self._body: dict[K, V] = default_body or {}
         self._fn_get_value = fn_get_value
         self._fn_no_store = fn_no_store or (lambda _: False)
         self._lock: Lock = Lock()

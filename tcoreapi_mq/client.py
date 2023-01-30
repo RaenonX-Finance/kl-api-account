@@ -64,7 +64,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
                         return
 
                     print_log(
-                        f"Last: {data.last_px} / Close: {data.close} / Change: {data.change_val}",
+                        f"Last: {data.last_px} @ {data.filled_time}",
                         identifier=f"RTM-[yellow]{data.symbol_complete}[/]"
                     )
 

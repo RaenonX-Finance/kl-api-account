@@ -1,5 +1,5 @@
 from threading import Lock
-from typing import Callable, Protocol, TypeVar
+from typing import Callable, Generic, Protocol, TypeVar
 
 K = TypeVar("K")
 V = TypeVar("V")
@@ -13,7 +13,7 @@ class FuncGetValue(Protocol):
         ...
 
 
-class DataCache:
+class DataCache(Generic[K, V, P]):
     def __init__(
         self,
         fn_get_value: FuncGetValue,

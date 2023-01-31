@@ -1,3 +1,4 @@
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from itertools import product
 from threading import Lock
@@ -99,6 +100,7 @@ class CalculatedDataManager:
         self, symbols: Iterable[SymbolBaseType], interval_period_set: set[PeriodInterval],
         fn_get_history_data: FuncGetHistoryData
     ) -> HistoryDataCache:
+        _start = time.time()
         futures = {}
 
         for symbol_obj, interval_period in product(symbols, interval_period_set):
@@ -107,10 +109,11 @@ class CalculatedDataManager:
 
             futures[future] = key
 
-        return {
-            futures[future]: future.result()
-            for future in as_completed(futures)
-        }
+        cache = {futures[future]: future.result() for future in as_completed(futures)}
+
+        print_log(f"History data cache created in {time.time() - _start:.3f} s", identifier="CAL-HST")
+
+        return cache
 
     def _calc_data_update_single_new_bar(
         self,
@@ -214,6 +217,7 @@ class CalculatedDataManager:
             print_log("Skipped calculating px data - lock acquired")
             return
 
+        _start = time.time()
         with self._update_calculated_data_lock:
             interval_info_set = self._get_params_interval_info(params_list)
             interval_period_set = self._get_params_interval_period(interval_info_set)
@@ -240,6 +244,16 @@ class CalculatedDataManager:
                 store_calculated_args.append(calc_args)
 
             store_calculated_to_db(store_calculated_args)
+
+        security_identifiers = [
+            f"{symbol_obj.security}@{interval_info.period_min}"
+            for symbol_obj, interval_info in product(symbols, interval_info_set)
+        ]
+        print_log(
+            f"Updated calculated data in {time.time() - _start:.3f} s - "
+            f"({len(security_identifiers)}) {' / '.join(security_identifiers)}",
+            identifier="CAL-ALL"
+        )
 
     def _calc_data_update(
         self,

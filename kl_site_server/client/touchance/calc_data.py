@@ -6,7 +6,7 @@ from typing import Callable, Iterable, NamedTuple, TypeAlias
 
 from pandas import DataFrame
 
-from kl_site_common.utils import print_log, print_warning
+from kl_site_common.utils import df_load_entries_with_dt, print_log, print_warning
 from kl_site_server.calc import (
     CachedDataTooOldError, calc_set_epoch_index, calculate_indicators_full, calculate_indicators_last,
     calculate_indicators_partial,
@@ -129,8 +129,10 @@ class CalculatedDataManager:
             return None
 
         cached_calculated_data = calculated_data_lookup.get_calculated_data(symbol_complete, period_min)
-
-        cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
+        cached_calculated_df = (
+            df_load_entries_with_dt(cached_calculated_data, df_name=f"NBR: {symbol_obj.security} @ {period_min}")
+            if cached_calculated_data else None
+        )
         history_data_key = HistoryDataCacheKey(symbol_obj=symbol_obj, interval=interval_info.interval)
         df_interval = history_data_cache.get(history_data_key)
 
@@ -165,18 +167,20 @@ class CalculatedDataManager:
         history_data_cache: HistoryDataCache,
     ) -> StoreCalculatedDataArgs | None:
         symbol_complete = symbol_obj.symbol_complete
+        period_min = interval_info.period_min
 
         if not self._px_data_cache.is_all_ready_of_intervals([interval_info.interval], symbol_complete):
             return None
 
-        cached_calculated_data = calculated_data_lookup.get_calculated_data(
-            symbol_complete, interval_info.period_min
+        cached_calculated_data = calculated_data_lookup.get_calculated_data(symbol_complete, period_min)
+        cached_calculated_df = (
+            df_load_entries_with_dt(cached_calculated_data, df_name=f"UPD: {symbol_obj.security} @ {period_min}")
+            if cached_calculated_data else None
         )
-        cached_calculated_df = DataFrame(cached_calculated_data) if cached_calculated_data else None
 
         # Calculated data might not have newer bars
         if cached_calculated_df is not None:
-            calculated_df = calculate_indicators_last(interval_info.period_min, cached_calculated_df)
+            calculated_df = calculate_indicators_last(period_min, cached_calculated_df)
         else:
             history_data_key = HistoryDataCacheKey(symbol_obj=symbol_obj, interval=interval_info.interval)
             df_interval = history_data_cache.get(history_data_key)
@@ -186,14 +190,14 @@ class CalculatedDataManager:
 
             print_log(
                 "Calculating indicators of "
-                f"[yellow]{symbol_obj.security}@{interval_info.period_min}[/] on all data"
+                f"[yellow]{symbol_obj.security}@{period_min}[/] on all data"
             )
-            calculated_df = calculate_indicators_full(interval_info.period_min, df_interval)
+            calculated_df = calculate_indicators_full(period_min, df_interval)
 
         if calculated_df is None:
             print_warning(
                 "No history or cached calculated data available "
-                f"for [bold]{symbol_obj.security}[/]@{interval_info.period_min}"
+                f"for [bold]{symbol_obj.security}[/]@{period_min}"
             )
             return None
 
@@ -280,11 +284,14 @@ class CalculatedDataManager:
 
     def update_calc_data_new_bar(self, params_list: Iterable[TouchancePxRequestParams]) -> None:
         def get_history_data(key: HistoryDataCacheKey, max_period_num: int) -> DataFrame:
-            df = PxHistoryDataEntry.entries_to_dataframe(get_history_data_from_db_limit_count(
-                key.symbol_obj.symbol_complete,
-                key.interval,
-                max_period_num * MAX_PERIOD_NO_EMA
-            ).data)
+            df = PxHistoryDataEntry.entries_to_dataframe(
+                get_history_data_from_db_limit_count(
+                    key.symbol_obj.symbol_complete,
+                    key.interval,
+                    max_period_num * MAX_PERIOD_NO_EMA
+                ).data,
+                df_name=f"HST: {key.symbol_obj.security} @ {key.interval}"
+            )
 
             calc_set_epoch_index(df)
 

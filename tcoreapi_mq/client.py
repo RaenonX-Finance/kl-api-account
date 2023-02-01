@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
+from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from threading import Thread
+from threading import Lock, Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_debug, print_error, print_log, print_warning
@@ -14,6 +15,7 @@ class TouchanceApiClient(QuoteAPI, ABC):
         super().__init__()
 
         self._last_data_min: int = datetime.utcnow().minute
+        self._message_handler_executor: ThreadPoolExecutor = ThreadPoolExecutor(thread_name_prefix="TC-API-")
 
     def start(self):
         login_result = self.connect(SYS_PORT_QUOTE)
@@ -53,84 +55,86 @@ class TouchanceApiClient(QuoteAPI, ABC):
             print_log(f"Server minute change - changing from {prev_min} to {self._last_data_min} on {timestamp}")
             self.on_system_time_min_change(SystemTimeData.from_datetime(timestamp))
 
+    def _quote_subscription_handle_realtime(self, data: RealtimeData):
+        if not data.is_valid:
+            print_warning(f"Received invalid (no trade) realtime data from {data.security}")
+            return
+
+        print_log(
+            f"Last: {data.last_px} @ {data.filled_time}",
+            identifier=f"RTM-[yellow]{data.symbol_complete}[/]"
+        )
+
+        if not self.is_subscribing_realtime(data.symbol_complete):
+            # Subscription is not actively terminated even if the app is exited
+            # Therefore, it is possible to receive realtime data even if it's not subscribed
+            # ------------------------------------------
+            # If such thing happens, ignore that
+            # > Not unsubscribing the data because multiple app instances may run at the same time
+            # > Sending subscription cancellation request will interrupt the other app
+            return
+
+        self.on_received_realtime_data(data)
+
+    def _quote_subscription_handle_history(self, handshake: HistoryDataHandshake):
+        if not handshake.is_ready:
+            print_warning(
+                f"Status of history data handshake is not ready ({handshake.status})",
+                identifier=handshake.request_identifier,
+            )
+            return
+
+        if not self.is_handshake_valid_request(handshake):
+            print_debug(
+                "Received not subscribed history data handshake",
+                identifier=handshake.request_identifier,
+            )
+            return
+
+        query_idx = 0
+        # Use `dict` to ensure no duplicates
+        # > Paged history may contain duplicated data, say last of page 0 and first of page 1
+        history_data_of_event: dict[datetime, PxHistoryDataEntry] = {}
+
+        while True:
+            history_data_paged = self.get_paged_history(handshake, query_idx)
+            if query_idx % 3000 == 0:
+                print_log(
+                    f"Received history data at index #{query_idx} ({len(history_data_paged.data)})",
+                    identifier=handshake.request_identifier,
+                )
+
+            if not history_data_paged:
+                return
+
+            if not history_data_paged.data:
+                break
+
+            history_data_of_event.update(history_data_paged.data)
+            query_idx = history_data_paged.last_query_idx
+
+        print_log(
+            f"Received {len(history_data_of_event)} history data",
+            identifier=handshake.request_identifier,
+        )
+
+        self.complete_get_history(handshake)
+
+        if history_data_of_event:
+            self.on_received_history_data(
+                HistoryData.from_socket_message(list(history_data_of_event.values()), handshake),
+                handshake
+            )
+        else:
+            print_error("No history data available", identifier=handshake.request_identifier)
+
     def _quote_subscription_handle_message(self, message: CommonData):
         try:
             match message.data_type:
                 case "REALTIME":
-                    data = RealtimeData(message)
-
-                    if not data.is_valid:
-                        print_warning(f"Received invalid (no trade) realtime data from {data.security}")
-                        return
-
-                    print_log(
-                        f"Last: {data.last_px} @ {data.filled_time}",
-                        identifier=f"RTM-[yellow]{data.symbol_complete}[/]"
-                    )
-
-                    if not self.is_subscribing_realtime(data.symbol_complete):
-                        # Subscription is not actively terminated even if the app is exited
-                        # Therefore, it is possible to receive realtime data even if it's not subscribed
-                        # ------------------------------------------
-                        # If such thing happens, ignore that
-                        # > Not unsubscribing the data because multiple app instances may run at the same time
-                        # > Sending subscription cancellation request will interrupt the other app
-                        return
-
-                    self.on_received_realtime_data(data)
+                    self._quote_subscription_handle_realtime(RealtimeData(message))
                 case "TICKS" | "1K" | "DK":
-                    handshake = HistoryDataHandshake(message)
-
-                    if not handshake.is_ready:
-                        print_warning(
-                            f"Status of history data handshake is not ready ({handshake.status})",
-                            identifier=handshake.request_identifier,
-                        )
-                        return
-
-                    if not self.is_handshake_valid_request(handshake):
-                        print_debug(
-                            "Received not subscribed history data handshake",
-                            identifier=handshake.request_identifier,
-                        )
-                        return
-
-                    query_idx = 0
-                    # Use `dict` to ensure no duplicates
-                    # > Paged history may contain duplicated data, say last of page 0 and first of page 1
-                    history_data_of_event: dict[datetime, PxHistoryDataEntry] = {}
-
-                    while True:
-                        history_data_paged = self.get_paged_history(handshake, query_idx)
-                        if query_idx % 3000 == 0:
-                            print_log(
-                                f"Received history data at index #{query_idx} ({len(history_data_paged.data)})",
-                                identifier=handshake.request_identifier,
-                            )
-
-                        if not history_data_paged:
-                            return
-
-                        if not history_data_paged.data:
-                            break
-
-                        history_data_of_event.update(history_data_paged.data)
-                        query_idx = history_data_paged.last_query_idx
-
-                    print_log(
-                        f"Received {len(history_data_of_event)} history data",
-                        identifier=handshake.request_identifier,
-                    )
-
-                    self.complete_get_history(handshake)
-
-                    if history_data_of_event:
-                        self.on_received_history_data(
-                            HistoryData.from_socket_message(list(history_data_of_event.values()), handshake),
-                            handshake
-                        )
-                    else:
-                        print_error("No history data available", identifier=handshake.request_identifier)
+                    self._quote_subscription_handle_history(HistoryDataHandshake(message))
                 case "PING" | "UNSUBQUOTE" | "SYSTEMTIME":
                     pass
                 case _:
@@ -149,4 +153,4 @@ class TouchanceApiClient(QuoteAPI, ABC):
             # Only care about the message after the first colon (:)
             message = CommonData(message.split(":", 1)[1])
 
-            self._quote_subscription_handle_message(message)
+            self._message_handler_executor.submit(self._quote_subscription_handle_message, message)

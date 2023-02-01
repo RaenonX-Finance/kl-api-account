@@ -7,7 +7,7 @@ from pymongo.cursor import Cursor
 from pymongo.errors import OperationFailure
 
 from kl_site_common.db import start_mongo_txn
-from kl_site_common.utils import print_log, split_chunks
+from kl_site_common.utils import print_log, print_warning, split_chunks
 from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry
 from ..const import px_data_col
 from ..model import DbHistoryDataResult
@@ -15,7 +15,8 @@ from ..model import DbHistoryDataResult
 
 def _get_history_data_result(
     fn_get_find_cursor: Callable[[], Cursor], *,
-    use_native_data_sort: bool = False
+    use_native_data_sort: bool = False,
+    find_details: str | None = None,
 ) -> DbHistoryDataResult:
     try:
         if use_native_data_sort:
@@ -35,6 +36,8 @@ def _get_history_data_result(
             data=data,
         )
     except StopIteration:
+        print_warning(f"Empty history data result: {find_details}")
+
         return DbHistoryDataResult(earliest=None, latest=None, data=[])
 
 
@@ -59,7 +62,7 @@ def get_history_data_from_db_timeframe(
             }
         })
 
-    return _get_history_data_result(get_find_cursor)
+    return _get_history_data_result(get_find_cursor, find_details=f"{symbol_complete} @ {interval} ({start} ~ {end})")
 
 
 def get_history_data_from_db_limit_count(
@@ -120,7 +123,7 @@ def get_history_data_from_db_full(
             "i": interval
         })
 
-    return _get_history_data_result(get_find_cursor)
+    return _get_history_data_result(get_find_cursor, find_details=f"{symbol_complete} @ {interval} (All)")
 
 
 def get_history_data_close_px_from_db(
@@ -143,7 +146,11 @@ def get_history_data_at_time_from_db(
             "et": {"$in": epoch_time_secs}
         }).sort("ts", pymongo.DESCENDING).limit(count)
 
-    return _get_history_data_result(get_find_cursor, use_native_data_sort=True)
+    return _get_history_data_result(
+        get_find_cursor,
+        use_native_data_sort=True,
+        find_details=f"{symbol_complete} x {count} @ {epoch_time_secs}"
+    )
 
 
 def store_history_to_db(data: HistoryData, limit: int | None):

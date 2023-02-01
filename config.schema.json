@@ -146,13 +146,19 @@
               "type": "object",
               "description": "Px data updating related settings.",
               "required": [
-                "market-time-gate-sec"
+                "market-time-gate-sec",
+                "market-delay-warning-sec"
               ],
               "additionalProperties": false,
               "properties": {
                 "market-time-gate-sec": {
                   "type": "number",
                   "description": "Time gate in seconds for market data. Market Px will send once only if the time gap between the previous send is greater than this time.",
+                  "exclusiveMinimum": 0
+                },
+                "market-delay-warning-sec": {
+                  "type": "number",
+                  "description": "Time gap in seconds to log the market data delay warning. A warning will be logged if the gap between the current system time and the realtime fill time is greater than this time.",
                   "exclusiveMinimum": 0
                 }
               }

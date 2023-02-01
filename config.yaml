@@ -15,7 +15,8 @@ data:
     segment-count: 2000
     timeout-sec: 300
     px-update:
-      market-time-gate-sec: 0.075
+      market-time-gate-sec: 0.1
+      market-delay-warning-sec: 2
     px-history-refetch:
       limit: 50
       backward-hour: 2

@@ -96,9 +96,9 @@ Sample realtime data return:
   }
 }
 """
-from datetime import time
+from datetime import datetime, time
 
-from kl_site_common.utils import time_hhmmss_to_utc_time
+from kl_site_common.utils import time_hhmmss_to_utc_time, time_yymmdd_hhmmss_to_utc_datetime
 from ._base import SubscriptionDataBase
 from .common import CommonData
 
@@ -157,5 +157,17 @@ class RealtimeData(SubscriptionDataBase):
         return self.change_val / self.open * 100
 
     @property
+    def _filled_time(self) -> str:
+        return self.quote["FilledTime"]
+
+    @property
+    def _trade_date(self) -> str:
+        return self.quote["TradeDate"]
+
+    @property
+    def filled_datetime(self) -> datetime:
+        return time_yymmdd_hhmmss_to_utc_datetime(self._trade_date, self._filled_time)
+
+    @property
     def filled_time(self) -> time:
-        return time_hhmmss_to_utc_time(self.quote["FilledTime"])
+        return time_hhmmss_to_utc_time(self._filled_time)

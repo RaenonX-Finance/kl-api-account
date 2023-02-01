@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
-from threading import Lock, Thread
+from threading import Thread
 
-from kl_site_common.const import DATA_TIMEOUT_SEC, SYS_PORT_QUOTE
+from kl_site_common.const import DATA_TIMEOUT_SEC, MARKET_DELAY_WARNING_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_debug, print_error, print_log, print_warning
 from .message import CommonData, HistoryData, HistoryDataHandshake, PxHistoryDataEntry, RealtimeData, SystemTimeData
 from .quote_api import QuoteAPI
@@ -64,6 +64,13 @@ class TouchanceApiClient(QuoteAPI, ABC):
             f"Last: {data.last_px} @ {data.filled_time}",
             identifier=f"RTM-[yellow]{data.symbol_complete}[/]"
         )
+
+        fill_time_diff_sec = (datetime.utcnow().replace(tzinfo=timezone.utc) - data.filled_datetime).total_seconds()
+        if fill_time_diff_sec > MARKET_DELAY_WARNING_SEC:
+            print_warning(
+                f"Detected realtime order fill time gap of {fill_time_diff_sec:.3f} s",
+                identifier=f"RTM-[yellow]{data.symbol_complete}[/]"
+            )
 
         if not self.is_subscribing_realtime(data.symbol_complete):
             # Subscription is not actively terminated even if the app is exited

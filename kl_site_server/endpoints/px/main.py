@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 
 from kl_site_common.utils import print_log
 from kl_site_server.model import PxDataConfig
-from kl_site_server.utils import PxDataDict, generate_bad_request_exception, to_api_response_px_data_list
+from kl_site_server.utils import generate_bad_request_exception, to_api_response_px_data_list
 from .model import PxInitParams, RequestPxParams
 from ..auth import get_active_user_by_oauth2_token
 

@@ -9,5 +9,8 @@ from .epoch import get_epoch_sec_time
 from .func_exec import execute_async_function
 from .json_encoder import JSONEncoder
 from .system import set_current_process_to_highest_priority
-from .time_ import time_hhmmss_to_utc_time, time_round_second_to_min, time_str_to_utc_time, time_to_total_seconds
+from .time_ import (
+    time_hhmm_to_utc_time, time_hhmmss_to_utc_time, time_round_second_to_min, time_to_total_seconds,
+    time_yymmdd_hhmmss_to_utc_datetime,
+)
 from .timer import ExecTimer

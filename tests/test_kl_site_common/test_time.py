@@ -1,6 +1,9 @@
 from datetime import datetime, time, timezone
 
-from kl_site_common.utils import time_round_second_to_min, time_hhmm_to_utc_time, time_to_total_seconds
+from kl_site_common.utils import (
+    time_round_second_to_min, time_hhmm_to_utc_time, time_to_total_seconds,
+    time_yymmdd_hhmmss_to_utc_datetime,
+)
 
 
 def test_time_to_total_seconds():
@@ -16,3 +19,8 @@ def test_time_hhmm_to_utc_time():
 def test_time_round_second_to_min():
     assert time_round_second_to_min(datetime(2022, 7, 25, 7, 0, 58)) == datetime(2022, 7, 25, 7, 1, 0)
     assert time_round_second_to_min(datetime(2022, 7, 26, 23, 59, 58)) == datetime(2022, 7, 27, 0, 0, 0)
+
+
+def test_time_yymmdd_hhmmss_to_utc_datetime():
+    expected = datetime(2022, 7, 25, 7, 1, 0, tzinfo=timezone.utc)
+    assert time_yymmdd_hhmmss_to_utc_datetime("20220725", "070100") == expected

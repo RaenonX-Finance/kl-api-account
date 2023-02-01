@@ -9,6 +9,10 @@ def time_hhmmss_to_utc_time(s: str) -> time:
     return datetime.strptime(s.zfill(6), "%H%M%S").time().replace(tzinfo=timezone.utc)
 
 
+def time_yymmdd_hhmmss_to_utc_datetime(date_: str, time_: str) -> datetime:
+    return datetime.strptime(f"{date_} {time_:>06}", "%Y%m%d %H%M%S").replace(tzinfo=timezone.utc)
+
+
 def time_to_total_seconds(t: time) -> int:
     return t.hour * 3600 + t.minute * 60 + t.second
 

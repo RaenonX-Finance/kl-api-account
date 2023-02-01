@@ -25,8 +25,16 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache: PxDataCache = PxDataCache()
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
+        self._px_realtime_check_intervals: list[HistoryInterval] = ["1K"]
         self._requesting_px_data: bool = False
         self._calc_data_manager: CalculatedDataManager = CalculatedDataManager(self._px_data_cache)
+
+    def _update_px_request_params(self, params: TouchancePxRequestParams):
+        self._px_request_params[params.symbol_obj.symbol_complete] = params
+
+        self._px_realtime_check_intervals = ["1K"]
+        if any(params.period_days for params in self._px_request_params.values()):
+            self._px_realtime_check_intervals.append("DK")
 
     def request_px_data(self, params_list: list[TouchancePxRequestParams], *, re_calc_data: bool) -> None:
         self._requesting_px_data = True
@@ -70,7 +78,7 @@ class TouchanceDataClient(TouchanceApiClient):
             self.subscribe_realtime(params.symbol_obj)
 
             # Params should be recorded only after all the calls are done
-            self._px_request_params[params.symbol_obj.symbol_complete] = params
+            self._update_px_request_params(params)
 
         def get_history_data(
             symbol_obj: SymbolBaseType, interval: HistoryInterval, start: datetime, end: datetime
@@ -138,7 +146,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         self._px_data_cache.update_latest_market_data_of_symbol(data)
 
-        if not self._px_data_cache.is_all_ready_of_intervals(["1K", "DK"], data.symbol_complete):
+        if not self._px_data_cache.is_all_ready_of_intervals(self._px_realtime_check_intervals, data.symbol_complete):
             params = self._px_request_params[data.symbol_complete]
 
             if params.should_re_request:

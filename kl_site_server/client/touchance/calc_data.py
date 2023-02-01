@@ -71,11 +71,13 @@ class CalculatedDataManager:
                 period_min for params in params_list
                 for period_min in params.period_mins
             ),
-            "DK": max(
-                period_day for params in params_list
-                for period_day in params.period_days
-            ),
         }
+        period_days = [
+            period_day for params in params_list
+            for period_day in params.period_days
+        ]
+        if period_days:
+            max_period_num["DK"] = max(period_days)
 
         for params in params_list:
             period_min_set.update(

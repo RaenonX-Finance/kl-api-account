@@ -1,7 +1,7 @@
 from dataclasses import InitVar, dataclass, field
 from typing import Optional
 
-from kl_site_common.utils import time_str_to_utc_time, time_to_total_seconds
+from kl_site_common.utils import time_hhmm_to_utc_time, time_to_total_seconds
 
 
 @dataclass(kw_only=True)
@@ -13,8 +13,8 @@ class SrLevelKeyTimePair:
     close_time_sec: int = field(init=False)
 
     def __post_init__(self, open_str: str, close_str: str):
-        self.open_time_sec = time_to_total_seconds(time_str_to_utc_time(open_str))
-        self.close_time_sec = time_to_total_seconds(time_str_to_utc_time(close_str))
+        self.open_time_sec = time_to_total_seconds(time_hhmm_to_utc_time(open_str))
+        self.close_time_sec = time_to_total_seconds(time_hhmm_to_utc_time(close_str))
 
     @staticmethod
     def from_config_obj(config_obj: dict[str, str] | None) -> Optional["SrLevelKeyTimePair"]:

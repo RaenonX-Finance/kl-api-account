@@ -6,7 +6,7 @@ from bson import ObjectId
 from pydantic import BaseModel, Field, root_validator, validator
 
 from kl_site_common.db import PyObjectId
-from kl_site_common.utils import time_str_to_utc_time
+from kl_site_common.utils import time_hhmm_to_utc_time
 from tcoreapi_mq.message import PxHistoryDataEntry
 
 
@@ -56,8 +56,8 @@ class MarketSessionEntry:
     def from_config(config_obj: dict[str, Any]) -> "MarketSessionEntry":
         return MarketSessionEntry(
             weekdays=config_obj["weekdays"],
-            start=time_str_to_utc_time(config_obj["start"]),
-            end=time_str_to_utc_time(config_obj["end"]),
+            start=time_hhmm_to_utc_time(config_obj["start"]),
+            end=time_hhmm_to_utc_time(config_obj["end"]),
         )
 
 

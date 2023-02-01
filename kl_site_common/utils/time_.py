@@ -1,7 +1,7 @@
 from datetime import datetime, time, timedelta, timezone
 
 
-def time_str_to_utc_time(s: str) -> time:
+def time_hhmm_to_utc_time(s: str) -> time:
     return datetime.strptime(s, "%H:%M").time().replace(tzinfo=timezone.utc)
 
 

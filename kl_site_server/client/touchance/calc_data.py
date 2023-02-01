@@ -380,7 +380,9 @@ class CalculatedDataManager:
             skip_if_locked=True,
         )
 
-    def update_calc_data_full(self, symbol_obj: SymbolBaseType, params_list: list[TouchancePxRequestParams]) -> None:
+    def update_calc_data_full(self, params: TouchancePxRequestParams) -> None:
+        symbol_obj = params.symbol_obj
+
         def get_history_data(key: HistoryDataCacheKey, _: int) -> DataFrame:
             df = DataFrame(get_history_data_from_db_full(key.symbol_obj.symbol_complete, key.interval).data)
 
@@ -400,7 +402,7 @@ class CalculatedDataManager:
             get_calculated_data_lookup,
             self._calc_data_update_single_common,
             {symbol_obj},
-            params_list,
+            [params],
             threaded=False,
             skip_if_locked=False,
         )

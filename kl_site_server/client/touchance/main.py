@@ -61,7 +61,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 # Ensure all history data requests are finished
                 # Not using context manager because sometimes it unlocks locked lock
                 self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
-                self._calc_data_manager.update_calc_data_full(params.symbol_obj, [params])
+                self._calc_data_manager.update_calc_data_full(params)
                 if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
                     self.history_data_lock_dict[params.symbol_obj.symbol_complete].release()
 

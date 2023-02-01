@@ -290,7 +290,7 @@ class CalculatedDataManager:
                     key.interval,
                     max_period_num * MAX_PERIOD_NO_EMA
                 ).data,
-                df_name=f"HST: {key.symbol_obj.security} @ {key.interval}"
+                df_name=f"Calc New: {key.symbol_obj.security} @ {key.interval}"
             )
 
             calc_set_epoch_index(df)
@@ -338,7 +338,10 @@ class CalculatedDataManager:
                 self._px_data_cache.get_cache_entry_of_interval(interval, symbol_complete).data_last_bar
             )
 
-            df = DataFrame(get_history_data_from_db_full(symbol_complete, interval).update_latest(last_entry).data)
+            df = PxHistoryDataEntry.entries_to_dataframe(
+                get_history_data_from_db_full(symbol_complete, interval).update_latest(last_entry).data,
+                f"Calc Last: {key.symbol_obj.security} @ {key.interval}"
+            )
 
             calc_set_epoch_index(df)
 

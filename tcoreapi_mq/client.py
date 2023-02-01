@@ -1,7 +1,7 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
-from datetime import datetime
-from threading import Thread
+from datetime import datetime, timezone
+from threading import Lock, Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, MARKET_DELAY_WARNING_SEC, SYS_PORT_QUOTE
 from kl_site_common.utils import print_debug, print_error, print_log, print_warning
@@ -15,6 +15,12 @@ class TouchanceApiClient(QuoteAPI, ABC):
         super().__init__()
 
         self._last_data_min: int = datetime.utcnow().minute
+        # This lock ensures that history data request completes before any other message
+        # History data request is still a type of subscription.
+        # If the security price is updated while the history data fetch is still running,
+        # there will be multiple history data request being handled simultaneously.
+        # This is behavior is undesired because history data request should NOT be handled multiple times.
+        self._history_data_request_lock: Lock = Lock()
         self._message_handler_executor: ThreadPoolExecutor = ThreadPoolExecutor(thread_name_prefix="TC-API-")
 
     def start(self):
@@ -84,6 +90,13 @@ class TouchanceApiClient(QuoteAPI, ABC):
         self.on_received_realtime_data(data)
 
     def _quote_subscription_handle_history(self, handshake: HistoryDataHandshake):
+        if self._history_data_request_lock.locked():
+            print_log(
+                "Received history data handshake while handling other history data request",
+                identifier=handshake.request_identifier,
+            )
+            return
+
         if not handshake.is_ready:
             print_warning(
                 f"Status of history data handshake is not ready ({handshake.status})",
@@ -103,9 +116,12 @@ class TouchanceApiClient(QuoteAPI, ABC):
         # > Paged history may contain duplicated data, say last of page 0 and first of page 1
         history_data_of_event: dict[datetime, PxHistoryDataEntry] = {}
 
+        if not self.is_handshake_subscribing(handshake):
+            self._history_data_request_lock.acquire()
+
         while True:
             history_data_paged = self.get_paged_history(handshake, query_idx)
-            if query_idx % 3000 == 0:
+            if query_idx > 0 and query_idx % 3000 == 0:
                 print_log(
                     f"Received history data at index #{query_idx} ({len(history_data_paged.data)})",
                     identifier=handshake.request_identifier,
@@ -125,8 +141,6 @@ class TouchanceApiClient(QuoteAPI, ABC):
             identifier=handshake.request_identifier,
         )
 
-        self.complete_get_history(handshake)
-
         if history_data_of_event:
             self.on_received_history_data(
                 HistoryData.from_socket_message(list(history_data_of_event.values()), handshake),
@@ -134,6 +148,13 @@ class TouchanceApiClient(QuoteAPI, ABC):
             )
         else:
             print_error("No history data available", identifier=handshake.request_identifier)
+
+        # Needs to be after `on_received_history_data` as it releases the history data lock
+        # History data lock is used in `request_px_data` ensuring that the fetch is completed
+        self.complete_get_history(handshake)
+
+        if self._history_data_request_lock.locked():
+            self._history_data_request_lock.release()
 
     def _quote_subscription_handle_message(self, message: CommonData):
         try:

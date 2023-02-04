@@ -99,58 +99,54 @@ Sample realtime data return:
 from datetime import datetime, time
 
 from kl_site_common.utils import time_hhmmss_to_utc_time, time_yymmdd_hhmmss_to_utc_datetime
-from ._base import SubscriptionDataBase
 from .common import CommonData
+from .realtime_base import RealtimeDataBase
 
 
-class RealtimeData(SubscriptionDataBase):
+class RealtimeData(RealtimeDataBase):
     def __init__(self, data: CommonData):
         super().__init__(data)
 
-        self.quote: dict[str, str] = self.data.body["Quote"]
+        self._quote: dict[str, str] = self.data.body["Quote"]
         # Trade Qty could be 0, no real trade occur in this case (possibly B/A updated?)
-        self.is_valid: bool = bool(int(self.quote["TradeQuantity"]))
+        self._is_valid: bool = bool(int(self._quote["TradeQuantity"]))
+
+    @property
+    def is_valid(self) -> bool:
+        return self._is_valid
 
     @property
     def symbol_complete(self) -> str:
-        return self.quote["Symbol"]
+        return self._quote["Symbol"]
 
     @property
     def security(self) -> str:
-        return self.quote["Security"]
-
-    @property
-    def security_name(self) -> str:
-        return self.quote["SecurityName"]
-
-    @property
-    def exchange(self) -> str:
-        return f"{self.quote['Exchange']} ({self.quote['ExchangeName']})"
+        return self._quote["Security"]
 
     @property
     def last_px(self) -> float:
-        return float(self.quote["TradingPrice"])
+        return float(self._quote["TradingPrice"])
 
     @property
     def open(self) -> float:
         # `OpeningPrice` could be `0` for some reason - might because of holiday
-        return float(self.quote["OpeningPrice"]) or float(self.quote["ReferencePrice"])
+        return float(self._quote["OpeningPrice"]) or float(self._quote["ReferencePrice"])
 
     @property
     def high(self) -> float:
-        return float(self.quote["HighPrice"])
+        return float(self._quote["HighPrice"])
 
     @property
     def low(self) -> float:
-        return float(self.quote["LowPrice"])
+        return float(self._quote["LowPrice"])
 
     @property
     def close(self) -> float:
-        return float(self.quote["ClosingPrice"] or self.last_px)
+        return float(self._quote["ClosingPrice"] or self.last_px)
 
     @property
     def change_val(self) -> float:
-        return float(self.quote["Change"])
+        return float(self._quote["Change"])
 
     @property
     def change_pct(self) -> float:
@@ -158,11 +154,11 @@ class RealtimeData(SubscriptionDataBase):
 
     @property
     def _filled_time(self) -> str:
-        return self.quote["FilledTime"]
+        return self._quote["FilledTime"]
 
     @property
     def _trade_date(self) -> str:
-        return self.quote["TradeDate"]
+        return self._quote["TradeDate"]
 
     @property
     def filled_datetime(self) -> datetime:

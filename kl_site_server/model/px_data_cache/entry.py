@@ -7,7 +7,7 @@ from kl_site_common.utils import print_warning
 from kl_site_server.db import CalculatedDataLookup
 from kl_site_server.enums import PxDataCol
 from kl_site_server.model import BarDataDict, PxData, PxDataCommon, PxDataConfig
-from tcoreapi_mq.message import HistoryInterval, RealtimeData, calc_market_date
+from tcoreapi_mq.message import HistoryInterval, RealtimeDataBase, calc_market_date
 
 
 @dataclass(kw_only=True)
@@ -20,7 +20,7 @@ class PxDataCacheEntry:
     interval: HistoryInterval
     interval_sec: int
 
-    latest_market: RealtimeData | None = field(init=False, default=None)
+    latest_market: RealtimeDataBase | None = field(init=False, default=None)
     data_keys_sorted: list[int] = field(init=False)
 
     def __post_init__(self):
@@ -81,7 +81,7 @@ class PxDataCacheEntry:
         else:
             print_warning("`PxDataCacheEntry.update_all()` called, but `bars` is empty")
 
-    def update_latest_market(self, data: RealtimeData):
+    def update_latest_market(self, data: RealtimeDataBase):
         """
         Updates the latest market data. Does NOT update the underlying cached data.
 

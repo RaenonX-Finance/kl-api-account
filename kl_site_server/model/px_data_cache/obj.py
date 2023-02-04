@@ -7,7 +7,7 @@ from kl_site_common.const import MARKET_PX_TIME_GATE_SEC
 from kl_site_common.utils import print_log, print_warning
 from kl_site_server.calc import CALC_STRENGTH_BARS_NEEDED, calc_strength
 from kl_site_server.db import get_calculated_data_from_db, is_market_closed, store_history_to_db_from_entries
-from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeData, SystemTimeData
+from tcoreapi_mq.message import HistoryData, HistoryInterval, PxHistoryDataEntry, RealtimeDataBase, SystemTimeData
 from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .entry import PxDataCacheEntry
 from ..bar_data import to_bar_data_dict_tcoreapi
@@ -24,7 +24,7 @@ class PxDataCache:
 
     last_market_send: float = field(init=False, default=0)
 
-    buffer_mkt_px: dict[str, RealtimeData] = field(init=False, default_factory=dict)  # Security / Data
+    buffer_mkt_px: dict[str, RealtimeDataBase] = field(init=False, default_factory=dict)  # Security / Data
 
     def init_entry(
         self, *, symbol_obj: SymbolBaseType, min_tick: float, decimals: int,
@@ -137,13 +137,13 @@ class PxDataCache:
                 f"No data update as the history data is not either 1K or DK - {symbol_complete} @ {data.data_type}"
             )
 
-    def update_latest_market_data_of_symbol(self, data: RealtimeData) -> None:
+    def update_latest_market_data_of_symbol(self, data: RealtimeDataBase) -> None:
         if data_1k := self.data_1k.get(data.symbol_complete):
             data_1k.update_latest_market(data)
         if data_dk := self.data_dk.get(data.symbol_complete):
             data_dk.update_latest_market(data)
 
-    def update_market_data_of_symbol(self, data: RealtimeData) -> MarketPxUpdateResult:
+    def update_market_data_of_symbol(self, data: RealtimeDataBase) -> MarketPxUpdateResult:
         symbol_complete = data.symbol_complete
 
         reason = None

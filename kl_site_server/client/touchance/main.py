@@ -13,7 +13,10 @@ from kl_site_server.model import (
     TouchancePxRequestParams,
 )
 from tcoreapi_mq.client import TouchanceApiClient
-from tcoreapi_mq.message import HistoryData, HistoryDataHandshake, HistoryInterval, RealtimeData, SystemTimeData
+from tcoreapi_mq.message import (
+    HistoryData, HistoryDataHandshake, HistoryInterval, RealtimeDataBase,
+    RealtimeDataHistory, SystemTimeData,
+)
 from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
 from .calc_data import CalculatedDataManager
 from .subscribe import HistoryDataSubscriber
@@ -139,7 +142,9 @@ class TouchanceDataClient(TouchanceApiClient):
         if not self._requesting_px_data:
             self.test_minute_change(data.data_list[-1].timestamp)
 
-    def on_received_realtime_data(self, data: RealtimeData) -> None:
+        self.on_received_realtime_data(RealtimeDataHistory(data, handshake))
+
+    def on_received_realtime_data(self, data: RealtimeDataBase) -> None:
         if is_market_closed(data.security):  # https://github.com/RaenonX-Finance/kl-site-back/issues/40
             print_log(f"[red]Ignored[/] market Px data of [yellow]{data.security}[/] - outside market hours")
             return

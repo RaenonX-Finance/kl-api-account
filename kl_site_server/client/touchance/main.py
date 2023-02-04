@@ -75,7 +75,7 @@ class TouchanceDataClient(TouchanceApiClient):
 
         # Those actions should only happen after complete data calculation
         for params in params_list:
-            self.subscribe_realtime(params.symbol_obj)
+            # self.subscribe_realtime(params.symbol_obj)
 
             # Params should be recorded only after all the calls are done
             self._update_px_request_params(params)

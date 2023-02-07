@@ -122,6 +122,8 @@ def get_calculated_data_from_db(
             list(reversed(aggr_result["data"][offset:offset + count]))  # noqa: E231
         )
 
+    print_log(f"Obtained calculated data of {sorted(ret.data.keys())}")
+
     return ret
 
 

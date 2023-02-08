@@ -46,7 +46,8 @@ def _get_recent_n_sr_level_pairs_only(
 
     data_count = 0
 
-    for timestamp_date in sorted(grouped_dict.keys()):
+    # Reversed to guarantee getting the latest first
+    for timestamp_date in reversed(sorted(grouped_dict.keys())):
         data_pair = grouped_dict[timestamp_date]
 
         if len(data_pair) != 2:

@@ -14,7 +14,8 @@ class SrLevelKeyTimePair:
 
     def __post_init__(self, open_str: str, close_str: str):
         self.open_time_sec = time_to_total_seconds(time_hhmm_to_utc_time(open_str))
-        self.close_time_sec = time_to_total_seconds(time_hhmm_to_utc_time(close_str))
+        # Offset 60 secs because if `close_str` is 15:00, the actual time wanted is `close` of 14:59
+        self.close_time_sec = (time_to_total_seconds(time_hhmm_to_utc_time(close_str)) - 60) % 86400
 
     @staticmethod
     def from_config_obj(config_obj: dict[str, str] | None) -> Optional["SrLevelKeyTimePair"]:

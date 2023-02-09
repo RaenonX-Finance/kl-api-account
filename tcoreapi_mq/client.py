@@ -1,6 +1,7 @@
 from abc import ABC, abstractmethod
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
+from json import JSONDecodeError
 from threading import Lock, Thread
 
 from kl_site_common.const import DATA_TIMEOUT_SEC, MARKET_DELAY_WARNING_SEC, SYS_PORT_QUOTE
@@ -167,6 +168,12 @@ class TouchanceApiClient(QuoteAPI, ABC):
                     pass
                 case _:
                     print_warning(f"Unknown message data type: {message.data_type}")
+        except JSONDecodeError as e:
+            error_message = f"Attempt to decode misformatted JSON: {e.doc}"
+
+            print_error(error_message)
+            self.on_error(error_message)
+            raise e
         except Exception as e:
             error_message = f"{type(e)}: {e}"
 

@@ -49,6 +49,15 @@ DATA_DOWNLOAD_DK = _CONFIG_DATA_DOWNLOAD["dk"]
 
 # endregion
 
+# region Data / Cache
+
+_CONFIG_DATA_CACHE = _CONFIG_DATA["cache"]
+
+CACHE_PX_REQUEST_TTL_SEC = _CONFIG_DATA_CACHE["px-request-ttl-sec"]
+CACHE_PX_REQUEST_TTL_SIZE = _CONFIG_DATA_CACHE["px-request-ttl-size"]
+
+# endregion
+
 # region Data / Stream
 
 _CONFIG_DATA_STREAM = _CONFIG_DATA["stream"]

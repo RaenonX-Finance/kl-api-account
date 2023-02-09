@@ -11,7 +11,7 @@ if TYPE_CHECKING:
     from kl_site_server.endpoints import RequestPxMessageSingle as RequestPxMessageSingleModel
 
 
-@dataclass(kw_only=True, frozen=True)
+@dataclass(kw_only=True, frozen=True, order=True)
 class PxDataConfig:
     security: str
     period_min: int

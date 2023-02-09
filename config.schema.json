@@ -93,6 +93,7 @@
       "description": "Data related settings.",
       "required": [
         "download",
+        "cache",
         "stream",
         "source",
         "period",
@@ -117,6 +118,27 @@
             "dk": {
               "type": "integer",
               "description": "Data duration to download for daily-bar (DK) in days.",
+              "exclusiveMinimum": 0
+            }
+          }
+        },
+        "cache": {
+          "type": "object",
+          "description": "Data caching related settings.",
+          "required": [
+            "px-request-ttl-sec",
+            "px-request-ttl-size"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "px-request-ttl-sec": {
+              "type": "number",
+              "description": "Entry life in second for TTL cache for Px request response.",
+              "exclusiveMinimum": 0
+            },
+            "px-request-ttl-size": {
+              "type": "integer",
+              "description": "Max size of TTL cache for Px request response.",
               "exclusiveMinimum": 0
             }
           }

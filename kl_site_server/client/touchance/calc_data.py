@@ -340,8 +340,10 @@ class CalculatedDataManager:
                 self._px_data_cache.get_cache_entry_of_interval(interval, symbol_complete).data_last_bar
             )
 
+            # 1450 because at least a day of 1K (1440) is needed (for tie point), additional 10 for buffer
+            history_data = get_history_data_from_db_limit_count(symbol_complete, interval, count=1450)
             df = PxHistoryDataEntry.entries_to_dataframe(
-                get_history_data_from_db_full(symbol_complete, interval).update_latest(last_entry).data,
+                history_data.update_latest(last_entry).data,
                 f"Calc Last: {key.symbol_obj.security} @ {key.interval}"
             )
 

@@ -31,7 +31,6 @@
     "system",
     "log",
     "data",
-    "indicator",
     "account"
   ],
   "additionalProperties": false,
@@ -96,7 +95,6 @@
         "cache",
         "stream",
         "source",
-        "period",
         "sr-level"
       ],
       "additionalProperties": false,
@@ -328,75 +326,9 @@
             }
           }
         },
-        "period": {
-          "type": "object",
-          "description": "Data period related settings.",
-          "required": [
-            "min",
-            "day"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "min": {
-              "type": "array",
-              "description": "Data periods based on 1K. The resulting data are aggregated from 1 minute candlestick.",
-              "uniqueItems": true,
-              "minItems": 1,
-              "items": {
-                "type": "object",
-                "description": "An entity of a data period.",
-                "required": [
-                  "min",
-                  "name"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "min": {
-                    "type": "integer",
-                    "description": "Period in minutes.",
-                    "exclusiveMinimum": 0
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "Name of the period entity."
-                  }
-                }
-              }
-            },
-            "day": {
-              "type": "array",
-              "description": "Data periods based on DK. The resulting data are aggregated from daily candlestick.",
-              "uniqueItems": true,
-              "items": {
-                "type": "object",
-                "description": "An entity of a data period.",
-                "required": [
-                  "day",
-                  "name"
-                ],
-                "additionalProperties": false,
-                "properties": {
-                  "day": {
-                    "type": "integer",
-                    "description": "Period in days.",
-                    "enum": [
-                      1,
-                      7,
-                      30
-                    ]
-                  },
-                  "name": {
-                    "type": "string",
-                    "description": "Name of the period entity."
-                  }
-                }
-              }
-            }
-          }
-        },
         "sr-level": {
           "type": "object",
-          "description": "Support-resistance level determination settings.",
+          "description": "Support-resistance level determining settings.",
           "required": [
             "custom"
           ],
@@ -427,80 +359,6 @@
                   }
                 }
               }
-            }
-          }
-        }
-      }
-    },
-    "indicator": {
-      "type": "object",
-      "description": "Indicator related settings.",
-      "required": [
-        "ema-strong-sr",
-        "ema-net"
-      ],
-      "additionalProperties": false,
-      "properties": {
-        "ema-net": {
-          "type": "object",
-          "description": "EMA periods to use for EMA net.",
-          "required": [
-            "fast",
-            "slow"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "fast": {
-              "type": "integer",
-              "description": "Faster EMA period to use.",
-              "exclusiveMinimum": 0
-            },
-            "slow": {
-              "type": "integer",
-              "description": "Slower EMA period to use.",
-              "exclusiveMinimum": 0
-            }
-          }
-        },
-        "ema-strong-sr": {
-          "type": "array",
-          "description": "EMA period pairs to use for EMA pairs that provide strong support/resistance.",
-          "minItems": 1,
-          "uniqueItems": true,
-          "items": {
-            "type": "object",
-            "description": "Available pairs for strong S/R EMA period pairs.",
-            "required": [
-              "fast",
-              "slow"
-            ],
-            "additionalProperties": false,
-            "properties": {
-              "fast": {
-                "type": "integer",
-                "description": "Faster EMA period to use.",
-                "exclusiveMinimum": 0
-              },
-              "slow": {
-                "type": "integer",
-                "description": "Slower EMA period to use.",
-                "exclusiveMinimum": 0
-              }
-            }
-          }
-        },
-        "sr-level": {
-          "type": "object",
-          "description": "S/R level calculation settings.",
-          "required": [
-            "min-diff"
-          ],
-          "additionalProperties": false,
-          "properties": {
-            "min-diff": {
-              "type": "number",
-              "description": "Minimum difference between levels.",
-              "exclusiveMinimum": 0
             }
           }
         }

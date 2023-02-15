@@ -3,19 +3,14 @@ from datetime import datetime
 
 from pandas.tseries.offsets import BDay
 
-from kl_site_common.const import INDICATOR_EMA_PERIODS
+from kl_site_server.db import PX_CONFIG
 
-CANDLESTICK_DIR_MACD_FAST = 20
+_PERIODS_NO_EMA = [
+    PX_CONFIG.candle_dir.signal + PX_CONFIG.candle_dir.slow,
+    PX_CONFIG.candle_dir.fast
+]
 
-CANDLESTICK_DIR_MACD_SIGNAL = 15
-
-CANDLESTICK_DIR_MACD_SLOW = 300
-
-CANDLESTICK_DIR_MACD_REQUIRED = CANDLESTICK_DIR_MACD_SIGNAL + CANDLESTICK_DIR_MACD_SLOW
-
-_PERIODS_NO_EMA = [CANDLESTICK_DIR_MACD_REQUIRED, CANDLESTICK_DIR_MACD_FAST]
-
-MAX_PERIOD = max(*INDICATOR_EMA_PERIODS, *_PERIODS_NO_EMA)
+MAX_PERIOD = max(*PX_CONFIG.ema_periods, *PX_CONFIG.candle_dir.ema_periods)
 
 MAX_PERIOD_NO_EMA = max(*_PERIODS_NO_EMA)
 

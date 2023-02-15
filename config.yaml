@@ -86,39 +86,8 @@ data:
         basic:
           open: '07:00'
           close: '05:30'
-  period:
-    min:
-      - min: 1
-        name: '1'
-      - min: 3
-        name: '3'
-      - min: 5
-        name: '5'
-      - min: 10
-        name: '10'
-      - min: 15
-        name: '15'
-      - min: 30
-        name: '30'
-      - min: 60
-        name: '60'
-    day:
-      - day: 1
-        name: 'D'
   sr-level:
     custom: {}
-
-indicator:
-  ema-net:
-    fast: 10
-    slow: 34
-  ema-strong-sr:
-    - fast: 144
-      slow: 169
-    - fast: 576
-      slow: 676
-  sr-level:
-    min-diff: 35
 
 account:
   sign-up-key-expiry-sec: 86400

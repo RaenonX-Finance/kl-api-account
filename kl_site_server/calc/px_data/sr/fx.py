@@ -5,9 +5,8 @@ import numpy as np
 from pandas import DataFrame, Series
 from pandas.tseries.offsets import BDay
 
-from kl_site_common.const import SR_LEVEL_MIN_DIFF
 from kl_site_common.utils import print_warning
-from kl_site_server.db import get_history_data_at_time_from_db
+from kl_site_server.db import PX_CONFIG, get_history_data_at_time_from_db
 from kl_site_server.enums import PxDataCol
 from .model import SrLevelKeyTimePair
 
@@ -92,7 +91,7 @@ def _generate_sr_level_pairs(
 
         diff = abs(_1 - _2)
 
-        if diff < SR_LEVEL_MIN_DIFF:
+        if diff < PX_CONFIG.sr_level.min_diff:
             yield []
         else:
             yield list(np.concatenate([

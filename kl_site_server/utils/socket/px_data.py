@@ -1,9 +1,7 @@
-from typing import Iterable, TYPE_CHECKING, TypeAlias, TypedDict
+from typing import Iterable, TYPE_CHECKING, TypedDict
 
-from kl_site_common.const import (
-    EMA_PERIOD_PAIRS_STRONG_SR, EMA_PERIOD_PAIR_NET, EmaPeriodPair, INDICATOR_EMA_PERIODS,
-)
 from kl_site_common.utils import print_warning
+from kl_site_server.db import PX_CONFIG
 from kl_site_server.enums import PxDataCol
 from .px_data_market import PxDataMarketSingle, from_realtime_data_single
 from .utils import data_rename_col, dump_and_compress
@@ -35,7 +33,9 @@ class PxDataContract(TypedDict):
     name: str
 
 
-PxDataEmaPeriodPair: TypeAlias = EmaPeriodPair
+class PxDataEmaPeriodPair(TypedDict):
+    fast: int
+    slow: int
 
 
 class PxDataEmaConfig(TypedDict):
@@ -89,7 +89,7 @@ def _from_px_data_bars(px_data: "PxData") -> list[PxDataBar]:
     }
     columns |= {
         PxDataCol.get_ema_col_name(period): f"ema{period}"
-        for period in INDICATOR_EMA_PERIODS
+        for period in PX_CONFIG.ema_periods
     }
 
     if not px_data.data:
@@ -117,8 +117,8 @@ def _from_px_data_contract(px_data: "PxData") -> PxDataContract:
 
 def _get_ema_config() -> PxDataEmaConfig:
     return {
-        "net": EMA_PERIOD_PAIR_NET,
-        "strongSr": EMA_PERIOD_PAIRS_STRONG_SR,
+        "net": PX_CONFIG.ema_net.dict(),
+        "strongSr": [strong_sr.dict() for strong_sr in PX_CONFIG.ema_strong_sr],
     }
 
 

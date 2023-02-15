@@ -2,8 +2,8 @@ import pytest
 from pandas import DataFrame
 
 from kl_site_server.calc.px_data_fields.candlestick import calc_candlestick_partial
+from kl_site_server.db import PX_CONFIG
 from kl_site_server.enums import PxDataCol
-from kl_site_server.utils import CANDLESTICK_DIR_MACD_FAST, CANDLESTICK_DIR_MACD_SLOW
 
 
 def test_calc_candlestick_partial():
@@ -12,8 +12,8 @@ def test_calc_candlestick_partial():
     })
     df_ema_base = DataFrame({
         PxDataCol.CLOSE: [8, 9, 6, 7, 8, 1],
-        PxDataCol.get_ema_col_name(CANDLESTICK_DIR_MACD_FAST): [5.5, 5.833, 5.849, 5.959, 6.153, 5.662],
-        PxDataCol.get_ema_col_name(CANDLESTICK_DIR_MACD_SLOW): [7.7, 7.709, 7.698, 7.693, 7.695, 7.651],
+        PxDataCol.get_ema_col_name(PX_CONFIG.candle_dir.fast): [5.5, 5.833, 5.849, 5.959, 6.153, 5.662],
+        PxDataCol.get_ema_col_name(PX_CONFIG.candle_dir.slow): [7.7, 7.709, 7.698, 7.693, 7.695, 7.651],
         PxDataCol.MACD_SIGNAL: [6.3, 5.278, 4.387, 3.622, 2.976, 2.356],
         PxDataCol.CANDLESTICK_DIR: [-1, -1, -1, -1, -1, -1],
     })

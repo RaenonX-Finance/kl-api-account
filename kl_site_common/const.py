@@ -1,5 +1,3 @@
-from typing import TypedDict
-
 import yaml
 from rich.console import Console
 
@@ -78,47 +76,12 @@ DATA_PX_REFETCH_STORE_LIMIT = _CONFIG_DATA_PX_REFETCH["limit"]
 
 DATA_SOURCES = _CONFIG_DATA["source"]
 
-_DATA_PERIOD = _CONFIG_DATA["period"]
-
-DATA_PERIOD_MINS = _DATA_PERIOD["min"]
-DATA_PERIOD_DAYS = _DATA_PERIOD["day"]
-
 # region Data / SR levels
 
 _CONFIG_DATA_SR = _CONFIG_DATA["sr-level"]
 SR_CUSTOM_LEVELS = _CONFIG_DATA_SR["custom"]
 
 # endregion
-
-# endregion
-
-# region Indicator
-
-_CONFIG_INDICATOR = config["indicator"]
-
-
-class EmaPeriodPair(TypedDict):
-    fast: int
-    slow: int
-
-
-def _extract_ema_periods(pair: EmaPeriodPair) -> set[int]:
-    return {pair["fast"], pair["slow"]}
-
-
-EMA_PERIOD_PAIR_NET: EmaPeriodPair = _CONFIG_INDICATOR["ema-net"]
-EMA_PERIOD_PAIRS_STRONG_SR: list[EmaPeriodPair] = _CONFIG_INDICATOR["ema-strong-sr"]
-
-INDICATOR_EMA_PERIODS: set[int] = \
-    _extract_ema_periods(EMA_PERIOD_PAIR_NET) | \
-    {
-        period
-        for pair in EMA_PERIOD_PAIRS_STRONG_SR
-        for period in _extract_ema_periods(pair)
-    }
-
-_CONFIG_INDICATOR_SR_LEVEL = _CONFIG_INDICATOR["sr-level"]
-SR_LEVEL_MIN_DIFF = _CONFIG_INDICATOR_SR_LEVEL["min-diff"]
 
 # endregion
 

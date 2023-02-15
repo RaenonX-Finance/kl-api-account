@@ -1,13 +1,13 @@
 from pandas import DataFrame
 
-from kl_site_common.const import INDICATOR_EMA_PERIODS
 from kl_site_common.utils import df_fill_na_with_none, df_get_last_rev_index_of_matching_val, print_log
+from kl_site_server.db import PX_CONFIG
 from kl_site_server.enums import PxDataCol
 from .candlestick import calc_candlestick_full, calc_candlestick_last, calc_candlestick_partial
 from .diff import calc_diff_full, calc_diff_last
 from .ema import calc_ema_full, calc_ema_last, calc_ema_partial
 from .index import calc_set_epoch_index
-from .tie_point import calc_tie_point_full, calc_tie_point_partial, calc_tie_point_last
+from .tie_point import calc_tie_point_full, calc_tie_point_last, calc_tie_point_partial
 from ..px_data import aggregate_df
 
 
@@ -23,7 +23,7 @@ def calculate_indicators_full(period_min: int, df: DataFrame) -> DataFrame:
     df = calc_tie_point_full(df, period_min)
 
     df = calc_candlestick_full(df)
-    df = calc_ema_full(df, INDICATOR_EMA_PERIODS)
+    df = calc_ema_full(df, PX_CONFIG.ema_periods)
 
     return df
 
@@ -58,7 +58,7 @@ def calculate_indicators_partial(
     df = calc_tie_point_partial(df, cached_calc_df, close_match_idx_on_df, period_min)
 
     df = calc_candlestick_partial(df, cached_calc_df, close_match_idx_on_df)
-    df = calc_ema_partial(df, cached_calc_df, close_match_idx_on_df, INDICATOR_EMA_PERIODS)
+    df = calc_ema_partial(df, cached_calc_df, close_match_idx_on_df, PX_CONFIG.ema_periods)
 
     # Partial only calculate until the last of `cached_calc_df`
     # Aggregated `df` could have new timestamp that `cached_calc_df` doesn't have
@@ -78,6 +78,6 @@ def calculate_indicators_last(period_min: int, df: DataFrame) -> DataFrame:
     df = calc_tie_point_last(df, period_min)
 
     df = calc_candlestick_last(df)
-    df = calc_ema_last(df, INDICATOR_EMA_PERIODS)
+    df = calc_ema_last(df, PX_CONFIG.ema_periods)
 
     return df

@@ -1,11 +1,9 @@
-from typing import TypeAlias, TypedDict, TYPE_CHECKING
+from typing import TypeAlias, TypedDict
 
-from kl_site_common.const import DATA_PERIOD_DAYS, DATA_PERIOD_MINS, DATA_SOURCES, SR_CUSTOM_LEVELS
+from kl_site_common.const import DATA_SOURCES, SR_CUSTOM_LEVELS
+from kl_site_server.db import PX_CONFIG, UserConfigModel
 from .data import PeriodInfo, ProductInfo
 from .utils import dump_and_compress
-
-if TYPE_CHECKING:
-    from kl_site_server.db import UserConfigModel
 
 
 class CustomSrLevel(TypedDict):
@@ -42,14 +40,8 @@ def _to_products() -> list[ProductInfo]:
 
 
 def _to_periods() -> list[PeriodInfo]:
-    period_min_info = [
-        {"min": period_min_entry["min"], "name": period_min_entry["name"]}
-        for period_min_entry in DATA_PERIOD_MINS
-    ]
-    period_day_info = [
-        {"min": period_day_entry["day"] * 1440, "name": period_day_entry["name"]}
-        for period_day_entry in DATA_PERIOD_DAYS
-    ]
+    period_min_info = [{"min": period.period_min, "name": period.name} for period in PX_CONFIG.period_mins]
+    period_day_info = [{"min": period.period_min, "name": period.name} for period in PX_CONFIG.period_days]
 
     return period_min_info + period_day_info
 

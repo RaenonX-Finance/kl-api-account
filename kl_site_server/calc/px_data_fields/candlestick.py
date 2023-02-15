@@ -5,21 +5,21 @@ import talib
 from pandas import DataFrame, Series
 
 from kl_site_common.utils import df_get_last_non_nan_rev_index
+from kl_site_server.db import PX_CONFIG
 from kl_site_server.enums import PxDataCol
-from kl_site_server.utils import CANDLESTICK_DIR_MACD_FAST, CANDLESTICK_DIR_MACD_SIGNAL, CANDLESTICK_DIR_MACD_SLOW
 from .ema import calc_ema_single
 
-_px_col_macd_fast = PxDataCol.get_ema_col_name(CANDLESTICK_DIR_MACD_FAST)
-_px_col_macd_slow = PxDataCol.get_ema_col_name(CANDLESTICK_DIR_MACD_SLOW)
+_px_col_macd_fast = PxDataCol.get_ema_col_name(PX_CONFIG.candle_dir.fast)
+_px_col_macd_slow = PxDataCol.get_ema_col_name(PX_CONFIG.candle_dir.slow)
 
 
 def _macd_full(px: Series) -> tuple[Series, Series, Series, Series]:
     # Creating formula instead of using `talib.MACD()`
     # because the aforementioned function returns incorrect result
-    macd_fast = talib.EMA(px, timeperiod=CANDLESTICK_DIR_MACD_FAST)
-    macd_slow = talib.EMA(px, timeperiod=CANDLESTICK_DIR_MACD_SLOW)
+    macd_fast = talib.EMA(px, timeperiod=PX_CONFIG.candle_dir.fast)
+    macd_slow = talib.EMA(px, timeperiod=PX_CONFIG.candle_dir.slow)
     macd = macd_fast - macd_slow
-    sig = talib.EMA(macd, timeperiod=CANDLESTICK_DIR_MACD_SIGNAL)
+    sig = talib.EMA(macd, timeperiod=PX_CONFIG.candle_dir.signal)
     hist = macd - sig
 
     return macd_fast, macd_slow, sig, hist
@@ -43,11 +43,11 @@ def calc_candlestick_full(df: DataFrame) -> DataFrame:
 def _macd_of_index(df: DataFrame, idx_curr: Any, idx_prev: Any) -> DataFrame:
     cur_close = df.at[idx_curr, PxDataCol.CLOSE]
 
-    macd_fast = calc_ema_single(cur_close, df.at[idx_prev, _px_col_macd_fast], CANDLESTICK_DIR_MACD_FAST)
-    macd_slow = calc_ema_single(cur_close, df.at[idx_prev, _px_col_macd_slow], CANDLESTICK_DIR_MACD_SLOW)
+    macd_fast = calc_ema_single(cur_close, df.at[idx_prev, _px_col_macd_fast], PX_CONFIG.candle_dir.fast)
+    macd_slow = calc_ema_single(cur_close, df.at[idx_prev, _px_col_macd_slow], PX_CONFIG.candle_dir.slow)
 
     macd = macd_fast - macd_slow
-    sig = calc_ema_single(macd, df.at[idx_prev, PxDataCol.MACD_SIGNAL], CANDLESTICK_DIR_MACD_SIGNAL)
+    sig = calc_ema_single(macd, df.at[idx_prev, PxDataCol.MACD_SIGNAL], PX_CONFIG.candle_dir.signal)
     hist = macd - sig
 
     df.at[idx_curr, _px_col_macd_fast] = macd_fast

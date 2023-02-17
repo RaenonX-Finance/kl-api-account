@@ -119,7 +119,7 @@ def authenticate_user_with_callback(
     redirect_uri: str = Body(...),
 ) -> DbUserModel:
     if not auth_db_validation.find_one({"client_id": form.client_id}):
-        raise generate_bad_request_exception("Invalid client ID")
+        raise generate_bad_request_exception("Invalid client.py ID")
 
     if FASTAPI_AUTH_CALLBACK != redirect_uri:
         raise generate_bad_request_exception("Callback URI mismatch")
@@ -141,7 +141,7 @@ def refresh_access_token(
     user_data: UserDataModel = Depends(get_user_data_by_oauth2_token)
 ) -> str:
     if not auth_db_validation.find_one({"client_id": body.client_id, "client_secret": body.client_secret}):
-        raise generate_bad_request_exception("Invalid client ID or secret")
+        raise generate_bad_request_exception("Invalid client.py ID or secret")
 
     return create_access_token(
         username=user_data.username,

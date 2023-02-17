@@ -18,14 +18,11 @@ Sample history data entry:
 }
 """
 import json
-from dataclasses import InitVar, dataclass, field, fields
+from dataclasses import InitVar, dataclass, field
 from datetime import datetime, timezone
 from functools import total_ordering
 from typing import TYPE_CHECKING, TypedDict
 
-from pandas import DataFrame
-
-from kl_site_common.utils import df_load_entries_with_dt
 from kl_site_server.enums import PxDataCol
 from .calc import calc_interval_to_timedelta_offset, calc_market_date
 from ..send import HistoryInterval
@@ -90,24 +87,6 @@ class PxHistoryDataEntry:
             return ValueError(f"Cannot compare {type(other)} with {PxHistoryDataEntry}")
 
         return self.timestamp < other.timestamp
-
-    @staticmethod
-    def entries_to_dataframe(entries: list["PxHistoryDataEntry"], df_name: str) -> DataFrame:
-        if not entries:
-            raise ValueError("No data available for creating dataframe from history data entries")
-
-        field_names = [entry_field.name for entry_field in fields(entries[0])]
-
-        return df_load_entries_with_dt(
-            [
-                {
-                    field_name: getattr(entry, field_name)
-                    for field_name in field_names
-                }
-                for entry in entries
-            ],
-            df_name=df_name
-        )
 
     @staticmethod
     def is_valid(body: dict[str, str]) -> bool:

@@ -1,18 +1,11 @@
 from dataclasses import dataclass
-from typing import NamedTuple, TYPE_CHECKING, TypeAlias
+from typing import TypeAlias
 
 import pymongo
-from pandas import DataFrame
-from pymongo.errors import OperationFailure
 
 from kl_site_common.db import start_mongo_txn
-from kl_site_common.utils import print_log, split_chunks
-from kl_site_server.enums import PxDataCol
-from tcoreapi_mq.model import SymbolBaseType
+from kl_site_common.utils import print_log
 from ..const import px_data_calc_col
-
-if TYPE_CHECKING:
-    from kl_site_server.model import BarDataDict
 
 
 @dataclass(kw_only=True)
@@ -42,24 +35,6 @@ class CalculatedDataLookup:
 
     def get_calculated_data(self, symbol_complete: str, period_min: int) -> list[dict] | None:
         return self.data.get(self._make_key(symbol_complete, period_min))
-
-    def update_last_bar(self, last_bar_dict: dict[str, "BarDataDict"]) -> "CalculatedDataLookup":
-        for key in self.data.keys():
-            symbol_complete, _ = key
-
-            if not (last_bar := last_bar_dict.get(symbol_complete)):
-                continue
-
-            # self._data[key][-1][PxDataCol.OPEN] = last_bar[PxDataCol.OPEN]
-            self.data[key][-1][PxDataCol.HIGH] = max(self.data[key][-1][PxDataCol.HIGH], last_bar[PxDataCol.HIGH])
-            self.data[key][-1][PxDataCol.LOW] = min(self.data[key][-1][PxDataCol.LOW], last_bar[PxDataCol.LOW])
-            self.data[key][-1][PxDataCol.CLOSE] = last_bar[PxDataCol.CLOSE]
-            # self._data[key][-1][PxDataCol.VOLUME] = last_bar[PxDataCol.VOLUME]
-
-        return self
-
-    def merge(self, calc_data_lookup: "CalculatedDataLookup") -> "CalculatedDataLookup":
-        return CalculatedDataLookup(data=self.data | calc_data_lookup.data)
 
 
 def get_calculated_data_from_db(
@@ -127,43 +102,7 @@ def get_calculated_data_from_db(
     return ret
 
 
-class StoreCalculatedDataArgs(NamedTuple):
-    symbol_obj: SymbolBaseType
-    period_min: int
-    df: DataFrame
-    full: bool
-
-
 def _update_px_data_calc(del_conditions: dict, recs_insert: list[dict]):
     with start_mongo_txn() as session:
         px_data_calc_col.delete_many({"$or": del_conditions}, session=session)
         px_data_calc_col.insert_many(recs_insert, session=session)
-
-
-def store_calculated_to_db(args: list[StoreCalculatedDataArgs]):
-    if not args:
-        print_log("Skipped storing calculated data to db - no data to store")
-        return
-
-    all_del_conditions = []
-    all_recs_insert = []
-    for (symbol_obj, period_min, df, full) in args:
-        common_filter = {"s": symbol_obj.symbol_complete, "p": period_min}
-        recs = df.to_dict("records") if full else [df.iloc[-1].to_dict()]
-
-        all_del_conditions.extend(
-            common_filter | {PxDataCol.EPOCH_SEC: rec[PxDataCol.EPOCH_SEC]}
-            for rec in recs
-        )
-        all_recs_insert.extend(common_filter | rec for rec in recs)
-
-    print_log(
-        f"Storing [purple]{len(all_recs_insert)}[/] calculated data of "
-        f"[yellow]{' / '.join(sorted({arg.symbol_obj.security for arg in args}))}[/]"
-    )
-
-    for (del_conditions, recs_insert) in split_chunks(all_del_conditions, all_recs_insert, chunk_size=3000):
-        try:
-            _update_px_data_calc(del_conditions, recs_insert)
-        except OperationFailure:
-            _update_px_data_calc(del_conditions, recs_insert)

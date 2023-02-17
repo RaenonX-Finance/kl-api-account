@@ -1,11 +1,7 @@
-import time
-from datetime import datetime
 from typing import Any, Callable
 
 import numpy as np
-from pandas import DataFrame, to_datetime
-
-from kl_site_common.utils import print_log
+from pandas import DataFrame
 
 
 def df_fill_na_with_none(func: Callable[[Any], DataFrame]):
@@ -39,8 +35,8 @@ def df_get_last_rev_index_of_matching_val(df_base: DataFrame, df_comp: DataFrame
     same_val_rev_idx = -1
     same_val_idx_val = df_base.index[same_val_rev_idx]
     while (
-        same_val_idx_val not in df_comp.index
-        or df_base.at[same_val_idx_val, column] != df_comp.at[same_val_idx_val, column]
+            same_val_idx_val not in df_comp.index
+            or df_base.at[same_val_idx_val, column] != df_comp.at[same_val_idx_val, column]
     ):
         same_val_rev_idx -= 1
 
@@ -50,30 +46,3 @@ def df_get_last_rev_index_of_matching_val(df_base: DataFrame, df_comp: DataFrame
         same_val_idx_val = df_base.index[same_val_rev_idx]
 
     return same_val_rev_idx
-
-
-def df_load_entries_with_dt(data: list[dict], *, df_name: str | None = None) -> DataFrame:
-    if not data:
-        raise ValueError("No data available for creating dataframe")
-
-    _start = time.time()
-
-    data_col_names_dt = {k for k, v in data[0].items() if isinstance(v, datetime)}
-    data_new = [
-        {
-            key: value.isoformat() if key in data_col_names_dt else value
-            for key, value in entry.items()
-        }
-        for entry in data
-    ]
-
-    df = DataFrame.from_records(data_new)
-    for dt_col_name in data_col_names_dt:
-        df[dt_col_name] = to_datetime(df[dt_col_name])
-
-    print_log(
-        f"Created DT dataframe of {f' x '.join(str(d) for d in df.shape)} in {time.time() - _start:.3f} s "
-        f"({df_name or 'Unnamed'})"
-    )
-
-    return df

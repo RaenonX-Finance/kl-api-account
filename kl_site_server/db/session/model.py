@@ -10,7 +10,7 @@ class UserSessionModel(BaseModel):
     account_id: PyObjectId = Field(..., description="Account ID (ObjectID) of the session.")
     session_id: dict[SocketNamespace, str] = Field(
         ...,
-        description="Session ID of the `socket.io` client, "
+        description="Session ID of the `socket.io` client.py, "
                     "where key is the socket namespace; value is the session ID."
     )
     last_check: datetime = Field(..., description="Last session check timestamp.")

@@ -48,7 +48,7 @@ def get_history_data_from_db_timeframe(
     end: datetime,
 ) -> DbHistoryDataResult:
     print_log(
-        f"Requesting history data of [yellow]{symbol_complete}[/] at [yellow]{interval}[/] "
+        f"Querying history data of [yellow]{symbol_complete}[/] at [yellow]{interval}[/] "
         f"starting from {start} to {end}"
     )
 
@@ -71,7 +71,7 @@ def get_history_data_from_db_limit_count(
     count: int,
 ) -> DbHistoryDataResult:
     print_log(
-        f"Requesting history data of [yellow]{symbol_complete}[/] at [yellow]{interval}[/] "
+        f"Querying history data of [yellow]{symbol_complete}[/] at [yellow]{interval}[/] "
         f"- {count} bars"
     )
 
@@ -113,7 +113,7 @@ def get_history_data_from_db_full(
     interval: HistoryInterval,
 ) -> DbHistoryDataResult:
     print_log(
-        f"Requesting history data of [yellow]{symbol_complete}[/] at [yellow]{interval}[/] "
+        f"Querying history data of [yellow]{symbol_complete}[/] at [yellow]{interval}[/] "
         "- All bars"
     )
 

@@ -31,3 +31,7 @@ pydantic
 # Security
 python-jose[cryptography]
 passlib[bcrypt]
+
+# gRPC
+grpcio
+grpcio-tools

@@ -1,8 +1,11 @@
 system:
-  app-id: ZMQ
-  port:
-    quote: 51237
-  service-key: 8076c9867a372d2a9a814ae710c256e2
+  touchance:
+    app-id: ZMQ
+    port:
+      quote: 51237
+    service-key: 8076c9867a372d2a9a814ae710c256e2
+  grpc:
+    px-calc: localhost:5098
 
 log:
   suppress-warnings: false

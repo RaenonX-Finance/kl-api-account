@@ -19,9 +19,23 @@ def print_configs():
 
 _CONFIG_SYS = config["system"]
 
-SYS_APP_ID = _CONFIG_SYS["app-id"]
-SYS_PORT_QUOTE = _CONFIG_SYS["port"]["quote"]
-SYS_SERVICE_KEY = _CONFIG_SYS["service-key"]
+# region System / Touchance
+
+_SYS_TOUCHANCE = _CONFIG_SYS["touchance"]
+
+SYS_APP_ID = _SYS_TOUCHANCE["app-id"]
+SYS_PORT_QUOTE = _SYS_TOUCHANCE["port"]["quote"]
+SYS_SERVICE_KEY = _SYS_TOUCHANCE["service-key"]
+
+# endregion
+
+# region System / Touchance
+
+_SYS_GRPC = _CONFIG_SYS["grpc"]
+
+GRPC_PX_CALC = _SYS_GRPC["px-calc"]
+
+# endregion
 
 # endregion
 

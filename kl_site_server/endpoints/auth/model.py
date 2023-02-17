@@ -15,8 +15,8 @@ class OAuthToken(BaseModel):
 
 class RefreshAccessTokenModel(BaseModel):
     """Data model containing the data needed for refreshing the access token."""
-    client_id: str = Field(..., description="OAuth client ID.")
-    client_secret: str = Field(..., description="OAuth client secret.")
+    client_id: str = Field(..., description="OAuth client.py ID.")
+    client_secret: str = Field(..., description="OAuth client.py secret.")
 
 
 class UserSignupModel(BaseModel):

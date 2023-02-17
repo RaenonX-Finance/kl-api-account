@@ -4,6 +4,7 @@ from datetime import datetime
 
 from kl_site_common.const import DATA_PX_REFETCH_STORE_LIMIT
 from kl_site_common.utils import execute_async_function, print_log, print_warning
+from kl_site_grpc.client import GrpcClient
 from kl_site_server.app import (
     on_error, on_px_data_new_bar_created, on_px_data_updated_market, on_system_time_min_change,
 )
@@ -18,7 +19,6 @@ from tcoreapi_mq.message import (
     RealtimeDataHistory, SystemTimeData,
 )
 from tcoreapi_mq.model import FUTURES_SECURITY_TO_SYM_OBJ, SymbolBaseType
-from .calc_data import CalculatedDataManager
 from .subscribe import HistoryDataSubscriber
 
 
@@ -30,7 +30,6 @@ class TouchanceDataClient(TouchanceApiClient):
         self._px_request_params: dict[str, TouchancePxRequestParams] = {}
         self._px_realtime_check_intervals: list[HistoryInterval] = ["1K"]
         self._requesting_px_data: bool = False
-        self._calc_data_manager: CalculatedDataManager = CalculatedDataManager(self._px_data_cache)
 
     def _update_px_request_params(self, params: TouchancePxRequestParams):
         self._px_request_params[params.symbol_obj.symbol_complete] = params
@@ -72,7 +71,7 @@ class TouchanceDataClient(TouchanceApiClient):
                 # Ensure all history data requests are finished
                 # Not using context manager because sometimes it unlocks locked lock
                 self.history_data_lock_dict[params.symbol_obj.symbol_complete].acquire()
-                self._calc_data_manager.update_calc_data_full(params)
+                GrpcClient.calc_all([params.symbol_obj.symbol_complete])
                 if self.history_data_lock_dict[params.symbol_obj.symbol_complete].locked():
                     self.history_data_lock_dict[params.symbol_obj.symbol_complete].release()
 
@@ -137,7 +136,7 @@ class TouchanceDataClient(TouchanceApiClient):
         store_history_to_db(data, None if self._requesting_px_data else DATA_PX_REFETCH_STORE_LIMIT)
         self._px_data_cache.update_complete_data_of_symbol(data)
 
-        self._calc_data_manager.update_calc_data_last(self._px_request_params.values(), {data.symbol_complete})
+        GrpcClient.calc_last_fire(data.symbol_complete)
 
         if not self._requesting_px_data:
             self.test_minute_change(data.data_list[-1].timestamp)
@@ -175,8 +174,10 @@ class TouchanceDataClient(TouchanceApiClient):
         print_log(f"{time.time() - _time:.3f} s: Making new bar on cache", identifier="NBR")
         securities_created = self._px_data_cache.make_new_bar(data)
 
-        print_log(f"{time.time() - _time:.3f} s: Making new bar for calculated data", identifier="NBR")
-        self._calc_data_manager.update_calc_data_new_bar(self._px_request_params.values())
+        print_log(f"{time.time() - _time:.3f} s: Sending calc new bar request via gRPC", identifier="NBR")
+        GrpcClient.calc_partial_fire([
+            params.symbol_obj.symbol_complete for params in self._px_request_params.values()
+        ])
 
         print_log(f"{time.time() - _time:.3f} s: Triggering new bar creation events", identifier="NBR")
         execute_async_function(

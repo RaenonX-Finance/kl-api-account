@@ -79,13 +79,3 @@ class TCoreZMQ:
                 session_key=self.session_key, symbol_obj=symbol_obj
             ).to_message())
             return QueryInstrumentMessage(symbol_obj=symbol_obj, message=self.socket.get_message())
-
-    def query_all_instrument_info(self, instrument_type: InstrumentType) -> ErrorMessage:
-        print_log(f"Requesting all instrument info of type [yellow]{instrument_type}[/]")
-
-        with self.lock:
-            req = QueryAllInstrumentRequest(session_key=self.session_key, instrument_type=instrument_type)
-            self.socket.send_string(req.to_message())
-
-            # FIXME: Temporarily returns error message only, none of the instrument type works
-            return ErrorMessage(message=self.socket.get_message())

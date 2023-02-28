@@ -6,5 +6,3 @@ exclude =
     venv/
     sandbox*.py
     __init__.py
-    protos/
-    kl_site_proto

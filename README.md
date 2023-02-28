@@ -1,18 +1,12 @@
-# kl-site-back
+# kl-api-account
 
-Backend for KL-Law market data website.
+Backend for KL account API.
 
 Check `config.yaml` for server settings.
 
 ## Prerequisites
 
-- Touchance 3.0
 - Python 3.10
-
-## Environment Variables
-
-Most of the variables can be used from `kl_site_common.env`.
-They should be self-explanatory, and should have default value set to it, unless specified otherwise.
 
 ### Required
 

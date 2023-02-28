@@ -1,12 +1,12 @@
 apps:
-  - name: 'kl-site-back'
+  - name: 'KL.Api.Account'
     # Entry point
     script: 'main.py'
     # Execution configs
     exec_mode: 'fork'
     # Environments
     env:
-      APP_NAME: app
+      APP_NAME: 'KL.Api.Account'
     env_production: {}
     # Others
     interpreter: py

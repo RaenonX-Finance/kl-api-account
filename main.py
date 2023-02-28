@@ -12,8 +12,6 @@ async def startup_event():
     start_server_app()
     set_current_process_to_highest_priority()
 
-# TODO: pm2 to run uvicorn instead
-
 
 if __name__ == "__main__":
     # Using this instead of `uvicorn` API to avoid starting the main client.py twice

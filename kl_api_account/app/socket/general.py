@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 from kl_api_common.utils import print_socket_event
 from kl_api_account.const import fast_api_socket
-from kl_api_account.db import record_session_checked, record_session_disconnected
+from kl_api_account.db import record_session_disconnected
 from kl_api_account.endpoints import get_active_user_by_oauth2_token, get_user_config_by_token
 from kl_api_account.enums import GeneralSocketEvent
 from kl_api_account.model import PxCheckAuthMessage
@@ -41,8 +41,8 @@ def register_handlers_general():
     @fast_api_socket.on(GeneralSocketEvent.AUTH)
     async def on_px_check_auth(session_id: str, auth_message: PxCheckAuthMessage):
         try:
-            user_data = get_active_user_by_oauth2_token(auth_message["token"])
-            record_session_checked(user_data.id)
+            # Calling the method checks token validity
+            get_active_user_by_oauth2_token(auth_message["token"])
 
             await socket_send_to_session(GeneralSocketEvent.AUTH, "OK", session_id)
         except HTTPException as ex:

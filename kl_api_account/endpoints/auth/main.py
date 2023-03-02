@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Body, Depends, status
 
 from kl_api_account.db import SignupKeyModel, UserDataModel, ValidationSecretsModel
 from .db_control import (
     generate_access_token, generate_access_token_on_doc,
     generate_account_creation_key as generate_account_creation_key_db, generate_validation_secrets,
-    get_active_user_by_user_data, refresh_access_token, signup_user,
+    get_active_user_by_user_data, refresh_access_token, signup_user, get_active_user_by_oauth2_token
 )
-from .model import OAuthToken
+from .model import OAuthToken, TokenCheckModel, TokenCheckResult
 
 auth_router = APIRouter(prefix="/auth")
 
@@ -85,3 +85,13 @@ async def generate_account_creation_key(
     signup_key: SignupKeyModel = Depends(generate_account_creation_key_db)
 ) -> SignupKeyModel:
     return signup_key
+
+
+@auth_router.post(
+    "/token-check",
+    description="Check if the token is valid.",
+    response_model=TokenCheckResult
+)
+async def check_token_validity(model: TokenCheckModel = Body(...)) -> TokenCheckResult:
+    get_active_user_by_oauth2_token(model.token)
+    return TokenCheckResult(ok=True)

@@ -39,3 +39,11 @@ class UserSignupModel(BaseModel):
             hashed_password=get_password_hash(self.password),
             signup_key=None if admin else self.signup_key,
         )
+
+
+class TokenCheckModel(BaseModel):
+    token: str = Field(...)
+
+
+class TokenCheckResult(BaseModel):
+    ok: bool = Field(...)

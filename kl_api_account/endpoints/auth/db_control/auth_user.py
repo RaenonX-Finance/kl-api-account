@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from jose import ExpiredSignatureError, JWTError
 
 from kl_api_common.env import DEVELOPMENT_MODE, FASTAPI_AUTH_CALLBACK, FASTAPI_AUTH_TOKEN_EXPIRY_MINS
-from kl_api_account.db import DbUserModel, UserDataModel, auth_db_users, auth_db_validation
+from kl_api_account.db import DbUserModel, UserDataModel, auth_db_users, auth_db_validation, record_session_checked
 from kl_api_account.utils import (
     generate_bad_request_exception, generate_blocked_exception,
     generate_unauthorized_exception,
@@ -76,6 +76,7 @@ def get_active_user_by_user_data(
 
 def get_active_user_by_oauth2_token(token: str) -> UserDataModel:
     user_data = get_user_data_by_oauth2_token(token)
+    record_session_checked(user_data.id)
     return get_active_user_by_user_data(user_data)
 
 

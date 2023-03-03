@@ -1,5 +1,3 @@
-from typing import Any, Coroutine
-
 from fastapi import HTTPException
 
 from kl_api_common.db import PyObjectId

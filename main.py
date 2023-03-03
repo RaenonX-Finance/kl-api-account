@@ -2,13 +2,12 @@ import newrelic.agent
 
 newrelic.agent.initialize("newrelic.ini")
 
-# noqa: E402
-import os
+import os  # noqa: E402
 
-from kl_api_common.const import print_configs
-from kl_api_common.utils import set_current_process_to_highest_priority
-from kl_api_account.app import start_server_app
-from kl_api_account.const import fast_api
+from kl_api_common.const import print_configs  # noqa: E402
+from kl_api_common.utils import set_current_process_to_highest_priority  # noqa: E402
+from kl_api_account.app import start_server_app  # noqa: E402
+from kl_api_account.const import fast_api  # noqa: E402
 
 
 @fast_api.on_event("startup")

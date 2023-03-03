@@ -1,44 +1,63 @@
-import logging
-import os.path
-from typing import Callable, Literal, TypeAlias
+import threading
+import time
+from datetime import datetime
 
-from kl_api_common.const import LOG_TO_DIR
-from kl_api_common.env import APP_NAME
-from .handler import ParallelTimedRotatingFileHandler
+from rich.console import Console, Text
 
-LogLevels: TypeAlias = Literal["CRITICAL", "ERROR", "WARNING", "INFO", "DEBUG"]
-
-_logger = logging.getLogger("KL.Account")
-
-_log_func_map: dict[LogLevels, Callable[[str], None]] = {
-    "CRITICAL": _logger.critical,
-    "ERROR": _logger.error,
-    "WARNING": _logger.warning,
-    "INFO": _logger.info,
-    "DEBUG": _logger.debug,
-}
-
-if LOG_TO_DIR:
-    _handler = ParallelTimedRotatingFileHandler(
-        filename=os.path.join(LOG_TO_DIR, APP_NAME),
-        encoding="utf-8",
-        when="D",
-        backup_count=14,
-    )
-    _handler.setFormatter(logging.Formatter(
-        fmt="%(levelname)8s %(asctime)s.%(msecs)03d: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    ))
-
-    _logger.addHandler(_handler)
-    _logger.setLevel(logging.DEBUG)  # All messages should be logged
+from kl_api_common.const import rich_console
+from kl_api_common.env import APP_NAME, DEVELOPMENT_MODE
+from .logger import log_message_via_logger
+from .types import LogData, LogLevels
 
 
-def log_message_to_file(level: LogLevels, message: str):
-    if level not in _log_func_map:
-        raise ValueError(f"Invalid log level: {level}")
+def _get_current_timestamp() -> str:
+    return datetime.now().isoformat()[:-3]
 
-    if not LOG_TO_DIR:
-        raise ValueError("Logging to file not enabled. Check config option: `log.output-directory`.")
 
-    _log_func_map[level](message)
+def _print_console(
+    rich_console: Console, level: LogLevels, message: str, *,
+    timestamp_color: str, identifier: str | None, **data
+):
+    if level == "DEBUG" and not DEVELOPMENT_MODE:
+        return
+
+    epoch_ms = int(time.time() * 1000)
+    log_data: LogData = {
+        "application": APP_NAME,
+        "level": level,
+        "timestamp": epoch_ms,
+        "threadId": threading.get_ident(),
+        "message": Text.from_markup(message).plain,
+        **data
+    }
+
+    if identifier:
+        log_data["identifier"] = identifier
+
+    log_message_via_logger(level, log_data)
+
+    if not DEVELOPMENT_MODE:
+        return
+
+    message = f"{level:>8} [{timestamp_color}]{datetime.fromtimestamp(epoch_ms / 1000).isoformat()[:-3]}[/] " \
+              f"\[{log_data['threadId']:>6}]: {f'[{identifier}]' if identifier else ''} {message}"  # noqa: W605
+
+    rich_console.print(message, soft_wrap=True)  # Disable soft wrapping
+
+
+def print_log(message: str, *, identifier: str | None = None, **data):
+    _print_console(rich_console, "INFO", message, timestamp_color="green", identifier=identifier, **data)
+
+
+def print_socket_event(event: str, *, session_id: str, **data):
+    message = f"Received `[purple]{event}[/]`"
+
+    if session_id:
+        message += f" - SID: [yellow]{session_id}[/]"
+
+    data["session"] = {
+        "event": event,
+        "id": session_id
+    }
+
+    print_log(message, **data)

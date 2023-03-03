@@ -16,3 +16,5 @@ MONGO_URL: str = env.str("MONGO_URL")
 DEVELOPMENT_MODE: bool = env.bool("DEV", False)
 
 APP_NAME: str = env.str("APP_NAME")
+
+NEW_RELIC_LICENSE_KEY: str = env.str("NEW_RELIC_LICENSE_KEY")

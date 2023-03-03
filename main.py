@@ -1,3 +1,8 @@
+import newrelic.agent
+
+newrelic.agent.initialize("newrelic.ini")
+
+# noqa: E402
 import os
 
 from kl_api_common.const import print_configs
@@ -14,6 +19,6 @@ async def startup_event():
 
 
 if __name__ == "__main__":
-    # Using this instead of `uvicorn` API to avoid starting the main client.py twice
+    # Using this instead of `uvicorn` API to avoid starting the main.py twice
     # https://stackoverflow.com/a/66197795/11571888
     os.system("uvicorn main:fast_api --port=8000")

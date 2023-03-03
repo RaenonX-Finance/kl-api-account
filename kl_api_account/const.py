@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 
 from kl_api_common.env import DEVELOPMENT_MODE
-from .utils import FastApiSioJSONSerializer
+from kl_api_common.utils import FastApiSioJSONSerializer
 
 fast_api = FastAPI(
     title="KL.Account API",

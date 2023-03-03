@@ -14,7 +14,8 @@ async def on_http_exception(ex: HTTPException, session_id: str):
     await socket_disconnect_session(session_id)
 
 
-def get_tasks_with_session_control(account_id: PyObjectId, session_id: str) -> list[Coroutine[Any, Any, None]]:
+async def get_tasks_with_session_control(account_id: PyObjectId, session_id: str):
     session_id_to_disconnect = record_session_connected(account_id, session_id)
 
-    return [socket_disconnect_session(session_id_to_disconnect)]
+    if session_id_to_disconnect:
+        await socket_disconnect_session(session_id_to_disconnect)

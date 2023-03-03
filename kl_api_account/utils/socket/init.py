@@ -1,17 +1,17 @@
-import json
 from typing import TypedDict
 
 from kl_api_account.db import UserConfigModel
-from kl_api_common.utils import JSONEncoder
 
 
 class InitData(TypedDict):
     config: dict
 
 
-def to_socket_message_init_data(config: "UserConfigModel") -> str:
+def to_socket_message_init_data(config: "UserConfigModel") -> InitData:
     data: InitData = {
-        "config": dict(config),
+        # `account_id` field is not needed
+        # `account_id` also has JSON serialization issue caused by socket IO server
+        "config": config.dict(exclude={"account_id"}),
     }
 
-    return json.dumps(data, cls=JSONEncoder)
+    return data

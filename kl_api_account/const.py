@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi_socketio import SocketManager
 
 from kl_api_common.env import DEVELOPMENT_MODE
+from .utils import FastApiSioJSONSerializer
 
 fast_api = FastAPI(
     title="KL.Account API",
@@ -13,10 +14,8 @@ fast_api = FastAPI(
 )
 # Set `cors_allowed_origins` to `None` and let `CORSMiddleware` handle CORS things
 # > Calling ``SocketManager`` patches `fast_api` with attribute `sio`
-SocketManager(app=fast_api, cors_allowed_origins=[])
-# noinspection PyUnresolvedReferences
+SocketManager(app=fast_api, cors_allowed_origins=[], json=FastApiSioJSONSerializer)
 fast_api_socket: socketio.AsyncServer = fast_api.sio
-
 
 fast_api.add_middleware(
     CORSMiddleware,

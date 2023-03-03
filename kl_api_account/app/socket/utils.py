@@ -10,7 +10,7 @@ from kl_api_account.socket import socket_disconnect_session, socket_send_to_sess
 
 async def on_http_exception(ex: HTTPException, session_id: str):
     # Can't use `asyncio.gather()` here because sign-in event should be sent first
-    await socket_send_to_session(GeneralSocketEvent.SIGN_IN, ex.detail, session_id)
+    await socket_send_to_session(GeneralSocketEvent.ERROR, ex.detail, session_id)
     await socket_disconnect_session(session_id)
 
 

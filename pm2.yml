@@ -7,6 +7,10 @@ apps:
     # Environments
     env:
       APP_NAME: 'KL.Api.Account'
+    # Restart options
+    min_uptime: 30000
+    max_restarts: 5
+    restart_delay: 10000
     # Others
     interpreter: py
     cron_restart: '10 21 * * *'  # Restart at 21:10 everyday

@@ -55,7 +55,7 @@ def print_socket_event(event: str, *, session_id: str, **data):
     if session_id:
         message += f" - SID: [yellow]{session_id}[/]"
 
-    data["session"] = {
+    data["socket"] = {
         "event": event,
         "id": session_id
     }

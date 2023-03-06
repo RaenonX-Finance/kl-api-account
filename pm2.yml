@@ -1,5 +1,6 @@
 apps:
-  - name: 'KL.Api.Account'
+  - namespace: 'KL'
+    name: 'KL.Api.Account'
     # Entry point
     script: 'main.py'
     # Execution configs

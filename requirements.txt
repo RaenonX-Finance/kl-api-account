@@ -19,3 +19,6 @@ pydantic
 # Security
 python-jose[cryptography]
 passlib[bcrypt]
+
+# Monitoring
+newrelic

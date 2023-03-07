@@ -13,3 +13,13 @@ class JSONEncoder(json.JSONEncoder):
             return o.dict()
 
         return json.JSONEncoder.default(self, o)
+
+
+class FastApiSioJSONSerializer:
+    @staticmethod
+    def dumps(*args, **kwargs):
+        return json.dumps(*args, **kwargs, cls=JSONEncoder)
+
+    @staticmethod
+    def loads(*args, **kwargs):
+        return json.loads(*args, **kwargs)

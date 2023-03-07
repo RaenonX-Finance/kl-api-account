@@ -1,25 +1,27 @@
+import logging
+
 import yaml
 from rich.console import Console
 
 from .config import get_config
 
-console = Console()
-console_error = Console(stderr=True, style="bold red")
+rich_console = Console()
+
+py_logger = logging.getLogger("KL.Api.Account")
 
 config = get_config()
 
 
 def print_configs():
     # Print current config
-    console.print("[cyan]--- Config content ---[/]")
-    console.print(yaml.dump(config, default_flow_style=False))
+    rich_console.print("[cyan]--- Config content ---[/]")
+    rich_console.print(yaml.dump(config, default_flow_style=False))
 
 
 # region Log
 
-_CONFIG_LOG = config["log"]
+_CONFIG_LOG = config.get("log", {})
 
-LOG_SUPPRESS_WARNINGS = _CONFIG_LOG["suppress-warnings"]
 LOG_TO_DIR = _CONFIG_LOG.get("output-directory")
 
 # endregion

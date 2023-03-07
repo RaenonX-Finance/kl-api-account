@@ -1,12 +1,17 @@
 apps:
-  - name: 'KL.Api.Account'
+  - namespace: 'KL'
+    name: 'KL.Api.Account'
     # Entry point
     script: 'main.py'
     # Execution configs
     exec_mode: 'fork'
     # Environments
     env:
-      APP_NAME: 'KL.Api.Account'
+      APP_NAME: 'KL.Api.Account.Production'
+    # Restart options
+    min_uptime: 30000
+    max_restarts: 5
+    restart_delay: 10000
     # Others
     interpreter: py
     cron_restart: '10 21 * * *'  # Restart at 21:10 everyday

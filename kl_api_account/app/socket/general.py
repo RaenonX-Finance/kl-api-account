@@ -22,7 +22,7 @@ def register_handlers_general():
             config = get_user_config_by_token(access_token)
 
             await asyncio.gather(
-                *get_tasks_with_session_control(config.account_id, session_id),
+                get_tasks_with_session_control(config.account_id, session_id),
                 socket_send_to_session(
                     GeneralSocketEvent.INIT,
                     to_socket_message_init_data(config),

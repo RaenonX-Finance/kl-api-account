@@ -1,5 +1,5 @@
 apps:
-  - namespace: 'KL'
+  - namespace: 'KL.Web'
     name: 'KL.Api.Account'
     # Entry point
     script: 'main.py'

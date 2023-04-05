@@ -100,6 +100,9 @@ def authenticate_user_by_credentials(
     if not is_password_match(form.password, user.hashed_password):
         raise generate_unauthorized_exception("Incorrect password")
 
+    # Test user validity
+    get_active_user_by_user_data(user)
+
     return user
 
 

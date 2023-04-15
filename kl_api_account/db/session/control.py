@@ -26,7 +26,10 @@ def record_session_connected(
         )
         user_db_session.insert_one(model.dict())
 
-        print_log(f"Session [cyan]created[/] for account [yellow]{account_id}[/]", accountId=account_id)
+        print_log(
+            f"Session [cyan]created[/] for account [yellow]{account_id}[/] - SID: `[cyan]{session_id}[/]`",
+            accountId=account_id, sessionId=session_id
+        )
         return None
 
     session_model = UserSessionModel(**session)
@@ -39,7 +42,8 @@ def record_session_connected(
         )
         print_log(
             f"Session [bold red]replaced[/] for account [yellow]{account_id}[/] - "
-            f"Session ID `[cyan]{session_model.session_id}[/]` to disconnect", accountId=account_id
+            f"SID: `[cyan]{session_model.session_id}[/]` -> `[cyan]{session_id}[/]`",
+            accountId=account_id, sessionId={"old": session_model.session_id, "new": session_id}
         )
         return session_model.session_id
 

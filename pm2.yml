@@ -1,5 +1,5 @@
 apps:
-  - namespace: 'KL'
+  - namespace: 'KL.Web'
     name: 'KL.Api.Account'
     # Entry point
     script: 'main.py'
@@ -14,5 +14,4 @@ apps:
     restart_delay: 10000
     # Others
     interpreter: py
-    cron_restart: '10 21 * * *'  # Restart at 21:10 everyday
     time: true  # Log timestamp in logs

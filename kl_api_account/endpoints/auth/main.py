@@ -93,5 +93,5 @@ async def generate_account_creation_key(
     response_model=TokenCheckResult
 )
 async def check_token_validity(model: TokenCheckModel = Body(...)) -> TokenCheckResult:
-    get_active_user_by_oauth2_token(model.token)
-    return TokenCheckResult(ok=True)
+    user = get_active_user_by_oauth2_token(model.token)
+    return TokenCheckResult(ok=True, admin=user.admin, permissions=user.permissions)

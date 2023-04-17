@@ -3,7 +3,7 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
-from kl_api_account.db import DEFAULT_ACCOUNT_PERMISSIONS, DbUserModel
+from kl_api_account.db import DEFAULT_ACCOUNT_PERMISSIONS, DbUserModel, Permission
 from .secret import get_password_hash
 
 
@@ -47,3 +47,5 @@ class TokenCheckModel(BaseModel):
 
 class TokenCheckResult(BaseModel):
     ok: bool = Field(...)
+    admin: bool = Field(...)
+    permissions: list[Permission] = Field(...)
